@@ -40,7 +40,6 @@ type MonitorResource struct {
 func Run() {
 	u := MonitorResource{}
 	restful.DefaultContainer.Add(u.WebService())
-	restful.TraceLogger(log.Logger)
 	handleSwagger()
 	enableCORS()
 
@@ -66,7 +65,7 @@ func handleSwagger() {
 		PostBuildSwaggerObjectHandler: enrichSwaggerObject}
 	restful.DefaultContainer.Add(restfulspec.NewOpenAPIService(config))
 	// Open http://localhost:8080/apidocs/?url=http://localhost:8080/apidocs.json
-	http.Handle("/apidocs/", http.StripPrefix("/apidocs/", http.FileServer(http.Dir("C:/Users/Carman/go/src/alertmanager-kubesphere-plugin/swagger-ui/dist"))))
+	http.Handle("/apidocs/", http.StripPrefix("/apidocs/", http.FileServer(http.Dir("C:/Users/Carman/go/src/alert-kubesphere-plugin/swagger-ui/dist"))))
 }
 
 func enrichSwaggerObject(swo *spec.Swagger) {
@@ -103,7 +102,8 @@ func (u MonitorResource) WebService() *restful.WebService {
 		Reads(models.UserRequest{}).
 		//Param(myws.BodyParameter("user_info", "user request information").DataType("UserRequest").Required(true)).
 		Metadata(restfulspec.KeyOpenAPITags, tags)).
-		Produces(restful.MIME_JSON)
+		Produces(restful.MIME_JSON).
+		Consumes(restful.MIME_JSON)
 
 	ws.Route(ws.GET("/bye/{name}").To(u.sayBye).
 		Doc("test01").
