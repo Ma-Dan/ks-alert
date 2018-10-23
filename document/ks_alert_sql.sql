@@ -166,7 +166,8 @@ create table alert_history (
 	alert_group_id varchar(200) not null,
 	alert_group_name varchar(200) not null,
 	trigger_alert_rule varchar(200) not null, -- 触发告警的 alert rule
-	event_time timestamp default current_timestamp not null, -- alert变更的时间，
+	event_time timestamp default current_timestamp not null, -- 根据该字段判断只保留30天的数据，可以开放给用户看最近15天的数据
 	operation varchar(50) not null, -- alert被触发， alert被silenced， alert 起作用时间已到， alert 被删除。
+	send_status text, -- 用户组各个用户的发送状态，json 形式
   description text
 );
