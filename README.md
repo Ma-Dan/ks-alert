@@ -18,3 +18,6 @@
 
 用户配置的告警模型
 ![](document/user_alert_module.png)
+
+数据库设计
+![](document/ks-alert-db-design.png)

@@ -23,7 +23,7 @@ create table resource (
 -- 单个或者全部resource 分别视为一种resource_group
 create table resource_group (
   resource_group_id varchar(50) not null primary key,
-	resource_group_name varchar(50) not null, 
+	resource_group_name varchar(50) not null,
 	enable boolean default true,
 	create_time timestamp default current_timestamp not null,
 	update_time timestamp default current_timestamp not null,
@@ -125,23 +125,21 @@ create table receiver_group (
 
 -- alert 绑定资源和receivers和报警规则
 create table alert_binding (
-	id varchar(50) not null primary key, 
+	id varchar(50) not null primary key,
 	user_id varchar(50) not null,
 	user_alert_id varchar(50) not null,   -- 该用户的某个告警
 	resource_group_id varchar(50),  -- 告警资源绑定
 	alert_group_id varchar(50) not null,  -- 告警规则绑定
 	receiver_group_id varchar(50) not null,  -- 绑定receiver group，若有多个receiver_group,则插入多条记录
-  reason varchar(255) default '' not null,  -- meters which status is alert  触发告警的原因
-  silence_enable boolean default false,
-  silence_start timestamp default current_timestamp not null,
-  silence_end timestamp default current_timestamp not null,
+
   repeat_type varchar(20) default 'exponential',  -- 多久重复一次告警通知，重发周期保持不变 stationary 还是服从指数 exponential
   repeat_interval int default 8,  -- 单位是小时, 如果重发周期是固定的 stationary，该字段才有效
   init_repeat_period int default 1,  --  如果重发周期是exponential， 初始重发周期是 1小时
   max_repeat_period int default 168,  --  如果重发周期是exponential， 最大重发周期是 168 小时。
+
   enable_time timestamp default current_timestamp not null,  -- 告警的开始时间， 若不设置，则就是当前时间
 	disable_time timestamp default current_timestamp not null,  -- 告警的结束时间， 若不设置，则告警一直有效
-	enable boolean default true not null, -- 该告警组是否启用
+	enable boolean default true not null, -- 该告警是否启用
 	description text -- 告警描述
 );
 
@@ -158,16 +156,21 @@ create table alert_history (
 	resource_group_name varchar(50) not null,
 	resource_names text, -- 该时刻所有的资源,以数组的形式展示
 	alerted_resource text, -- 正在触发告警的资源
-
 	severity varchar(20) not null, -- 严重程度 与 receiver_group 绑定
 	receiver_group_name varchar(50) not null,
-	receiver_group varchar(300),  -- 多个接受者信息的拼接成一个大的字符串
-
+	receiver_group text,  -- 多个接受者信息的拼接成一个大的字符串
 	alert_group_id varchar(200) not null,
 	alert_group_name varchar(200) not null,
 	trigger_alert_rule varchar(200) not null, -- 触发告警的 alert rule
 	event_time timestamp default current_timestamp not null, -- 根据该字段判断只保留30天的数据，可以开放给用户看最近15天的数据
 	operation varchar(50) not null, -- alert被触发， alert被silenced， alert 起作用时间已到， alert 被删除。
 	send_status text, -- 用户组各个用户的发送状态，json 形式
-  description text
+  cause varchar(255) default '' not null,  -- meters which status is alert  触发告警的原因
+  silence_enable boolean default false,
+  silence_start timestamp default current_timestamp not null,
+  silence_end timestamp default current_timestamp not null,
+  repeat_type varchar(20) default 'exponential',  -- 多久重复一次告警通知，重发周期保持不变 stationary 还是服从指数 exponential
+  repeat_interval int default 8,  -- 单位是小时, 如果重发周期是固定的 stationary，该字段才有效
+  init_repeat_period int default 1,  --  如果重发周期是exponential， 初始重发周期是 1小时
+  max_repeat_period int default 168  --  如果重发周期是exponential， 最大重发周期是 168 小时。
 );
