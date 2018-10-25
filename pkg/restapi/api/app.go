@@ -1,28 +1,15 @@
 package api
 
 import (
-	"github.com/emicklei/go-restful"
-	"github.com/emicklei/go-restful/log"
-	"github.com/emicklei/go-restful-openapi"
-	"net/http"
-	"github.com/go-openapi/spec"
-	"fmt"
-	"alert-kubesphere-plugin/pkg/models"
 	"alert-kubesphere-plugin/pkg/client"
+	"alert-kubesphere-plugin/pkg/models"
+	"fmt"
+	"github.com/emicklei/go-restful"
+	"github.com/emicklei/go-restful-openapi"
+	"github.com/emicklei/go-restful/log"
+	"github.com/go-openapi/spec"
+	"net/http"
 )
-
-
-func (u MonitorResource) updateUser(request *restful.Request, response *restful.Response) {
-	usr := new(User)
-	err := request.ReadEntity(&usr)
-	fmt.Println(usr)
-	if err == nil {
-		response.WriteEntity(usr)
-	} else {
-		response.WriteError(http.StatusInternalServerError, err)
-	}
-}
-
 
 func (u MonitorResource) senderAlertConfig(request *restful.Request, response *restful.Response) {
 	client.SenderAlertConfig(request, response)
@@ -60,8 +47,8 @@ func enableCORS() {
 
 func handleSwagger() {
 	config := restfulspec.Config{
-		WebServices:                   restful.RegisteredWebServices(), // you control what services are visible
-		APIPath:                       "/apidocs.json",
+		WebServices: restful.RegisteredWebServices(), // you control what services are visible
+		APIPath:     "/apidocs.json",
 		PostBuildSwaggerObjectHandler: enrichSwaggerObject}
 	restful.DefaultContainer.Add(restfulspec.NewOpenAPIService(config))
 	// Open http://localhost:8080/apidocs/?url=http://localhost:8080/apidocs.json
@@ -71,7 +58,7 @@ func handleSwagger() {
 func enrichSwaggerObject(swo *spec.Swagger) {
 	swo.Info = &spec.Info{
 		InfoProps: spec.InfoProps{
-			Title:       "kubesphere alertmanager restful apis",
+			Title: "kubesphere alertmanager restful apis",
 			Contact: &spec.ContactInfo{
 				Name:  "carman",
 				Email: "carmanzhang@yunify.com",
@@ -112,7 +99,7 @@ func (u MonitorResource) WebService() *restful.WebService {
 		Produces(restful.MIME_JSON)
 
 	ws.Route(ws.PUT("/{user-id}").To(u.updateUser).
-	// docs
+		// docs
 		Doc("update a user").
 		Param(ws.PathParameter("user-id", "identifier of the user").DataType("string")).
 		Metadata(restfulspec.KeyOpenAPITags, tags).

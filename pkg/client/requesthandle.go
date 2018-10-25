@@ -1,14 +1,14 @@
 package client
 
 import (
-	"github.com/emicklei/go-restful"
-	"alert-kubesphere-plugin/pkg/models"
-	"github.com/golang/glog"
-	"fmt"
-	"alert-kubesphere-plugin/pkg/prometheus"
 	"encoding/json"
-	"time"
+	"fmt"
+	"github.com/emicklei/go-restful"
+	"github.com/golang/glog"
+	"kubesphere.io/alert-kubesphere-plugin/pkg/models"
+	"kubesphere.io/alert-kubesphere-plugin/pkg/prometheus"
 	"strconv"
+	"time"
 )
 
 func SenderAlertConfig(request *restful.Request, response *restful.Response) {
@@ -39,10 +39,6 @@ func SenderAlertConfig(request *restful.Request, response *restful.Response) {
 	// call alert strategy, push alert to alert manager when this alert fired
 	go monitorAndAlert(postfix, params)
 
-
-
-
-
 }
 
 func monitorAndAlert(query string, params string) {
@@ -69,25 +65,20 @@ func monitorAndAlert(query string, params string) {
 			}
 		}
 	}
-
-
 }
-
-
-
 
 func enrichRulePromQL(metricName string, resourceName models.ResourceName, resourceType string) string {
 	var ruleOrPromQL string
 	switch resourceType {
 	case "workspace":
-		ruleOrPromQL = prometheus.MakeWorkspacePromQL(metricName, resourceName)   // resourceName regex support
+		ruleOrPromQL = prometheus.MakeWorkspacePromQL(metricName, resourceName) // resourceName regex support
 	case "namespace":
 		ruleOrPromQL = prometheus.MakeNamespacePromQL(metricName, resourceName)
-	case "workload" :
+	case "workload":
 		ruleOrPromQL = prometheus.MakeWorkloadRule(metricName, resourceName)
-	case "pod" :
+	case "pod":
 		ruleOrPromQL = prometheus.MakePodPromQL(metricName, resourceName)
-	case "container" :
+	case "container":
 		ruleOrPromQL = prometheus.MakeContainerPromQL(metricName, resourceName)
 	}
 	return ruleOrPromQL
