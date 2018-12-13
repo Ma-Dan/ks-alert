@@ -2,7 +2,7 @@ package models
 
 import (
 	"github.com/jinzhu/gorm"
-	"kubesphere.io/alert-kubesphere-plugin/pkg/client"
+	"kubesphere.io/ks-alert/pkg/client"
 )
 
 func init() {

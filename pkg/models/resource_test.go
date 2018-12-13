@@ -3,7 +3,7 @@ package models
 import (
 	"fmt"
 	. "github.com/smartystreets/goconvey/convey"
-	"kubesphere.io/alert-kubesphere-plugin/pkg/utils/jsonutil"
+	"kubesphere.io/ks-alert/pkg/utils/jsonutil"
 	"testing"
 )
 

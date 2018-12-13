@@ -2,7 +2,7 @@ package models
 
 import (
 	. "github.com/smartystreets/goconvey/convey"
-	"kubesphere.io/alert-kubesphere-plugin/pkg/utils/idutil"
+	"kubesphere.io/ks-alert/pkg/utils/idutil"
 	"testing"
 	"time"
 )

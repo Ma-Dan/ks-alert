@@ -2,8 +2,8 @@ package models
 
 import (
 	"k8s.io/klog/glog"
-	"kubesphere.io/alert-kubesphere-plugin/pkg/client"
-	"kubesphere.io/alert-kubesphere-plugin/pkg/utils/idutil"
+	"kubesphere.io/ks-alert/pkg/client"
+	"kubesphere.io/ks-alert/pkg/utils/idutil"
 	"time"
 )
 
@@ -38,7 +38,7 @@ type ReceiverGroup struct {
 	UpdatedAt         time.Time `gorm:"not null;"`
 }
 
-func CreateReceiverGroup(receiverGroup *ReceiverGroup) (string, error) {
+func CreateReceiverGroup(receiverGroup *ReceiverGroup) (*ReceiverGroup, error) {
 	db, err := client.DBClient()
 	if err != nil {
 		panic(err)
@@ -48,12 +48,12 @@ func CreateReceiverGroup(receiverGroup *ReceiverGroup) (string, error) {
 
 	err = db.Model(&ReceiverGroup{}).Create(receiverGroup).Error
 
-	return receiverGroup.ReceiverGroupID, err
+	return receiverGroup, err
 }
 
 func CreateReceiverBindingGroupItem(receivers *[]Receiver, receiverGroup *ReceiverGroup) error {
 
-	receiverGroupID, err := CreateReceiverGroup(receiverGroup)
+	receiverGroup, err := CreateReceiverGroup(receiverGroup)
 	if err != nil {
 		glog.Errorln(err.Error())
 		return err
@@ -66,9 +66,10 @@ func CreateReceiverBindingGroupItem(receivers *[]Receiver, receiverGroup *Receiv
 
 	for _, receiver := range *receivers {
 		var err error
+		var createdReceiver *Receiver
 		if receiver.ReceiverID == "" {
 			// need to create this user, otherwise this user is exists
-			err = CreateReceiver(&receiver)
+			createdReceiver, err = CreateReceiver(&receiver)
 		}
 
 		if err != nil {
@@ -79,9 +80,9 @@ func CreateReceiverBindingGroupItem(receivers *[]Receiver, receiverGroup *Receiv
 		// Create item in table `ReceiverBindingGroup`
 
 		err = db.Model(&ReceiverBindingGroup{}).Create(&ReceiverBindingGroup{
-			ReceiverGroupID: receiverGroupID,
-			ReceiverID:      receiver.ReceiverID,
-			SeverityID:      receiver.SeverityID,
+			ReceiverGroupID: receiverGroup.ReceiverGroupID,
+			ReceiverID:      createdReceiver.ReceiverID,
+			SeverityID:      createdReceiver.SeverityID,
 			CreatedAt:       time.Now(),
 			UpdatedAt:       time.Now(),
 		}).Error
@@ -95,7 +96,7 @@ func CreateReceiverBindingGroupItem(receivers *[]Receiver, receiverGroup *Receiv
 	return nil
 }
 
-func CreateReceiver(receiver *Receiver) error {
+func CreateReceiver(receiver *Receiver) (*Receiver, error) {
 
 	db, err := client.DBClient()
 	if err != nil {
@@ -106,5 +107,5 @@ func CreateReceiver(receiver *Receiver) error {
 
 	err = db.Model(&Receiver{}).Create(receiver).Error
 
-	return err
+	return receiver, err
 }

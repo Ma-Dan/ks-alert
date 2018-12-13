@@ -1,8 +1,8 @@
 package models
 
 import (
-	"kubesphere.io/alert-kubesphere-plugin/pkg/client"
-	"kubesphere.io/alert-kubesphere-plugin/pkg/utils/idutil"
+	"kubesphere.io/ks-alert/pkg/client"
+	"kubesphere.io/ks-alert/pkg/utils/idutil"
 	"time"
 )
 
