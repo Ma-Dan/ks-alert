@@ -1,7 +1,7 @@
 package models
 
 import (
-	"kubesphere.io/ks-alert/pkg/models/client"
+	"kubesphere.io/ks-alert/pkg/utils/dbutil"
 	"kubesphere.io/ks-alert/pkg/utils/idutil"
 	"time"
 )
@@ -21,7 +21,7 @@ type Enterprise struct {
 }
 
 func CreateEnterprise(enterprise *Enterprise) error {
-	db, err := client.DBClient()
+	db, err := dbutil.DBClient()
 	if err != nil {
 		panic(err)
 	}
@@ -33,7 +33,7 @@ func CreateEnterprise(enterprise *Enterprise) error {
 }
 
 func GetEnterprise(enterprise *Enterprise) (*Enterprise, error) {
-	db, err := client.DBClient()
+	db, err := dbutil.DBClient()
 	if err != nil {
 		panic(err)
 	}

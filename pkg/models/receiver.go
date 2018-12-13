@@ -2,7 +2,7 @@ package models
 
 import (
 	"k8s.io/klog/glog"
-	"kubesphere.io/ks-alert/pkg/client"
+	"kubesphere.io/ks-alert/pkg/utils/dbutil"
 	"kubesphere.io/ks-alert/pkg/utils/idutil"
 	"time"
 )
@@ -39,7 +39,7 @@ type ReceiverGroup struct {
 }
 
 func CreateReceiverGroup(receiverGroup *ReceiverGroup) (*ReceiverGroup, error) {
-	db, err := client.DBClient()
+	db, err := dbutil.DBClient()
 	if err != nil {
 		panic(err)
 	}
@@ -53,13 +53,18 @@ func CreateReceiverGroup(receiverGroup *ReceiverGroup) (*ReceiverGroup, error) {
 
 func CreateReceiverBindingGroupItem(receivers *[]Receiver, receiverGroup *ReceiverGroup) error {
 
-	receiverGroup, err := CreateReceiverGroup(receiverGroup)
+	var err error
+
+	if receiverGroup.ReceiverGroupID == "" {
+		receiverGroup, err = CreateReceiverGroup(receiverGroup)
+	}
+
 	if err != nil {
 		glog.Errorln(err.Error())
 		return err
 	}
 
-	db, err := client.DBClient()
+	db, err := dbutil.DBClient()
 	if err != nil {
 		panic(err)
 	}
@@ -67,9 +72,12 @@ func CreateReceiverBindingGroupItem(receivers *[]Receiver, receiverGroup *Receiv
 	for _, receiver := range *receivers {
 		var err error
 		var createdReceiver *Receiver
-		if receiver.ReceiverID == "" {
+		var receiverID = receiver.ReceiverID
+
+		if receiverID == "" {
 			// need to create this user, otherwise this user is exists
 			createdReceiver, err = CreateReceiver(&receiver)
+			receiverID = createdReceiver.ReceiverID
 		}
 
 		if err != nil {
@@ -81,8 +89,8 @@ func CreateReceiverBindingGroupItem(receivers *[]Receiver, receiverGroup *Receiv
 
 		err = db.Model(&ReceiverBindingGroup{}).Create(&ReceiverBindingGroup{
 			ReceiverGroupID: receiverGroup.ReceiverGroupID,
-			ReceiverID:      createdReceiver.ReceiverID,
-			SeverityID:      createdReceiver.SeverityID,
+			ReceiverID:      receiverID,
+			SeverityID:      receiver.SeverityID,
 			CreatedAt:       time.Now(),
 			UpdatedAt:       time.Now(),
 		}).Error
@@ -98,7 +106,7 @@ func CreateReceiverBindingGroupItem(receivers *[]Receiver, receiverGroup *Receiv
 
 func CreateReceiver(receiver *Receiver) (*Receiver, error) {
 
-	db, err := client.DBClient()
+	db, err := dbutil.DBClient()
 	if err != nil {
 		panic(err)
 	}

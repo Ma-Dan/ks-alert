@@ -9,12 +9,20 @@ import (
 func TestCreateReceiverBindingGroupItem(t *testing.T) {
 	Convey("test CreateReceiverBindingGroup Item", t, func() {
 
+		productID := "product-4llxr47k7q82wz"
+
+		severities := GetSeveritiesByProductID(productID)
+
+		//		for _, severity := range *severities{
+		//			severity.SeverityID
+		//		}
+
 		receiver01, err := CreateReceiver(&Receiver{
 			ReceiverName: "aaaaaaaaaaa",
 			Email:        "zlahu@foxmail.com",
 			Phone:        "11111111111111",
 			Wechat:       "zhangliaish",
-			SeverityID:   "",
+			SeverityID:   (*severities)[0].SeverityID,
 			CreatedAt:    time.Now(),
 			UpdatedAt:    time.Now(),
 		})
@@ -26,7 +34,7 @@ func TestCreateReceiverBindingGroupItem(t *testing.T) {
 			Email:        "zlahu@foxmail.com",
 			Phone:        "222222222222222",
 			Wechat:       "zhangliaish",
-			SeverityID:   "",
+			SeverityID:   (*severities)[1].SeverityID,
 			CreatedAt:    time.Now(),
 			UpdatedAt:    time.Now(),
 		})
@@ -38,7 +46,7 @@ func TestCreateReceiverBindingGroupItem(t *testing.T) {
 			Email:        "zlahu@foxmail.com",
 			Phone:        "33333333333333",
 			Wechat:       "zhangliaish",
-			SeverityID:   "",
+			SeverityID:   (*severities)[2].SeverityID,
 			CreatedAt:    time.Now(),
 			UpdatedAt:    time.Now(),
 		})
@@ -56,7 +64,6 @@ func TestCreateReceiverBindingGroupItem(t *testing.T) {
 		receivers := []Receiver{*receiver01, *receiver02, *receiver03}
 
 		CreateReceiverBindingGroupItem(&receivers, receiverGroup)
-
 
 	})
 }

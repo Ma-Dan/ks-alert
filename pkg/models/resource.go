@@ -1,7 +1,7 @@
 package models
 
 import (
-	"kubesphere.io/ks-alert/pkg/client"
+	"kubesphere.io/ks-alert/pkg/utils/dbutil"
 	"kubesphere.io/ks-alert/pkg/utils/idutil"
 	"kubesphere.io/ks-alert/pkg/utils/jsonutil"
 	"time"
@@ -70,7 +70,7 @@ type ResourceURITmpl struct {
 }
 
 //func GetResourceGroups(resourceType *ResourceType) *[]ResourceGroup {
-//	db, err := client.DBClient()
+//	db, err := dbutil.DBClient()
 //	if err != nil {
 //		panic(err)
 //	}
@@ -82,7 +82,7 @@ type ResourceURITmpl struct {
 //}
 
 func GetResourceGroupsByResourceTypeID(resourceTypeID string) *[]ResourceGroup {
-	db, err := client.DBClient()
+	db, err := dbutil.DBClient()
 	if err != nil {
 		panic(err)
 	}
@@ -94,7 +94,7 @@ func GetResourceGroupsByResourceTypeID(resourceTypeID string) *[]ResourceGroup {
 }
 
 func CreateResourceGroup(resourceGroupName, resourceTypeID, resourceTypeName, createdBy, description string, resourceUri *ResourceURITmpls) error {
-	db, err := client.DBClient()
+	db, err := dbutil.DBClient()
 	if err != nil {
 		panic(err)
 	}
@@ -116,7 +116,7 @@ func CreateResourceGroup(resourceGroupName, resourceTypeID, resourceTypeName, cr
 }
 
 //func GetResourceTypes(product *Product) *[]ResourceType {
-//	db, err := client.DBClient()
+//	db, err := dbutil.DBClient()
 //	if err != nil {
 //		panic(err)
 //	}
@@ -128,7 +128,7 @@ func CreateResourceGroup(resourceGroupName, resourceTypeID, resourceTypeName, cr
 //}
 
 func GetResourceTypeByProductID(productID string) *[]ResourceType {
-	db, err := client.DBClient()
+	db, err := dbutil.DBClient()
 	if err != nil {
 		panic(err)
 	}
@@ -140,7 +140,7 @@ func GetResourceTypeByProductID(productID string) *[]ResourceType {
 }
 
 func GetAllResourceTypeCount(productID string) int {
-	db, err := client.DBClient()
+	db, err := dbutil.DBClient()
 	if err != nil {
 		panic(err)
 	}
@@ -152,7 +152,7 @@ func GetAllResourceTypeCount(productID string) int {
 }
 
 func CreateSourceType(productID, resourceTypeName, description string, enable bool, resourceUri *ResourceURITmpls) error {
-	db, err := client.DBClient()
+	db, err := dbutil.DBClient()
 	if err != nil {
 		panic(err)
 	}

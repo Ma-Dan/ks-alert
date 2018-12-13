@@ -9,7 +9,7 @@ import (
 )
 
 func (u MonitorResource) senderAlertConfig(request *restful.Request, response *restful.Response) {
-	//client.SenderAlertConfig(request, response)
+	//dbutil.SenderAlertConfig(request, response)
 }
 
 func (u MonitorResource) sayBye(request *restful.Request, response *restful.Response) {

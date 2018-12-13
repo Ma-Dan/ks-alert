@@ -2,7 +2,7 @@ package models
 
 import (
 	"k8s.io/klog/glog"
-	"kubesphere.io/ks-alert/pkg/client"
+	"kubesphere.io/ks-alert/pkg/utils/dbutil"
 	"kubesphere.io/ks-alert/pkg/utils/idutil"
 	"time"
 )
@@ -24,7 +24,7 @@ type Product struct {
 }
 
 func CreateProduct(product *Product) error {
-	db, err := client.DBClient()
+	db, err := dbutil.DBClient()
 	if err != nil {
 		panic(err)
 	}
@@ -37,7 +37,7 @@ func CreateProduct(product *Product) error {
 
 func GetProducts(product *Product) (*[]Product, error) {
 
-	db, err := client.DBClient()
+	db, err := dbutil.DBClient()
 	if err != nil {
 		panic(err)
 	}
@@ -54,7 +54,7 @@ func GetProductsByEnterprise(enterprise *Enterprise) (*[]Product, error) {
 		glog.Errorln(err.Error())
 	}
 
-	db, err := client.DBClient()
+	db, err := dbutil.DBClient()
 	if err != nil {
 		panic(err)
 	}

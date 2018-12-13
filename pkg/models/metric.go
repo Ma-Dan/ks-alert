@@ -1,7 +1,7 @@
 package models
 
 import (
-	"kubesphere.io/ks-alert/pkg/client"
+	"kubesphere.io/ks-alert/pkg/utils/dbutil"
 	"kubesphere.io/ks-alert/pkg/utils/idutil"
 	"time"
 )
@@ -16,7 +16,7 @@ type Metric struct {
 }
 
 func CreateMetric(metric *Metric) error {
-	db, err := client.DBClient()
+	db, err := dbutil.DBClient()
 	if err != nil {
 		panic(err)
 	}
@@ -28,7 +28,7 @@ func CreateMetric(metric *Metric) error {
 }
 
 func GetMetricsByResourceTypeID(resourceTypeID string) (*[]Metric, error) {
-	db, err := client.DBClient()
+	db, err := dbutil.DBClient()
 	if err != nil {
 		panic(err)
 	}
@@ -49,7 +49,7 @@ func GetMetrics(resourceType *ResourceType) (*[]Metric, error) {
 }
 
 func GetMetricByMetricID(metricID string) (*Metric, error) {
-	db, err := client.DBClient()
+	db, err := dbutil.DBClient()
 	if err != nil {
 		panic(err)
 	}

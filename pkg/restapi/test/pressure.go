@@ -17,7 +17,7 @@ var client = &http.Client{}
 
 //func testUnit(wg sync.WaitGroup, poststr string, params string) {
 //	defer wg.Done()
-//	resp, err := client.Get("http://139.198.190.141:8087/api/v1alpha1/monitoring/" + poststr + params)
+//	resp, err := dbutil.Get("http://139.198.190.141:8087/api/v1alpha1/monitoring/" + poststr + params)
 //	if resp != nil {
 //		defer resp.Body.Close()
 //	}
@@ -53,8 +53,8 @@ func main() {
 		go func() {
 			defer wg.Done()
 			resp, err := client.Get("http://139.198.190.141:8087/api/v1alpha1/monitoring/nodes?time=1539331481&metrics_filter=node_pod_count")
-			//resp, err := client.Get("http://139.198.190.141:8087/api/v1alpha1/monitoring/nodes?start=1539331400&end=1539331481&step=20s&metrics_filter=node_pod_count")
-			//resp, err := client.Get("http://139.198.190.141:8087/api/v1alpha1/monitoring/nodes")
+			//resp, err := dbutil.Get("http://139.198.190.141:8087/api/v1alpha1/monitoring/nodes?start=1539331400&end=1539331481&step=20s&metrics_filter=node_pod_count")
+			//resp, err := dbutil.Get("http://139.198.190.141:8087/api/v1alpha1/monitoring/nodes")
 			if resp != nil {
 				defer resp.Body.Close()
 			} else {

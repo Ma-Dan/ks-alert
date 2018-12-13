@@ -1,6 +1,7 @@
 package models
 
 import (
+	"encoding/json"
 	"fmt"
 	. "github.com/smartystreets/goconvey/convey"
 	"kubesphere.io/ks-alert/pkg/utils/jsonutil"
