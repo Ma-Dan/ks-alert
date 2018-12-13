@@ -1,9 +1,6 @@
 package api
 
 import (
-	"alert-kubesphere-plugin/pkg/client"
-	"alert-kubesphere-plugin/pkg/models"
-	"fmt"
 	"github.com/emicklei/go-restful"
 	"github.com/emicklei/go-restful-openapi"
 	"github.com/emicklei/go-restful/log"
@@ -12,7 +9,7 @@ import (
 )
 
 func (u MonitorResource) senderAlertConfig(request *restful.Request, response *restful.Response) {
-	client.SenderAlertConfig(request, response)
+	//client.SenderAlertConfig(request, response)
 }
 
 func (u MonitorResource) sayBye(request *restful.Request, response *restful.Response) {
@@ -52,7 +49,8 @@ func handleSwagger() {
 		PostBuildSwaggerObjectHandler: enrichSwaggerObject}
 	restful.DefaultContainer.Add(restfulspec.NewOpenAPIService(config))
 	// Open http://localhost:8080/apidocs/?url=http://localhost:8080/apidocs.json
-	http.Handle("/apidocs/", http.StripPrefix("/apidocs/", http.FileServer(http.Dir("C:/Users/Carman/go/src/alert-kubesphere-plugin/swagger-ui/dist"))))
+	// C:\Users\Carman\go\src\kubesphere.io\alert-kubesphere-plugin\swagger-ui
+	http.Handle("/apidocs/", http.StripPrefix("/apidocs/", http.FileServer(http.Dir("C:/Users/Carman/go/src/kubesphere.io/alert-kubesphere-plugin/swagger-ui/dist"))))
 }
 
 func enrichSwaggerObject(swo *spec.Swagger) {
@@ -76,39 +74,67 @@ func enrichSwaggerObject(swo *spec.Swagger) {
 func (u MonitorResource) WebService() *restful.WebService {
 	ws := new(restful.WebService)
 	ws.
-		Path("/v1/monitoring").
+		Path("/v1/alert").
 		Consumes(restful.MIME_XML, restful.MIME_JSON).
 		Produces(restful.MIME_JSON, restful.MIME_XML)
 
-	tags := []string{"monitoring apis"}
+	//tags := []string{"monitoring apis"}
+	// resource_group rule_group receiver_group
+	// ****************************************************************************************************
+	// resource_group  crud
+	//ws.Route(ws.PUT("/resource_group")
+	//// receiver_group crud
+	//ws.Route(ws.PUT("/receiver_group")
+	//// rule_group crud
+	//ws.Route(ws.PUT("/rule_group")
+	//// ****************************************************************************************************
+	//
+	//// 这里的 alert 包含 resource_group  receiver_group  rule_group，如果已经创建，则使用已创建的，如果未创建，则通过 create alert api 也可以创建
+	//// ****************************************************************************************************
+	//// modify alert
+	//ws.Route(ws.POST("/alerts/{alert_id}")
+	//// create alert
+	//ws.Route(ws.PUT("/alerts")
+	//// delete alert
+	//ws.Route(ws.DELETE("/alerts/{alert_id}")
+	//// get alert config
+	//ws.Route(ws.GET("/alerts/{alert_id}")
+	//ws.Route(ws.GET("/alerts")
+	//// get alert status
+	//ws.Route(ws.GET("/alerts/{alert_id}/status")
+	//// current fired alert
+	//ws.Route(ws.GET("/alerts/fired")
+	//// alert history(resolved alert, include start-time and  end-time)
+	//ws.Route(ws.GET("/alerts/history")
+	//// ****************************************************************************************************
+	//
+	//// silence api and repeat send
+	//// ****************************************************************************************************
+	//// create silence
+	//ws.Route(ws.PUT("/silence")
+	//// modify silence
+	//ws.Route(ws.POST("/silence")
+	//// get silence
+	//ws.Route(ws.GET("/silence")
+	//// delete silence
+	//ws.Route(ws.DELETE("/silence")
+	//
+	//ws.Route(ws.POST("/repeat_send")
+	//
+	//// ****************************************************************************************************
+	//
+	//
+	//// enterprise api
+	//// ****************************************************************************************************
+	//// enterprise register/modify/delete/get
+	//ws.Route(ws.PUT("/enterprise")
+	//// product register/modify/delete/get
+	//ws.Route(ws.POST("/enterprise/{enterprise_id}/product")
+	//// resource register/modify/delete/get
+	//ws.Route(ws.POST("/enterprise/{enterprise_id}/product/{product_id}/resource")
+	//// rule register/modify/delete/get
+	//ws.Route(ws.POST("/enterprise/{enterprise_id}/product/{product_id}/resource/{resource_id}/rule")
+	//// ****************************************************************************************************
 
-	ws.Route(ws.POST("/alert").To(u.senderAlertConfig).
-		// user id, user email, resource_type, resource_name, metric_name, condition
-		Doc("send alert configmap").
-		Operation("PutUserRequest").
-		Reads(models.UserRequest{}).
-		//Param(myws.BodyParameter("user_info", "user request information").DataType("UserRequest").Required(true)).
-		Metadata(restfulspec.KeyOpenAPITags, tags)).
-		Produces(restful.MIME_JSON).
-		Consumes(restful.MIME_JSON)
-
-	ws.Route(ws.GET("/bye/{name}").To(u.sayBye).
-		Doc("test01").
-		Param(ws.PathParameter("name", "your name").DataType("string").Required(true).DefaultValue("carman")).
-		Metadata(restfulspec.KeyOpenAPITags, tags)).
-		Produces(restful.MIME_JSON)
-
-	ws.Route(ws.PUT("/{user-id}").To(u.updateUser).
-		// docs
-		Doc("update a user").
-		Param(ws.PathParameter("user-id", "identifier of the user").DataType("string")).
-		Metadata(restfulspec.KeyOpenAPITags, tags).
-		Reads(User{})) // from the request
 	return ws
 }
-
-//type User struct {
-//	ID   string `json:"id" description:"identifier of the user"`
-//	Name string `json:"name" description:"name of the user" default:"john"`
-//	Age  int    `json:"age" description:"age of the user" default:"21"`
-//}
