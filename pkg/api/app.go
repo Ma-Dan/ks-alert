@@ -96,19 +96,19 @@ func (u Alert) WebService() *restful.WebService {
 	ws.Route(ws.GET("/alerts").To(retrieveAlert).
 		Doc("retrieve AlertConfig").
 		Operation("create an AlertConfig operator").
-		Reads(models.AlertConfig{}).
+		//Reads(models.AlertConfig{}).
 		Metadata(restfulspec.KeyOpenAPITags, tags))
 
 	ws.Route(ws.PUT("/alerts").To(updateAlert).
 		Doc("update AlertConfig").
 		Operation("create an AlertConfig operator").
-		Reads(models.AlertConfig{}).
+		//Reads(models.AlertConfig{}).
 		Metadata(restfulspec.KeyOpenAPITags, tags))
 
 	ws.Route(ws.DELETE("/alerts").To(deleteAlert).
 		Doc("delete AlertConfig").
 		Operation("create an AlertConfig operator").
-		Reads(models.AlertConfig{}).
+		//Reads(models.AlertConfig{}).
 		Metadata(restfulspec.KeyOpenAPITags, tags))
 	////resource_group rule_group receiver_group
 	////****************************************************************************************************

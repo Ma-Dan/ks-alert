@@ -171,7 +171,7 @@ func CreateResourceGroup(resourceGroupName, description string) (*ResourceGroup,
 		UpdatedAt:         time.Now(),
 	}
 
-	err = db.Model(&Product{}).Create(resourceGroup).Error
+	err = db.Model(&ResourceGroup{}).Create(resourceGroup).Error
 	return resourceGroup, err
 }
 
