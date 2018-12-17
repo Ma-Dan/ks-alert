@@ -5,34 +5,50 @@ import (
 	"kubesphere.io/ks-alert/pkg/utils/idutil"
 	"kubesphere.io/ks-alert/pkg/utils/jsonutil"
 	"time"
+	"errors"
 )
 
+type Resource struct {
+	ResourceID      string `gorm:"primary_key" json:"-"`
+	ResourceName    string `gorm:"type:varchar(50);" json:"resource_name"`
+	ResourceTypeID  string `gorm:"type:varchar(50);" json:"resource_type_id"`
+	ResourceGroupID string `gorm:"not null;" json:"-"`
+
+	URIParams       Params `gorm:"-" json:"resource_uri_params, omitempty"`
+	URIParamsString string `gorm:"type:text;not null;" json:"-"`
+
+	CreatedAt time.Time `gorm:"not null;" json:"-"`
+	UpdatedAt time.Time `gorm:"not null;" json:"-"`
+}
+
 type ResourceGroup struct {
-	ResourceGroupID   string    `gorm:"primary_key"`
-	ResourceTypeID    string    `gorm:"not null;"`
-	ResourceTypeName  string    `gorm:"type:varchar(50);"`
-	ResourceGroupName string    `gorm:"type:varchar(50);not null;"`
-	ResourceURITmpls  string    `gorm:"type:text;not null;"`
-	CreatedBy         string    `gorm:"type:varchar(50);not null;"`
-	Description       string    `gorm:"type:text;"`
-	CreatedAt         time.Time `gorm:"not null;"`
-	UpdatedAt         time.Time `gorm:"not null;"`
+	ResourceGroupID   string     `gorm:"primary_key" json:"-"`
+	ResourceGroupName string     `gorm:"type:varchar(50);not null;" json:"resource_group_name"`
+	Resources         []Resource `gorm:"-" json:"resources"`
+	Description       string     `gorm:"type:text;" json:"desc"`
+	CreatedAt         time.Time  `gorm:"not null;" json:"-"`
+	UpdatedAt         time.Time  `gorm:"not null;" json:"-"`
+	//ResourceURITmpls  string `gorm:"type:text;not null;"`
+	//CreatedBy         string    `gorm:"type:varchar(50);not null;"`
 }
 
 type ResourceType struct {
 	ResourceTypeID   string `gorm:"primary_key"`
 	ProductID        string `gorm:"not null;"`
 	ResourceTypeName string `gorm:"type:varchar(50);not null;"`
+	Description      string `gorm:"type:text;"`
+	Enable           bool   `gorm:"type:boolean;not null;"`
+
 	// MonitorCenterHost and MonitorCenterPort will override the corresponding filed in struct `product`
-	MonitorCenterHost string          `gorm:"type:varchar(128);not null;"`
-	MonitorCenterPort int             `gorm:"type:int;not null;default:-1;"`
-	Description       string          `gorm:"type:text;"`
-	Enable            bool            `gorm:"type:boolean;not null;"`
-	Endpoint          string          `gorm:"type:text;not null;"`
-	CreatedAt         time.Time       `gorm:"not null;"`
-	UpdatedAt         time.Time       `gorm:"not null;"`
-	Metrics           []Metric        `gorm:"ForeignKey:ResourceTypeID;AssociationForeignKey:MetricID"`
-	ResourceGroups    []ResourceGroup `gorm:"ForeignKey:ResourceTypeID;AssociationForeignKey:ResourceGroupID"`
+	MonitorCenterHost string `gorm:"type:varchar(128);"`
+	MonitorCenterPort int    `gorm:"type:int;"` //default:-1;
+	// ResourceURITmpls struct -> json
+	ResourceURITmpls string `gorm:"type:text;not null;"`
+
+	CreatedAt      time.Time       `gorm:"not null;"`
+	UpdatedAt      time.Time       `gorm:"not null;"`
+	Metrics        []Metric        `gorm:"ForeignKey:ResourceTypeID;AssociationForeignKey:MetricID"`
+	ResourceGroups []ResourceGroup `gorm:"ForeignKey:ResourceTypeID;AssociationForeignKey:ResourceGroupID"`
 }
 
 // the specific resource type has its own endpoint, can be expressed by URI
@@ -59,14 +75,18 @@ type ResourceType struct {
 }
 */
 
-type ResourceURITmpls struct {
-	ResourceURITmpl []ResourceURITmpl `json:"uri_tmpls"`
-}
+type URI string
+type Params map[string]string
+type Resources []string
 
 type ResourceURITmpl struct {
-	URI       string            `json:"uri_tmpl,omitempty"`
-	Params    map[string]string `json:"params,omitempty"`
-	Resources []string          `json:"resources,omitempty"`
+	URI       URI       `json:"uri_tmpl,omitempty"`
+	Params    Params    `json:"params,omitempty"`
+	Resources Resources `json:"resources,omitempty"`
+}
+
+type ResourceURITmpls struct {
+	ResourceURITmpl []ResourceURITmpl `json:"uri_tmpls"`
 }
 
 //func GetResourceGroups(resourceType *ResourceType) *[]ResourceGroup {
@@ -81,38 +101,78 @@ type ResourceURITmpl struct {
 //	return &resourceGroup
 //}
 
-func GetResourceGroupsByResourceTypeID(resourceTypeID string) *[]ResourceGroup {
+//func GetResourceGroupsByResourceTypeID(resourceTypeID string) *[]ResourceGroup {
+//	db, err := dbutil.DBClient()
+//	if err != nil {
+//		panic(err)
+//	}
+//
+//	var resourceGroups []ResourceGroup
+//	db.Model(&ResourceGroup{}).Where(&ResourceGroup{ResourceTypeID: resourceTypeID}).Find(&resourceGroups)
+//
+//	return &resourceGroups
+//}
+
+func CreateResources(resources *[]Resource, resourceGroup *ResourceGroup, uriParams *Params) error {
+
+	if resourceGroup == nil || resourceGroup.ResourceGroupID == "" {
+		return errors.New("resource group create field")
+	}
+
 	db, err := dbutil.DBClient()
 	if err != nil {
 		panic(err)
 	}
 
-	var resourceGroups []ResourceGroup
-	db.Model(&ResourceGroup{}).Where(&ResourceGroup{ResourceTypeID: resourceTypeID}).Find(&resourceGroups)
+	resourceGroupID := resourceGroup.ResourceGroupID
 
-	return &resourceGroups
+	for _, res := range *resources {
+
+		if res.ResourceTypeID == "" {
+			return errors.New("create resource field, resource type is not given")
+		}
+
+		res.ResourceID = idutil.GetUuid36("resource-")
+		res.ResourceGroupID = resourceGroupID
+		res.UpdatedAt = time.Now()
+
+		if res.URIParams != nil {
+			res.URIParamsString = jsonutil.Marshal(res.URIParams)
+		}else if uriParams != nil {
+			res.URIParamsString = jsonutil.Marshal(uriParams)
+		}
+
+		err = db.Model(&Resource{}).Create(&res).Error
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
-func CreateResourceGroup(resourceGroupName, resourceTypeID, resourceTypeName, createdBy, description string, resourceUri *ResourceURITmpls) error {
+
+func CreateResourceGroup(resourceGroupName, description string) (*ResourceGroup, error) {
+
+	if resourceGroupName == "" {
+		return nil, errors.New("resource Group Name is not given")
+	}
+
 	db, err := dbutil.DBClient()
 	if err != nil {
 		panic(err)
 	}
 
-	var resourceType = &ResourceGroup{
+	var resourceGroup = &ResourceGroup{
 		ResourceGroupID:   idutil.GetUuid36("resource_group-"),
 		ResourceGroupName: resourceGroupName,
-		ResourceTypeID:    resourceTypeID,
-		CreatedBy:         createdBy,
-		ResourceTypeName:  resourceTypeName,
 		Description:       description,
-		ResourceURITmpls:  jsonutil.Marshal(resourceUri),
 		CreatedAt:         time.Now(),
 		UpdatedAt:         time.Now(),
 	}
 
-	err = db.Model(&Product{}).Create(resourceType).Error
-	return err
+	err = db.Model(&Product{}).Create(resourceGroup).Error
+	return resourceGroup, err
 }
 
 //func GetResourceTypes(product *Product) *[]ResourceType {
@@ -163,7 +223,7 @@ func CreateSourceType(productID, resourceTypeName, description string, enable bo
 		ProductID:        productID,
 		Enable:           enable,
 		Description:      description,
-		Endpoint:         jsonutil.Marshal(resourceUri),
+		ResourceURITmpls: jsonutil.Marshal(resourceUri),
 		CreatedAt:        time.Now(),
 		UpdatedAt:        time.Now(),
 	}

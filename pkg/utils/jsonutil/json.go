@@ -1,9 +1,11 @@
 package jsonutil
 
 import (
-	"encoding/json"
 	"k8s.io/klog/glog"
+	"github.com/json-iterator/go"
 )
+
+var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 func Marshal(v interface{}) string {
 	byteArray, err := json.Marshal(v)

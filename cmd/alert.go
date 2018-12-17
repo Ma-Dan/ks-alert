@@ -1,6 +1,6 @@
 package main
 
-import "kubesphere.io/alert-kubesphere-plugin/pkg/restapi/api"
+import "kubesphere.io/ks-alert/pkg/api"
 
 func main() {
 	api.Run()

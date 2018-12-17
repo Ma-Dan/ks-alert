@@ -8,15 +8,15 @@ import (
 )
 
 type Receiver struct {
-	ReceiverID   string    `gorm:"type:varchar(50);primary_key"`
-	ReceiverName string    `gorm:"type:varchar(50);not null;"`
-	Email        string    `gorm:"type:varchar(50);not null;"`
-	Phone        string    `gorm:"type:varchar(50);"`
-	Wechat       string    `gorm:"type:varchar(50);"`
-	CreatedAt    time.Time `gorm:"not null;"`
-	UpdatedAt    time.Time `gorm:"not null;"`
+	ReceiverID   string    `gorm:"type:varchar(50);primary_key" json:"receiver_id, omitempty"`
+	ReceiverName string    `gorm:"type:varchar(50);not null;" json:"receiver_name, omitempty"`
+	Email        string    `gorm:"type:varchar(50);not null;" json:"email, omitempty"`
+	Phone        string    `gorm:"type:varchar(50);" json:"phone, omitempty"`
+	Wechat       string    `gorm:"type:varchar(50);" json:"wechat, omitempty"`
+	CreatedAt    time.Time `gorm:"not null;" json:"-"`
+	UpdatedAt    time.Time `gorm:"not null;" json:"-"`
 	// ignore this field because it will be appeared in table `ReceiverBindingGroup`
-	SeverityID string `gorm:"-"`
+	SeverityID string `gorm:"-"  json:"severity_id"`
 }
 
 // Association table
@@ -30,12 +30,14 @@ type ReceiverBindingGroup struct {
 }
 
 type ReceiverGroup struct {
-	ReceiverGroupID   string    `gorm:"type:varchar(50);primary_key"`
-	ReceiverGroupName string    `gorm:"type:varchar(50);not null;"`
-	Webhook           string    `gorm:"type:varchar(50);"`
-	WebhookEnable     bool      `gorm:"type:bool;"`
-	CreatedAt         time.Time `gorm:"not null;"`
-	UpdatedAt         time.Time `gorm:"not null;"`
+	ReceiverGroupID   string     `gorm:"type:varchar(50);primary_key" json:"-"`
+	ReceiverGroupName string     `gorm:"type:varchar(50);not null;" json:"receiver_group_name"`
+	Webhook           string     `gorm:"type:varchar(50);" json:"webhook, omitempty"`
+	WebhookEnable     bool       `gorm:"type:bool;" json:"webhook_enable, omitempty"`
+	Receivers         []Receiver `gorm:"-" json:"receivers"`
+	Description       string     `gorm:"type:text;" json:"desc"`
+	CreatedAt         time.Time  `gorm:"not null;" json:"-"`
+	UpdatedAt         time.Time  `gorm:"not null;" json:"-"`
 }
 
 func CreateReceiverGroup(receiverGroup *ReceiverGroup) (*ReceiverGroup, error) {
@@ -104,6 +106,20 @@ func CreateReceiverBindingGroupItem(receivers *[]Receiver, receiverGroup *Receiv
 	return nil
 }
 
+func CreateReceivers(receivers *[]Receiver) (*[]Receiver, error) {
+	var createdReceiver []Receiver
+
+	for i:=0; i< len(*receivers); i++ {
+		receiver, err := CreateReceiver(&(*receivers)[i])
+		if err != nil {
+			return &createdReceiver, err
+		}
+		createdReceiver = append(createdReceiver, *receiver)
+	}
+
+	return &createdReceiver, nil
+}
+
 func CreateReceiver(receiver *Receiver) (*Receiver, error) {
 
 	db, err := dbutil.DBClient()
@@ -111,9 +127,11 @@ func CreateReceiver(receiver *Receiver) (*Receiver, error) {
 		panic(err)
 	}
 
-	receiver.ReceiverID = idutil.GetUuid36("receiver-")
+	if receiver.ReceiverID != "" {
+		receiver.ReceiverID = idutil.GetUuid36("receiver-")
+		err = db.Model(&Receiver{}).Create(receiver).Error
+		return receiver, err
+	}
 
-	err = db.Model(&Receiver{}).Create(receiver).Error
-
-	return receiver, err
+	return receiver, nil
 }

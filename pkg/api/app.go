@@ -6,23 +6,30 @@ import (
 	"github.com/emicklei/go-restful/log"
 	"github.com/go-openapi/spec"
 	"net/http"
+	"kubesphere.io/ks-alert/pkg/handler"
+	"kubesphere.io/ks-alert/pkg/models"
 )
 
-func (u MonitorResource) senderAlertConfig(request *restful.Request, response *restful.Response) {
-	//dbutil.SenderAlertConfig(request, response)
+type Alert struct{}
+
+func createAlert(request *restful.Request, response *restful.Response) {
+	handler.CreateAlert(request, response)
 }
 
-func (u MonitorResource) sayBye(request *restful.Request, response *restful.Response) {
-	name := request.PathParameter("name")
-	response.WriteAsJson("bye, " + name)
-
+func retrieveAlert(request *restful.Request, response *restful.Response) {
+	handler.RetrieveAlert(request, response)
 }
 
-type MonitorResource struct {
+func updateAlert(request *restful.Request, response *restful.Response) {
+	handler.UpdateAlert(request, response)
+}
+
+func deleteAlert(request *restful.Request, response *restful.Response) {
+	handler.DeleteAlert(request, response)
 }
 
 func Run() {
-	u := MonitorResource{}
+	u := Alert{}
 	restful.DefaultContainer.Add(u.WebService())
 	handleSwagger()
 	enableCORS()
@@ -44,19 +51,19 @@ func enableCORS() {
 
 func handleSwagger() {
 	config := restfulspec.Config{
-		WebServices: restful.RegisteredWebServices(), // you control what services are visible
-		APIPath:     "/apidocs.json",
+		WebServices:                   restful.RegisteredWebServices(), // you control what services are visible
+		APIPath:                       "/apidocs.json",
 		PostBuildSwaggerObjectHandler: enrichSwaggerObject}
 	restful.DefaultContainer.Add(restfulspec.NewOpenAPIService(config))
 	// Open http://localhost:8080/apidocs/?url=http://localhost:8080/apidocs.json
 	// C:\Users\Carman\go\src\kubesphere.io\alert-kubesphere-plugin\swagger-ui
-	http.Handle("/apidocs/", http.StripPrefix("/apidocs/", http.FileServer(http.Dir("C:/Users/Carman/go/src/kubesphere.io/alert-kubesphere-plugin/swagger-ui/dist"))))
+	http.Handle("/apidocs/", http.StripPrefix("/apidocs/", http.FileServer(http.Dir("C:/Users/Carman/go/src/kubesphere.io/ks-alert/swagger-ui/dist"))))
 }
 
 func enrichSwaggerObject(swo *spec.Swagger) {
 	swo.Info = &spec.Info{
 		InfoProps: spec.InfoProps{
-			Title: "kubesphere alertmanager restful apis",
+			Title: "kubesphere AlertConfig restful apis",
 			Contact: &spec.ContactInfo{
 				Name:  "carman",
 				Email: "carmanzhang@yunify.com",
@@ -71,17 +78,41 @@ func enrichSwaggerObject(swo *spec.Swagger) {
 	}
 }
 
-func (u MonitorResource) WebService() *restful.WebService {
+func (u Alert) WebService() *restful.WebService {
 	ws := new(restful.WebService)
 	ws.
-		Path("/v1/alert").
-		Consumes(restful.MIME_XML, restful.MIME_JSON).
-		Produces(restful.MIME_JSON, restful.MIME_XML)
+		Path("/alert/v1").
+		Consumes(restful.MIME_JSON).
+		Produces(restful.MIME_JSON)
 
-	//tags := []string{"monitoring apis"}
-	// resource_group rule_group receiver_group
-	// ****************************************************************************************************
-	// resource_group  crud
+	tags := []string{"alert apis"}
+
+	ws.Route(ws.POST("/alerts").To(createAlert).
+		Doc("create AlertConfig").
+		Operation("create an AlertConfig operator").
+		Reads(models.AlertConfig{}).
+		Metadata(restfulspec.KeyOpenAPITags, tags))
+
+	ws.Route(ws.GET("/alerts").To(retrieveAlert).
+		Doc("retrieve AlertConfig").
+		Operation("create an AlertConfig operator").
+		Reads(models.AlertConfig{}).
+		Metadata(restfulspec.KeyOpenAPITags, tags))
+
+	ws.Route(ws.PUT("/alerts").To(updateAlert).
+		Doc("update AlertConfig").
+		Operation("create an AlertConfig operator").
+		Reads(models.AlertConfig{}).
+		Metadata(restfulspec.KeyOpenAPITags, tags))
+
+	ws.Route(ws.DELETE("/alerts").To(deleteAlert).
+		Doc("delete AlertConfig").
+		Operation("create an AlertConfig operator").
+		Reads(models.AlertConfig{}).
+		Metadata(restfulspec.KeyOpenAPITags, tags))
+	////resource_group rule_group receiver_group
+	////****************************************************************************************************
+	////resource_group  crud
 	//ws.Route(ws.PUT("/resource_group")
 	//// receiver_group crud
 	//ws.Route(ws.PUT("/receiver_group")
@@ -99,11 +130,10 @@ func (u MonitorResource) WebService() *restful.WebService {
 	//ws.Route(ws.DELETE("/alerts/{alert_id}")
 	//// get alert config
 	//ws.Route(ws.GET("/alerts/{alert_id}")
-	//ws.Route(ws.GET("/alerts")
-	//// get alert status
-	//ws.Route(ws.GET("/alerts/{alert_id}/status")
+	//
 	//// current fired alert
 	//ws.Route(ws.GET("/alerts/fired")
+	//
 	//// alert history(resolved alert, include start-time and  end-time)
 	//ws.Route(ws.GET("/alerts/history")
 	//// ****************************************************************************************************
@@ -118,22 +148,20 @@ func (u MonitorResource) WebService() *restful.WebService {
 	//ws.Route(ws.GET("/silence")
 	//// delete silence
 	//ws.Route(ws.DELETE("/silence")
-	//
-	//ws.Route(ws.POST("/repeat_send")
-	//
 	//// ****************************************************************************************************
 	//
 	//
 	//// enterprise api
 	//// ****************************************************************************************************
 	//// enterprise register/modify/delete/get
-	//ws.Route(ws.PUT("/enterprise")
+	//ws.Route(ws.PUT("/enterprises")
 	//// product register/modify/delete/get
-	//ws.Route(ws.POST("/enterprise/{enterprise_id}/product")
-	//// resource register/modify/delete/get
-	//ws.Route(ws.POST("/enterprise/{enterprise_id}/product/{product_id}/resource")
-	//// rule register/modify/delete/get
-	//ws.Route(ws.POST("/enterprise/{enterprise_id}/product/{product_id}/resource/{resource_id}/rule")
+	//ws.Route(ws.POST("/enterprises/{enterprise_id}/products")
+	//// resource_type register/modify/delete/get
+	//ws.Route(ws.POST("/enterprises/{enterprise_id}/products/{product_id}/resource_types")
+	//// alert_rule register/modify/delete/get
+	//ws.Route(ws.POST("/enterprises/{enterprise_id}/products/{product_id}/resource_types/{resource_id}/metrics")
+	//ws.Route(ws.POST("/enterprises/{enterprise_id}/products/{product_id}/resource_types/{resource_id}/metrics/{metric_id}/alert_rules")
 	//// ****************************************************************************************************
 
 	return ws
