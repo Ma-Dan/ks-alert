@@ -1,12 +1,12 @@
 package service
 
 import (
+	"flag"
 	"github.com/emicklei/go-restful"
-	"net/http"
 	"github.com/emicklei/go-restful-openapi"
 	"github.com/go-openapi/spec"
 	"log"
-	"flag"
+	"net/http"
 )
 
 var (
@@ -39,11 +39,11 @@ func enableCORS() {
 
 func handleSwagger() {
 	config := restfulspec.Config{
-		WebServices:                   restful.RegisteredWebServices(), // you control what services are visible
-		APIPath:                       "/apidocs.json",
+		WebServices: restful.RegisteredWebServices(), // you control what services are visible
+		APIPath:     "/apidocs.json",
 		PostBuildSwaggerObjectHandler: enrichSwaggerObject}
 	restful.DefaultContainer.Add(restfulspec.NewOpenAPIService(config))
-	http.Handle("/apidocs/", http.StripPrefix("/apidocs/", http.FileServer(http.Dir("C:/Users/Carman/go/src/kubesphere.io/ks-alert/pkg/dispatcher/swagger-ui/dist"))))
+	http.Handle("/apidocs/", http.StripPrefix("/apidocs/", http.FileServer(http.Dir("C:/Users/Zhang_Li/go/src/kubesphere.io/ks-alert/pkg/dispatcher/swagger-ui/dist"))))
 }
 
 func enrichSwaggerObject(swo *spec.Swagger) {

@@ -12,10 +12,20 @@ const (
 	Stop
 )
 
+type UpdateType string
+
+const (
+	ALertRuleUpdate UpdateType = "alert_rule"
+	ResourceUpdate  UpdateType = "resource"
+	ReceiverUpdate  UpdateType = "receiver"
+)
+
 type AlertConfig struct {
-	ReceiverGroup  ReceiverGroup  `json:"receiver_group"`
-	AlertRuleGroup AlertRuleGroup `json:"alert_rule_group"`
-	ResourceGroup  ResourceGroup  `json:"resource_group"`
+	AlertConfigID  string         `json:"alert_config_id, omitempty"`
+	UpdateType     UpdateType     `json:"update_type, omitempty"`
+	ReceiverGroup  ReceiverGroup  `json:"receiver_group, omitempty"`
+	AlertRuleGroup AlertRuleGroup `json:"alert_rule_group, omitempty"`
+	ResourceGroup  ResourceGroup  `json:"resource_group, omitempty"`
 	URIParams      Params         `json:"resource_uri_params, omitempty"`
 }
 

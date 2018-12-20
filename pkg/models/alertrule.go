@@ -1,10 +1,10 @@
 package models
 
 import (
-	"time"
-	"kubesphere.io/ks-alert/pkg/utils/dbutil"
 	"errors"
+	"kubesphere.io/ks-alert/pkg/utils/dbutil"
 	"kubesphere.io/ks-alert/pkg/utils/idutil"
+	"time"
 )
 
 type AlertRule struct {
@@ -17,7 +17,7 @@ type AlertRule struct {
 
 	ConditionType string `gorm:"type:varchar(10);not null;" json:"condition_type"`
 	// a flag which use to indicate that relationship between Severity and Threshold
-	PerferSeverity uint `gorm:"type:tinyint unsigned;not null;"`
+	PerferSeverity uint `gorm:"type:tinyint unsigned;not null;" json:"perfer_severity"`
 
 	//Threshold float32 `gorm:"type:float;not null;" json:"threshold"`
 	//SeverityID string `gorm:"type:varchar(50);not null;" json:"severity_id"`
