@@ -47,6 +47,18 @@ func CreateAlert(request *restful.Request, response *restful.Response) {
 		glog.Errorln(err)
 	}
 
+
+	//clientConn, err := client.GetExecutorGrpcClient(svc, etcd)
+	//if err != nil {
+	//	panic(err)
+	//}
+	//
+	//client := pb.NewExecutorClient(clientConn)
+	//
+	//resp, err := client.ExecuteAlertConfig(context.Background(), &pb.AlertConfig{Signal: 1, AlertConfigId: "world "})
+
+
+
 }
 
 func RetrieveAlert(request *restful.Request, response *restful.Response) {

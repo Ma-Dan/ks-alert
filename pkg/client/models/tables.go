@@ -1,7 +1,8 @@
 package models
 
 import (
-	"kubesphere.io/ks-alert/client"
+	"kubesphere.io/ks-alert/pkg/clientient"
+	"kubesphere.io/ks-alert/pkg/client"
 )
 
 func init() {

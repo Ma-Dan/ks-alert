@@ -3,7 +3,7 @@ package models
 import (
 	"errors"
 	"github.com/jinzhu/gorm"
-	"kubesphere.io/ks-alert/client"
+	"kubesphere.io/ks-alert/pkg/clientient"
 	. "kubesphere.io/ks-alert/pkg/models"
 )
 

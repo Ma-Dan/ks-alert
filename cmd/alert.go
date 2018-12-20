@@ -1,7 +1,7 @@
 package main
 
-import "kubesphere.io/ks-alert/pkg/api"
+import "kubesphere.io/ks-alert/pkg/dispatcher/service"
 
 func main() {
-	api.Run()
+	service.Run()
 }
