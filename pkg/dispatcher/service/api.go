@@ -57,59 +57,65 @@ func (u AlertAPI) WebService() *restful.WebService {
 		Operation("create an AlertConfig operator").
 		//Reads(models.AlertConfig{}).
 		Metadata(restfulspec.KeyOpenAPITags, tags))
-	////resource_group rule_group receiver_group
-	////****************************************************************************************************
-	////resource_group  crud
-	//ws.Route(ws.PUT("/resource_group")
-	//// receiver_group crud
-	//ws.Route(ws.PUT("/receiver_group")
-	//// rule_group crud
-	//ws.Route(ws.PUT("/rule_group")
-	//// ****************************************************************************************************
-	//
-	//// 这里的 alert 包含 resource_group  receiver_group  rule_group，如果已经创建，则使用已创建的，如果未创建，则通过 create alert api 也可以创建
-	//// ****************************************************************************************************
-	//// modify alert
-	//ws.Route(ws.POST("/alerts/{alert_id}")
-	//// create alert
-	//ws.Route(ws.PUT("/alerts")
-	//// delete alert
-	//ws.Route(ws.DELETE("/alerts/{alert_id}")
-	//// get alert config
-	//ws.Route(ws.GET("/alerts/{alert_id}")
-	//
+	//resource_group rule_group receiver_group
+	//****************************************************************************************************
+	//resource_group  crud
+	ws.Route(ws.POST("/resource_group").To(createResourceGroup))
+	ws.Route(ws.PUT("/resource_group").To(updateResourceGroup))
+	ws.Route(ws.GET("/resource_group").To(retrieveResourceGroup))
+	ws.Route(ws.DELETE("/resource_group").To(deleteResourceGroup))
+	//****************************************************************************************************
+	// receiver_group crud
+	ws.Route(ws.POST("/receiver_group").To(createReceiverGroup))
+	ws.Route(ws.PUT("/receiver_group").To(updateReceiverGroup))
+	ws.Route(ws.GET("/receiver_group").To(retrieveReceiverGroup))
+	ws.Route(ws.DELETE("/receiver_group").To(deleteReceiverGroup))
+	//****************************************************************************************************
+	// rule_group crud
+	ws.Route(ws.POST("/rule_group").To(createRuleGroup))
+	ws.Route(ws.PUT("/rule_group").To(updateRuleGroup))
+	ws.Route(ws.GET("/rule_group").To(retrieveRuleGroup))
+	ws.Route(ws.DELETE("/rule_group").To(deleteRuleGroup))
+	//****************************************************************************************************
+	// silence api
+	ws.Route(ws.POST("/silence").To(createSilence))
+	ws.Route(ws.PUT("/silence").To(updateSilence))
+	ws.Route(ws.GET("/silence").To(retrieveSilence))
+	ws.Route(ws.DELETE("/silence").To(deleteSilence))
+	//****************************************************************************************************
+	// enterprise crud
+	ws.Route(ws.POST("/enterprise").To(createEnterprise))
+	ws.Route(ws.PUT("/enterprise").To(updateEnterprise))
+	ws.Route(ws.GET("/enterprise").To(retrieveEnterprise))
+	ws.Route(ws.DELETE("/enterprise").To(deleteEnterprise))
+	//****************************************************************************************************
+	// product crud
+	ws.Route(ws.POST("/product").To(createProduct))
+	ws.Route(ws.PUT("/product").To(updateProduct))
+	ws.Route(ws.GET("/product").To(retrieveProduct))
+	ws.Route(ws.DELETE("/product").To(deleteProduct))
+	//****************************************************************************************************
+	// resource_type crud
+	ws.Route(ws.POST("/resource_types").To(createResourceTypes))
+	ws.Route(ws.PUT("/resource_types").To(updateResourceTypes))
+	ws.Route(ws.GET("/resource_types").To(retrieveResourceTypes))
+	ws.Route(ws.DELETE("/resource_types").To(deleteResourceTypes))
+	//****************************************************************************************************
+	// resource_type crud
+	ws.Route(ws.POST("/metrics").To(createMetrics))
+	ws.Route(ws.PUT("/metrics").To(updateMetrics))
+	ws.Route(ws.GET("/metrics").To(retrieveMetrics))
+	ws.Route(ws.DELETE("/metrics").To(deleteMetrics))
+	//****************************************************************************************************
+	// alert_rule crud
+	ws.Route(ws.POST("/alert_rules").To(createAlertRules))
+	ws.Route(ws.PUT("/alert_rules").To(updateAlertRules))
+	ws.Route(ws.GET("/alert_rules").To(retrieveAlertRules))
+	ws.Route(ws.DELETE("/alert_rules").To(deleteAlertRules))
 	//// current fired alert
 	//ws.Route(ws.GET("/alerts/fired")
 	//
 	//// alert history(resolved alert, include start-time and  end-time)
 	//ws.Route(ws.GET("/alerts/history")
-	//// ****************************************************************************************************
-	//
-	//// silence api and repeat send
-	//// ****************************************************************************************************
-	//// create silence
-	//ws.Route(ws.PUT("/silence")
-	//// modify silence
-	//ws.Route(ws.POST("/silence")
-	//// get silence
-	//ws.Route(ws.GET("/silence")
-	//// delete silence
-	//ws.Route(ws.DELETE("/silence")
-	//// ****************************************************************************************************
-	//
-	//
-	//// enterprise api
-	//// ****************************************************************************************************
-	//// enterprise register/modify/delete/get
-	//ws.Route(ws.PUT("/enterprises")
-	//// product register/modify/delete/get
-	//ws.Route(ws.POST("/enterprises/{enterprise_id}/products")
-	//// resource_type register/modify/delete/get
-	//ws.Route(ws.POST("/enterprises/{enterprise_id}/products/{product_id}/resource_types")
-	//// alert_rule register/modify/delete/get
-	//ws.Route(ws.POST("/enterprises/{enterprise_id}/products/{product_id}/resource_types/{resource_id}/metrics")
-	//ws.Route(ws.POST("/enterprises/{enterprise_id}/products/{product_id}/resource_types/{resource_id}/metrics/{metric_id}/alert_rules")
-	//// ****************************************************************************************************
-
 	return ws
 }
