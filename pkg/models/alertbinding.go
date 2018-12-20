@@ -2,11 +2,21 @@ package models
 
 import "time"
 
+// signal, used to notify goroutine with different
+type Signal int
+
+const (
+	Running   Signal = iota // value --> 0
+	Terminate               // value --> 1
+	Reload                  // value --> 2
+	Stop
+)
+
 type AlertConfig struct {
 	ReceiverGroup  ReceiverGroup  `json:"receiver_group"`
 	AlertRuleGroup AlertRuleGroup `json:"alert_rule_group"`
 	ResourceGroup  ResourceGroup  `json:"resource_group"`
-	URIParams  Params      `json:"resource_uri_params, omitempty"`
+	URIParams      Params         `json:"resource_uri_params, omitempty"`
 }
 
 type AlertBinding struct {

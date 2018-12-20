@@ -11,16 +11,21 @@ type AlertRule struct {
 	AlertRuleID      string `gorm:"primary_key" json:"-"`
 	AlertRuleGroupID string `gorm:"type:varchar(50);not null;" json:"-"`
 
-	SeverityID string `gorm:"type:varchar(50);not null;" json:"severity_id"`
-	SeverityCh string `gorm:"type:varchar(10);" json:"severity_ch"`
-
 	// ResourceTypeID string
 	MetricID   string `gorm:"type:varchar(50);not null;" json:"metric_id"`
 	MetricName string `gorm:"type:varchar(50);" json:"metric_name"`
 
-	ConditionType string  `gorm:"type:varchar(10);not null;" json:"condition_type"`
-	Threshold     float32 `gorm:"type:float;not null;" json:"threshold"`
-	Unit          string  `gorm:"type:varchar(10);" json:"unit"`
+	ConditionType string `gorm:"type:varchar(10);not null;" json:"condition_type"`
+	// a flag which use to indicate that relationship between Severity and Threshold
+	PerferSeverity uint `gorm:"type:tinyint unsigned;not null;"`
+
+	//Threshold float32 `gorm:"type:float;not null;" json:"threshold"`
+	//SeverityID string `gorm:"type:varchar(50);not null;" json:"severity_id"`
+	//SeverityCh string `gorm:"type:varchar(10);" json:"severity_ch"`
+	ThresholdSeverityString string              `gorm:"type:text;not null;" json:"-"`
+	ThresholdSeverity       []ThresholdSeverity `gorm:"-" json:"threshold_severity"`
+
+	Unit string `gorm:"type:varchar(10);" json:"unit"`
 
 	Period           int `gorm:"type:int;not null;" json:"period"`
 	ConsecutiveCount int `gorm:"type:int;not null;" json:"consecutive_count"`
@@ -33,6 +38,13 @@ type AlertRule struct {
 	Version   int       `gorm:"type:int;not null;" json:"-"`
 
 	RefAlertRuleID string `gorm:"type:varchar(50);" json:"ref_alert_rule_id"`
+}
+
+type ThresholdSeverity struct {
+	Threshold  float32 `json:"threshold"`
+	SeverityID string  `json:"severity_id"`
+	SeverityCh string  `json:"severity_ch, omitempty"`
+	SeverityEn string  `json:"severity_en, omitempty"`
 }
 
 type AlertRuleGroup struct {

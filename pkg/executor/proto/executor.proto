@@ -1,0 +1,39 @@
+syntax = "proto3";
+package executor;
+option go_package = "pb";
+
+message AlertConfig {
+    string alert_config_id = 1; // event content in json format
+    enum Signal {
+        RUN = 0;
+        STOP = 1;
+        Terminate = 2;
+        OTHER = 3;
+    }
+    Signal signal = 2;
+}
+
+// Error
+message Error {
+    enum ErrorCode {
+        SUCCESS = 0;
+        INVALID_PARAM = 1;
+        ACCESS_DENIED = 2;
+        THRESHOLD_REACHED = 3;
+    }
+    ErrorCode code = 1;
+    string text = 2; // optional
+}
+
+service Executor {
+    rpc ExecuteAlertConfig (AlertConfig) returns (Error) {
+//        option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+//            summary: "Put single event to eventhub"
+//            tags: "Event"
+//        };
+//        option (google.api.http) = {
+//            post: "/v1/event"
+//            body: "*"
+//        };
+    }
+}

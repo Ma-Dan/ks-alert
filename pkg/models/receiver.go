@@ -127,7 +127,7 @@ func CreateReceiver(receiver *Receiver) (*Receiver, error) {
 		panic(err)
 	}
 
-	if receiver.ReceiverID != "" {
+	if receiver.ReceiverID == "" {
 		receiver.ReceiverID = idutil.GetUuid36("receiver-")
 		err = db.Model(&Receiver{}).Create(receiver).Error
 		return receiver, err
