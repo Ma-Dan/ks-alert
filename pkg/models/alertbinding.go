@@ -3,12 +3,13 @@ package models
 import "time"
 
 // signal, used to notify goroutine with different
-type Signal int
+type Signal int32
 
 const (
-	Running   Signal = iota // value --> 0
-	Terminate               // value --> 1
-	Reload                  // value --> 2
+	Run       Signal = iota // value --> 0
+	Create                  // value --> 1
+	Terminate
+	Reload
 	Stop
 )
 
@@ -60,4 +61,12 @@ type AlertBinding struct {
 	KeepAliveAt time.Time `gorm:"not null;"`
 	// this alert config binding is executing on a specific `node`
 	HostID string `gorm:"type:varchar(50);not null;"`
+}
+
+func GetAlertBindingItem(alertConfigID string) (*AlertBinding, error) {
+	return nil, nil
+}
+
+func DeleteAlertBindingItem(alertConfigID string) error {
+	return nil
 }

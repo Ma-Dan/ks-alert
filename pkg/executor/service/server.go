@@ -13,6 +13,7 @@ import (
 	"google.golang.org/grpc"
 	"kubesphere.io/ks-alert/pkg/registry"
 	"kubesphere.io/ks-alert/pkg/executor/pb"
+	"kubesphere.io/ks-alert/pkg/executor"
 )
 
 const (
@@ -32,9 +33,10 @@ type server struct{}
 
 // server is used to implement ExecuteAlertConfig.
 // ExecuteAlertConfig(context.Context, *AlertConfig) (*Error, error)
-func (s *server) ExecuteAlertConfig(ctx context.Context, config *pb.AlertConfig) (*pb.Error, error) {
-	fmt.Println("sdsfdfdsv")
-	return &pb.Error{}, nil
+func (s *server) ExecuteAlertConfig(ctx context.Context, alertConfig *pb.AlertConfig) (*pb.Error, error) {
+	//id := alertConfig.AlertConfigId
+	executor.Action(ctx, alertConfig)
+
 }
 
 func main() {
@@ -71,7 +73,6 @@ func main() {
 	}()
 	log.Printf("starting executor service at %s:%d", *serviceHost, *servicePort)
 	s := grpc.NewServer()
-	//pb.RegisterExecutorServer(s, &server{})
-	pb.RegisterExecutorServer(s,&server{} )
+	pb.RegisterExecutorServer(s, &server{})
 	s.Serve(lis)
 }

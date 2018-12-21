@@ -9,11 +9,6 @@ import (
 	"net/http"
 )
 
-var (
-	ExecutorServiceName = flag.String("service", "alert_executor_service", "service name")
-	EtcdAddr            = flag.String("etcd", "http://127.0.0.1:2379", "register etcd address")
-)
-
 func Run() {
 	flag.Parse()
 
@@ -43,7 +38,7 @@ func handleSwagger() {
 		APIPath:     "/apidocs.json",
 		PostBuildSwaggerObjectHandler: enrichSwaggerObject}
 	restful.DefaultContainer.Add(restfulspec.NewOpenAPIService(config))
-	http.Handle("/apidocs/", http.StripPrefix("/apidocs/", http.FileServer(http.Dir("C:/Users/Zhang_Li/go/src/kubesphere.io/ks-alert/pkg/dispatcher/swagger-ui/dist"))))
+	http.Handle("/apidocs/", http.StripPrefix("/apidocs/", http.FileServer(http.Dir("C:/Users/Carman/go/src/kubesphere.io/ks-alert/pkg/dispatcher/swagger-ui/dist"))))
 }
 
 func enrichSwaggerObject(swo *spec.Swagger) {
