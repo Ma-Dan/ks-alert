@@ -2,59 +2,65 @@ package service
 
 import (
 	"flag"
-	"github.com/emicklei/go-restful"
-	"github.com/emicklei/go-restful-openapi"
-	"github.com/go-openapi/spec"
+	"fmt"
+	"google.golang.org/grpc"
+	"kubesphere.io/ks-alert/pkg/dispatcher/handler"
+	"kubesphere.io/ks-alert/pkg/dispatcher/pb"
+	"kubesphere.io/ks-alert/pkg/registry"
 	"log"
-	"net/http"
+	"net"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+)
+
+const (
+	DefaultDispatcherServiceHost          = "127.0.0.1"
+	DefaultDispatcherServiceName          = "alert_dispatcher_service"
+	DispatcherServiceRegistrationInterval = 10
+)
+
+var (
+	dispatcherServiceName = flag.String("dispatcher_service", "", "service name")
+	dispatcherServiceHost = flag.String("dispatcher_service_host", "", "service host")
+	dispatcherServicePort = flag.Int("dispatcher_service_port", 50000, "listening port")
+	dispatcherEtcdAddress = flag.String("dispatcher_etcd_addr", "http://127.0.0.1:2379", "register etcd address")
 )
 
 func Run() {
 	flag.Parse()
-
-	api := AlertAPI{}
-	restful.DefaultContainer.Add(api.WebService())
-	handleSwagger()
-	enableCORS()
-
-	log.Printf("Get the API using http://localhost:8080/apidocs.json")
-	log.Printf("Open Swagger UI using http://localhost:8080/apidocs/") // ?url=http://localhost:8080/apidocs.json
-	log.Print(http.ListenAndServe(":8080", nil))
-}
-
-func enableCORS() {
-	// Optionally, you may need to enable CORS for the UI to work.
-	cors := restful.CrossOriginResourceSharing{
-		AllowedHeaders: []string{"Content-Type", "Accept"},
-		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE"},
-		CookiesAllowed: false,
-		Container:      restful.DefaultContainer}
-	restful.DefaultContainer.Filter(cors.Filter)
-}
-
-func handleSwagger() {
-	config := restfulspec.Config{
-		WebServices: restful.RegisteredWebServices(), // you control what services are visible
-		APIPath:     "/apidocs.json",
-		PostBuildSwaggerObjectHandler: enrichSwaggerObject}
-	restful.DefaultContainer.Add(restfulspec.NewOpenAPIService(config))
-	http.Handle("/apidocs/", http.StripPrefix("/apidocs/", http.FileServer(http.Dir("C:/Users/Carman/go/src/kubesphere.io/ks-alert/pkg/dispatcher/swagger-ui/dist"))))
-}
-
-func enrichSwaggerObject(swo *spec.Swagger) {
-	swo.Info = &spec.Info{
-		InfoProps: spec.InfoProps{
-			Title: "kubesphere alert restful apis",
-			Contact: &spec.ContactInfo{
-				Name:  "carman",
-				Email: "carmanzhang@yunify.com",
-				URL:   "",
-			},
-			License: &spec.License{
-				Name: "MIT License",
-				URL:  "http://mit.org",
-			},
-			Version: "1.0.0",
-		},
+	if *dispatcherServiceHost == "" {
+		//panic(errors.New("executor service host ip is not specified"))
+		*dispatcherServiceHost = DefaultDispatcherServiceHost
 	}
+
+	if *dispatcherServiceName == "" {
+		*dispatcherServiceName = DefaultDispatcherServiceName
+	}
+
+	lis, err := net.Listen("tcp", fmt.Sprintf(*dispatcherServiceHost+":%d", *dispatcherServicePort))
+	if err != nil {
+		panic(err)
+	}
+
+	// register executor service information in etcd
+	err = registry.Register(*dispatcherServiceName, *dispatcherServiceHost, *dispatcherServicePort, *dispatcherEtcdAddress, time.Second*DispatcherServiceRegistrationInterval, 15)
+	if err != nil {
+		panic(err)
+	}
+
+	ch := make(chan os.Signal, 1)
+	signal.Notify(ch, syscall.SIGTERM, syscall.SIGINT, syscall.SIGKILL, syscall.SIGHUP, syscall.SIGQUIT)
+
+	go func() {
+		s := <-ch
+		log.Printf("receive signal '%v'", s)
+		registry.UnRegister()
+		os.Exit(1)
+	}()
+	log.Printf("starting executor service at %s:%d", *dispatcherServiceHost, *dispatcherServicePort)
+	s := grpc.NewServer()
+	pb.RegisterAlertEngineServer(s, &handler.Server{})
+	s.Serve(lis)
 }

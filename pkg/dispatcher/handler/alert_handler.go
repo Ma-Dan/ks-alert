@@ -1,14 +1,39 @@
 package handler
 
 import (
-	"github.com/emicklei/go-restful"
-	"kubesphere.io/ks-alert/pkg/models"
-	executor "kubesphere.io/ks-alert/pkg/executor/pb"
-	"fmt"
 	"context"
+	"fmt"
+	"github.com/emicklei/go-restful"
 	"kubesphere.io/ks-alert/pkg/dispatcher/client"
 	"kubesphere.io/ks-alert/pkg/dispatcher/option"
+	"kubesphere.io/ks-alert/pkg/dispatcher/pb"
+	executor "kubesphere.io/ks-alert/pkg/executor/pb"
+	"kubesphere.io/ks-alert/pkg/models"
 )
+
+// alert
+func (server Server) CreateAlertConfig(ctx context.Context, alertConfig *pb.AlertConfig) (*pb.AlertConfigResponse, error) {
+	fmt.Println("reveived from clinet")
+	return &pb.AlertConfigResponse{
+		AlertConfig: &pb.AlertConfig{AlertConfigId: "1234455678"},
+	}, nil
+}
+
+func (server Server) DeleteAlertConfig(ctx context.Context, alertConfig *pb.AlertConfig) (*pb.AlertConfigResponse, error) {
+	return nil, nil
+}
+
+func (server Server) UpdateAlertConfig(ctx context.Context, alertConfig *pb.AlertConfig) (*pb.AlertConfigResponse, error) {
+	return nil, nil
+}
+
+func (server Server) GetAlertConfig(ctx context.Context, alertConfig *pb.AlertConfig) (*pb.AlertConfigResponse, error) {
+	return nil, nil
+}
+
+func (server Server) GetAlertHistory(ctx context.Context, alertHistory *pb.AlertHistoryRequest) (*pb.AlertHistoryResponse, error) {
+	return nil, nil
+}
 
 func CreateAlert(request *restful.Request, response *restful.Response) {
 

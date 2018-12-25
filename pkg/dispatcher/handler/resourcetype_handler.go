@@ -1,16 +1,23 @@
 package handler
 
-import "github.com/emicklei/go-restful"
+import (
+	"context"
+	"kubesphere.io/ks-alert/pkg/dispatcher/pb"
+)
 
-func CreateResourceType(request *restful.Request, response *restful.Response) {
-
+// resource type
+func (server Server) CreateResourceType(ctx context.Context, resourceType *pb.ResourceType) (*pb.ResourceTypeResponse, error) {
+	return nil, nil
 }
-func RetrieveResourceType(request *restful.Request, response *restful.Response) {
 
+func (server Server) DeleteResourceType(ctx context.Context, resourceTypeID *pb.ResourceTypeID) (*pb.ResourceTypeResponse, error) {
+	return nil, nil
 }
-func UpdateResourceType(request *restful.Request, response *restful.Response) {
 
+func (server Server) UpdateResourceType(ctx context.Context, resourceType *pb.ResourceType) (*pb.ResourceTypeResponse, error) {
+	return nil, nil
 }
-func DeleteResourceType(request *restful.Request, response *restful.Response) {
 
+func (server Server) GetResourceType(ctx context.Context, resourceTypeID *pb.ResourceTypeID) (*pb.ResourceTypeResponse, error) {
+	return nil, nil
 }

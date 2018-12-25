@@ -17,13 +17,12 @@ type AlertRule struct {
 
 	ConditionType string `gorm:"type:varchar(10);not null;" json:"condition_type"`
 	// a flag which use to indicate that relationship between Severity and Threshold
-	PerferSeverity uint `gorm:"type:tinyint unsigned;not null;" json:"perfer_severity"`
+	PerferSeverity int8 `gorm:"type:tinyint unsigned;not null;" json:"perfer_severity"`
 
-	//Threshold float32 `gorm:"type:float;not null;" json:"threshold"`
-	//SeverityID string `gorm:"type:varchar(50);not null;" json:"severity_id"`
-	//SeverityCh string `gorm:"type:varchar(10);" json:"severity_ch"`
-	ThresholdSeverityString string              `gorm:"type:text;not null;" json:"-"`
-	ThresholdSeverity       []ThresholdSeverity `gorm:"-" json:"threshold_severity"`
+	Threshold float32 `gorm:"type:float;not null;" json:"threshold"`
+
+	//ThresholdSeverityString string              `gorm:"type:text;not null;" json:"-"`
+	//ThresholdSeverity       []ThresholdSeverity `gorm:"-" json:"threshold_severity"`
 
 	Unit string `gorm:"type:varchar(10);" json:"unit"`
 
@@ -37,15 +36,20 @@ type AlertRule struct {
 	UpdatedAt time.Time `gorm:"not null;" json:"-"`
 	Version   int       `gorm:"type:int;not null;" json:"-"`
 
+	// repeat send
+	RepeatSendType         string `gorm:"type:varchar(10);not null;"`
+	InitRepeatSendInterval uint   `gorm:"type:mediumint(11) unsigned;not null;"`
+	MaxRepeatSendInterval  uint   `gorm:"type:mediumint(11) unsigned;not null;"`
+
 	RefAlertRuleID string `gorm:"type:varchar(50);" json:"ref_alert_rule_id"`
 }
 
-type ThresholdSeverity struct {
-	Threshold  float32 `json:"threshold"`
-	SeverityID string  `json:"severity_id"`
-	SeverityCh string  `json:"severity_ch, omitempty"`
-	SeverityEn string  `json:"severity_en, omitempty"`
-}
+//type ThresholdSeverity struct {
+//	Threshold  float32 `json:"threshold"`
+//	SeverityID string  `json:"severity_id"`
+//	SeverityCh string  `json:"severity_ch, omitempty"`
+//	SeverityEn string  `json:"severity_en, omitempty"`
+//}
 
 type AlertRuleGroup struct {
 	AlertRuleGroupID   string      `gorm:"primary_key" json:"-"`

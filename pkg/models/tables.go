@@ -63,12 +63,6 @@ func createTables(db *gorm.DB) {
 		}
 	}
 
-	if !db.HasTable(&ReceiverBindingGroup{}) {
-		if err := db.Set("gorm:table_options", "ENGINE=InnoDB DEFAULT CHARSET=utf8").CreateTable(&ReceiverBindingGroup{}).Error; err != nil {
-			panic(err)
-		}
-	}
-
 	if !db.HasTable(&Severity{}) {
 		if err := db.Set("gorm:table_options", "ENGINE=InnoDB DEFAULT CHARSET=utf8").CreateTable(&Severity{}).Error; err != nil {
 			panic(err)

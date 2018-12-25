@@ -1,16 +1,23 @@
 package handler
 
-import "github.com/emicklei/go-restful"
+import (
+	"context"
+	"kubesphere.io/ks-alert/pkg/dispatcher/pb"
+)
 
-func CreateProduct(request *restful.Request, response *restful.Response) {
-
+// product
+func (server Server) CreateProduct(ctx context.Context, product *pb.Product) (*pb.ProductResponse, error) {
+	return nil, nil
 }
-func RetrieveProduct(request *restful.Request, response *restful.Response) {
 
+func (server Server) DeleteProduct(ctx context.Context, productID *pb.ProductID) (*pb.ProductResponse, error) {
+	return nil, nil
 }
-func UpdateProduct(request *restful.Request, response *restful.Response) {
 
+func (server Server) UpdateProduct(ctx context.Context, product *pb.Product) (*pb.ProductResponse, error) {
+	return nil, nil
 }
-func DeleteProduct(request *restful.Request, response *restful.Response) {
 
+func (server Server) GetProduct(ctx context.Context, productID *pb.ProductID) (*pb.ProductResponse, error) {
+	return nil, nil
 }

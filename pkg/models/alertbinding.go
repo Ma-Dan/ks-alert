@@ -6,8 +6,8 @@ import "time"
 type Signal int32
 
 const (
-	Run       Signal = iota // value --> 0
-	Create                  // value --> 1
+	Run    Signal = iota // value --> 0
+	Create               // value --> 1
 	Terminate
 	Reload
 	Stop
@@ -27,7 +27,6 @@ type AlertConfig struct {
 	ReceiverGroup  ReceiverGroup  `json:"receiver_group, omitempty"`
 	AlertRuleGroup AlertRuleGroup `json:"alert_rule_group, omitempty"`
 	ResourceGroup  ResourceGroup  `json:"resource_group, omitempty"`
-	URIParams      Params         `json:"resource_uri_params, omitempty"`
 }
 
 type AlertBinding struct {
@@ -38,12 +37,10 @@ type AlertBinding struct {
 	ResourceGroupID  string `gorm:"type:varchar(50);not null;"`
 	ReceiverGroupID  string `gorm:"type:varchar(50);not null;"`
 
+	SeverityID string `gorm:"type:varchar(50);not null;" json:"severity_id"`
+	SeverityCh string `gorm:"type:varchar(10);" json:"severity_ch"`
+
 	ProductID string `gorm:"type:varchar(50);not null;"`
-	// repeat send
-	RepeatSendType         string `gorm:"type:varchar(10);not null;"`
-	RepeatSendInterval     uint   `gorm:"type:mediumint(11) unsigned;not null;"`
-	InitRepeatSendInterval uint   `gorm:"type:mediumint(11) unsigned;not null;"`
-	MaxRepeatSendInterval  uint   `gorm:"type:mediumint(11) unsigned;not null;"`
 
 	Enable    bool      `gorm:"type:boolean;not null;default:true;"`
 	EnableAt  time.Time `gorm:"not null;"`

@@ -1,16 +1,23 @@
 package handler
 
-import "github.com/emicklei/go-restful"
+import (
+	"context"
+	"kubesphere.io/ks-alert/pkg/dispatcher/pb"
+)
 
-func CreateAlertRule(request *restful.Request, response *restful.Response) {
-
+// alert rule
+func (server Server) CreateAlertRule(ctx context.Context, alertRule *pb.AlertRule) (*pb.AlertRuleResponse, error) {
+	return nil, nil
 }
-func RetrieveAlertRule(request *restful.Request, response *restful.Response) {
 
+func (server Server) DeleteAlertRule(ctx context.Context, alertRuleID *pb.AlertRuleID) (*pb.AlertRuleResponse, error) {
+	return nil, nil
 }
-func UpdateAlertRule(request *restful.Request, response *restful.Response) {
 
+func (server Server) UpdateAlertRule(ctx context.Context, alertRule *pb.AlertRule) (*pb.AlertRuleResponse, error) {
+	return nil, nil
 }
-func DeleteAlertRule(request *restful.Request, response *restful.Response) {
 
+func (server Server) GetAlertRule(ctx context.Context, alertRuleID *pb.AlertRuleID) (*pb.AlertRuleResponse, error) {
+	return nil, nil
 }
