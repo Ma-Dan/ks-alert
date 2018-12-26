@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	. "github.com/smartystreets/goconvey/convey"
-	"kubesphere.io/ks-alert/pkg/utils/jsonutil"
+	"github.com/carmanzhang/ks-alert/pkg/utils/jsonutil"
 	"testing"
 )
 

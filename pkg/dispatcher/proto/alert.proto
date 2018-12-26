@@ -1,419 +1,419 @@
-syntax = "proto3";
-package pb;
-option go_package = "pb";
-
-//import "google/api/annotations.proto";
-//import "protoc-gen-swagger/options/annotations.proto";
-
-// Error
-message Error {
-    enum ErrorCode {
-        SUCCESS = 0;
-        INVALID_PARAM = 1;
-        ACCESS_DENIED = 2;
-        THRESHOLD_REACHED = 3;
-    }
-    ErrorCode code = 1;
-    string text = 2; // optional
-}
-
-message Enterprise {
-    string enterprise_id = 1;
-    string enterprise_name = 2;
-    string home_page = 3;
-    string address = 4;
-    string phone = 5;
-    string email = 6;
-    string contacts = 7;
-    string desc = 8;
-}
-
-message GetEnterpriseResponse {
-    Enterprise enterprise = 1;
-    Error error = 2; //optional
-}
-
-message EnterpriseID {
-    string enterprise_id = 1;
-}
-
-message EnterpriseResponse {
-    string enterprise_id = 1;
-    Error error = 2; //optional
-}
-
-message Product {
-    string product_id = 1;
-    string product_name = 2;
-    string enterprise_id = 3;
-    string home_page = 4;
-    string address = 5;
-    string phone = 6;
-    string email = 7;
-    string monitor_center_host = 8;
-    int32 monitor_center_port = 9;
-    string contacts = 10;
-    string desc = 11;
-}
-
-//message GetProductResponse {
-//    Product product = 1;
+//syntax = "proto3";
+//package pb;
+//option go_package = "pb";
+//
+////import "google/api/annotations.proto";
+////import "protoc-gen-swagger/options/annotations.proto";
+//
+//// Error
+//message Error {
+//    enum ErrorCode {
+//        SUCCESS = 0;
+//        INVALID_PARAM = 1;
+//        ACCESS_DENIED = 2;
+//        THRESHOLD_REACHED = 3;
+//    }
+//    ErrorCode code = 1;
+//    string text = 2; // optional
+//}
+//
+//message Enterprise {
+//    string enterprise_id = 1;
+//    string enterprise_name = 2;
+//    string home_page = 3;
+//    string address = 4;
+//    string phone = 5;
+//    string email = 6;
+//    string contacts = 7;
+//    string desc = 8;
+//}
+//
+//message GetEnterpriseResponse {
+//    Enterprise enterprise = 1;
 //    Error error = 2; //optional
 //}
-
-message ProductID {
-    string Product_id = 1;
-}
-
-message ProductResponse {
-    ProductID product_id = 1;
-    Product product = 2;
-
-    Error error = 3; //optional
-}
-
-// resource type
-message ResourceUriTmpls {
-    string uri_tmpl = 1;
-    repeated string resource_name = 2;
-    map<string, string> params = 3;
-}
-
-message ResourceType {
-    string resource_type_id = 1;
-    string resource_type_name = 2;
-    string product_id = 3;
-    string monitor_center_host = 4;
-    int32 monitor_center_port = 5;
-    ResourceUriTmpls resource_uri_tmpl = 6;
-    bool enable = 7;
-    string desc = 8;
-}
-
-message ResourceTypeID {
-    string resource_type_id = 1;
-}
-
-message ResourceTypeResponse {
-    ResourceTypeID resource_type_id = 1;
-    ResourceType resource_type = 2;
-    Error error = 3; //optional
-}
-
-enum RepeatSendType {
-    Fixed = 0;
-    exponential = 1;
-}
-
-// alert rule
-message AlertRule {
-    string alert_rule_id = 1;
-    string alert_rule_name = 2;
-
-    RepeatSendType repeat_send_type = 3;
-    int32 init_reapeat_sender_interval = 4;
-    int32 max_repeat_send_interval = 5;
-
-    int32 consecutive_count = 6;
-    int32 period = 7;
-
-    string condition_type = 8;
-    float threshold = 9;
-    string unit = 10;
-    int32 prefer_severity = 11;
-    bool enable = 12;
-    bool inhibit_rule_enable = 13;
-
-    string metric_id = 14;
-    string metric_name = 15;
-
-    string ref_alert_rule_id = 16;
-}
-
-message AlertRuleID {
-    string alert_rule_id = 1;
-}
-
-message AlertRuleResponse {
-    AlertRuleID alert_rule_id = 1;
-    AlertRule alert_rule = 2;
-    Error error = 3; //optional
-}
-
-// silence
-message SilenceID {
-    string alert_config_id = 1;
-    string alert_rule_id = 2;
-    string resource_id = 3;
-}
-
-message Silence {
-    SilenceID silence_id = 1;
-    int32 dutation = 2;
-    int64 end_timestamp = 3;
-}
-
-message SilenceResponse {
-    Silence silence = 1;
-    Error error = 2; //optional
-}
-
-// resource group
-message ResourceGroup {
-    string resource_group_id = 1;
-    string resource_group_name = 2;
-    ResourceUriTmpls resource_uri_tmpls = 3;
-    string desc = 4;
-    repeated Resource resources = 5;
-}
-
-message Resource {
-    string resource_id = 1;
-    string resource_name = 2;
-    string resource_group_id = 3;
-    string resource_type_id = 4;
-}
-
-// receiver group
-message ReceiverGroup {
-    string receiver_group_id = 1;
-    string receiver_group_name = 2;
-    string webhook = 3;
-    bool webhook_enable = 4;
-    string desc = 5;
-    repeated Receiver receivers = 6;
-}
-
-message Receiver {
-    string receiver_id = 1;
-    string receiver_name = 2;
-    string email = 3;
-    string phone = 4;
-    string wechat = 5;
-}
-
-// alert rule group
-message AlertRuleGroup {
-    string receiver_group_id = 1;
-    string receiver_group_name = 2;
-    //    Condition condition = 3;
-    //    enum Condition {
-    //        OR = 0;
-    //        AND = 1;
-    //        OTHER = 2;
-    //    }
-    string desc = 3;
-    repeated AlertRule alert_rules = 4;
-}
-
-// alert config
-message AlertConfig {
-    string alert_config_id = 1;
-    string alert_config_name = 2;
-    AlertRuleGroup alert_rule_group = 3;
-    ResourceGroup resource_group = 4;
-    ReceiverGroup receiver_group = 5;
-
-    string severity_id = 6;
-    string severity_ch = 7;
-
-    enum UpdateType {
-        RECEIVER = 0;
-        ALERTRULE = 1;
-        RESOURCE = 2;
-        SEVERITY = 3;
-        EFFECTIVETIME = 4;
-        ENABLE = 5;
-        DESC = 6;
-    }
-
-    UpdateType update_type = 8;
-
-    string enable_time = 9;
-    string disable_time = 10;
-    bool enable = 11;
-    string desc = 12;
-}
-
-message AlertConfigID {
-    string alert_config_id = 1;
-}
-
-message AlertConfigResponse {
-    AlertConfigID alert_config_id = 1;
-    AlertConfig alert_config = 2;
-    Error error = 3; //optional
-}
-
-// alert history
-message AlertHistory {
-    string alert_history_id = 1;
-    string alert_config_id = 2;
-    string alert_name = 3;
-
-    string severity_id = 4;
-    string severity_ch = 5;
-
-    string resource_group_id = 6;
-    string resource_group_name = 7;
-    string resource_type_id = 8;
-    string resource_type = 9;
-    string alerted_resource = 10;
-
-    string receiver_group_id = 11;
-    string receiver_group_name = 12;
-    repeated Receiver receivers = 13;
-
-    string alert_rule_group_id = 14;
-    string trigger_alert_rule = 15;
-    repeated AlertRule alert_rules = 16;
-
-    RepeatSendType repeat_type = 17;
-    string current_repeat_interval = 18;
-    string next_repeat_interval = 19;
-    string init_repeat_interval = 20;
-    string max_repeat_interval = 21;
-
-    string request_notification_status = 22;
-
-    string event_time = 23;
-}
-
-message AlertHistoryRequest {
-    string alert_history_id = 1;
-    string alert_config_id = 2;
-    string alert_rule_id = 3;
-    string resource_id = 4;
-    string product = 5;
-
-    int32 page = 6;
-    int32 limit = 7;
-    string field = 8;
-    string fuzz = 9;
-    int64 start_time = 10;
-    int64 end_time = 11;
-}
-
-message AlertHistoryResponse {
-    repeated AlertHistory alert_history = 1;
-    repeated Error error = 2;
-}
-
-// suggestion
-message Suggestion {
-    SuggestionID suggestion_id = 1;
-    string suggestion = 2;
-}
-
-message SuggestionID {
-    string alert_config_id = 1;
-    string resource_id = 2;
-    string alert_rule_id = 3;
-}
-
-message SuggestionResponse {
-    Suggestion suggestion = 2;
-    Error error = 3;
-}
-
-service AlertEngine {
-    // enterprise
-    rpc CreateEnterprise (Enterprise) returns (EnterpriseResponse) {
-    }
-
-    rpc DeleteEnterprise (EnterpriseID) returns (EnterpriseResponse) {
-    }
-
-    rpc UpdateEnterprise (Enterprise) returns (EnterpriseResponse) {
-    }
-
-    rpc GetEnterprise (EnterpriseID) returns (GetEnterpriseResponse) {
-    }
-
-    // product
-    rpc CreateProduct (Product) returns (ProductResponse) {
-    }
-
-    rpc DeleteProduct (ProductID) returns (ProductResponse) {
-    }
-
-    rpc UpdateProduct (Product) returns (ProductResponse) {
-    }
-
-    rpc GetProduct (ProductID) returns (ProductResponse) {
-    }
-
-    // resource type
-    rpc CreateResourceType (ResourceType) returns (ResourceTypeResponse) {
-    }
-
-    rpc DeleteResourceType (ResourceTypeID) returns (ResourceTypeResponse) {
-    }
-
-    rpc UpdateResourceType (ResourceType) returns (ResourceTypeResponse) {
-    }
-
-    rpc GetResourceType (ResourceTypeID) returns (ResourceTypeResponse) {
-    }
-
-    // alert rule
-    rpc CreateAlertRule (AlertRule) returns (AlertRuleResponse) {
-    }
-
-    rpc DeleteAlertRule (AlertRuleID) returns (AlertRuleResponse) {
-    }
-
-    rpc UpdateAlertRule (AlertRule) returns (AlertRuleResponse) {
-    }
-
-    rpc GetAlertRule (AlertRuleID) returns (AlertRuleResponse) {
-    }
-
-    // silence
-    rpc CreateSilence (Silence) returns (SilenceResponse) {
-    }
-
-    rpc DeleteSilence (Silence) returns (SilenceResponse) {
-    }
-
-    rpc UpdateSilence (Silence) returns (SilenceResponse) {
-    }
-
-    rpc GetSilence (Silence) returns (SilenceResponse) {
-    }
-
-    // alert
-    rpc CreateAlertConfig (AlertConfig) returns (AlertConfigResponse) {
-    }
-
-    rpc DeleteAlertConfig (AlertConfig) returns (AlertConfigResponse) {
-    }
-
-    rpc UpdateAlertConfig (AlertConfig) returns (AlertConfigResponse) {
-    }
-
-    rpc GetAlertConfig (AlertConfig) returns (AlertConfigResponse) {
-    }
-
-    // history
-    rpc GetAlertHistory (AlertHistoryRequest) returns (AlertHistoryResponse) {
-    }
-
-    // suggestion
-    rpc CreateSuggestion (Suggestion) returns (SuggestionResponse) {
-    }
-
-    rpc DeleteSuggestion (Suggestion) returns (SuggestionResponse) {
-    }
-
-    rpc UpdateSuggestion (Suggestion) returns (SuggestionResponse) {
-    }
-
-    rpc GetSuggestion (Suggestion) returns (SuggestionResponse) {
-    }
-
-    // resource
-    rpc GetResource (Resource) returns (Resource) {
-    }
-
-}
+//
+//message EnterpriseID {
+//    string enterprise_id = 1;
+//}
+//
+//message EnterpriseResponse {
+//    string enterprise_id = 1;
+//    Error error = 2; //optional
+//}
+//
+//message Product {
+//    string product_id = 1;
+//    string product_name = 2;
+//    string enterprise_id = 3;
+//    string home_page = 4;
+//    string address = 5;
+//    string phone = 6;
+//    string email = 7;
+//    string monitor_center_host = 8;
+//    int32 monitor_center_port = 9;
+//    string contacts = 10;
+//    string desc = 11;
+//}
+//
+////message GetProductResponse {
+////    Product product = 1;
+////    Error error = 2; //optional
+////}
+//
+//message ProductID {
+//    string Product_id = 1;
+//}
+//
+//message ProductResponse {
+//    ProductID product_id = 1;
+//    Product product = 2;
+//
+//    Error error = 3; //optional
+//}
+//
+//// resource type
+//message ResourceUriTmpls {
+//    string uri_tmpl = 1;
+//    repeated string resource_name = 2;
+//    map<string, string> params = 3;
+//}
+//
+//message ResourceType {
+//    string resource_type_id = 1;
+//    string resource_type_name = 2;
+//    string product_id = 3;
+//    string monitor_center_host = 4;
+//    int32 monitor_center_port = 5;
+//    ResourceUriTmpls resource_uri_tmpl = 6;
+//    bool enable = 7;
+//    string desc = 8;
+//}
+//
+//message ResourceTypeID {
+//    string resource_type_id = 1;
+//}
+//
+//message ResourceTypeResponse {
+//    ResourceTypeID resource_type_id = 1;
+//    ResourceType resource_type = 2;
+//    Error error = 3; //optional
+//}
+//
+//enum RepeatSendType {
+//    Fixed = 0;
+//    exponential = 1;
+//}
+//
+//// alert rule
+//message AlertRule {
+//    string alert_rule_id = 1;
+//    string alert_rule_name = 2;
+//
+//    RepeatSendType repeat_send_type = 3;
+//    int32 init_reapeat_sender_interval = 4;
+//    int32 max_repeat_send_interval = 5;
+//
+//    int32 consecutive_count = 6;
+//    int32 period = 7;
+//
+//    string condition_type = 8;
+//    float threshold = 9;
+//    string unit = 10;
+//    int32 prefer_severity = 11;
+//    bool enable = 12;
+//    bool inhibit_rule_enable = 13;
+//
+//    string metric_id = 14;
+//    string metric_name = 15;
+//
+//    string ref_alert_rule_id = 16;
+//}
+//
+//message AlertRuleID {
+//    string alert_rule_id = 1;
+//}
+//
+//message AlertRuleResponse {
+//    AlertRuleID alert_rule_id = 1;
+//    AlertRule alert_rule = 2;
+//    Error error = 3; //optional
+//}
+//
+//// silence
+//message SilenceID {
+//    string alert_config_id = 1;
+//    string alert_rule_id = 2;
+//    string resource_id = 3;
+//}
+//
+//message Silence {
+//    SilenceID silence_id = 1;
+//    int32 dutation = 2;
+//    int64 end_timestamp = 3;
+//}
+//
+//message SilenceResponse {
+//    Silence silence = 1;
+//    Error error = 2; //optional
+//}
+//
+//// resource group
+//message ResourceGroup {
+//    string resource_group_id = 1;
+//    string resource_group_name = 2;
+//    ResourceUriTmpls resource_uri_tmpls = 3;
+//    string desc = 4;
+//    repeated Resource resources = 5;
+//}
+//
+//message Resource {
+//    string resource_id = 1;
+//    string resource_name = 2;
+//    string resource_group_id = 3;
+//    string resource_type_id = 4;
+//}
+//
+//// receiver group
+//message ReceiverGroup {
+//    string receiver_group_id = 1;
+//    string receiver_group_name = 2;
+//    string webhook = 3;
+//    bool webhook_enable = 4;
+//    string desc = 5;
+//    repeated Receiver receivers = 6;
+//}
+//
+//message Receiver {
+//    string receiver_id = 1;
+//    string receiver_name = 2;
+//    string email = 3;
+//    string phone = 4;
+//    string wechat = 5;
+//}
+//
+//// alert rule group
+//message AlertRuleGroup {
+//    string receiver_group_id = 1;
+//    string receiver_group_name = 2;
+//    //    Condition condition = 3;
+//    //    enum Condition {
+//    //        OR = 0;
+//    //        AND = 1;
+//    //        OTHER = 2;
+//    //    }
+//    string desc = 3;
+//    repeated AlertRule alert_rules = 4;
+//}
+//
+//// alert config
+//message AlertConfig {
+//    string alert_config_id = 1;
+//    string alert_config_name = 2;
+//    AlertRuleGroup alert_rule_group = 3;
+//    ResourceGroup resource_group = 4;
+//    ReceiverGroup receiver_group = 5;
+//
+//    string severity_id = 6;
+//    string severity_ch = 7;
+//
+//    enum UpdateType {
+//        RECEIVER = 0;
+//        ALERTRULE = 1;
+//        RESOURCE = 2;
+//        SEVERITY = 3;
+//        EFFECTIVETIME = 4;
+//        ENABLE = 5;
+//        DESC = 6;
+//    }
+//
+//    UpdateType update_type = 8;
+//
+//    string enable_time = 9;
+//    string disable_time = 10;
+//    bool enable = 11;
+//    string desc = 12;
+//}
+//
+//message AlertConfigID {
+//    string alert_config_id = 1;
+//}
+//
+//message AlertConfigResponse {
+//    AlertConfigID alert_config_id = 1;
+//    AlertConfig alert_config = 2;
+//    Error error = 3; //optional
+//}
+//
+//// alert history
+//message AlertHistory {
+//    string alert_history_id = 1;
+//    string alert_config_id = 2;
+//    string alert_name = 3;
+//
+//    string severity_id = 4;
+//    string severity_ch = 5;
+//
+//    string resource_group_id = 6;
+//    string resource_group_name = 7;
+//    string resource_type_id = 8;
+//    string resource_type = 9;
+//    string alerted_resource = 10;
+//
+//    string receiver_group_id = 11;
+//    string receiver_group_name = 12;
+//    repeated Receiver receivers = 13;
+//
+//    string alert_rule_group_id = 14;
+//    string trigger_alert_rule = 15;
+//    repeated AlertRule alert_rules = 16;
+//
+//    RepeatSendType repeat_type = 17;
+//    string current_repeat_interval = 18;
+//    string next_repeat_interval = 19;
+//    string init_repeat_interval = 20;
+//    string max_repeat_interval = 21;
+//
+//    string request_notification_status = 22;
+//
+//    string event_time = 23;
+//}
+//
+//message AlertHistoryRequest {
+//    string alert_history_id = 1;
+//    string alert_config_id = 2;
+//    string alert_rule_id = 3;
+//    string resource_id = 4;
+//    string product = 5;
+//
+//    int32 page = 6;
+//    int32 limit = 7;
+//    string field = 8;
+//    string fuzz = 9;
+//    int64 start_time = 10;
+//    int64 end_time = 11;
+//}
+//
+//message AlertHistoryResponse {
+//    repeated AlertHistory alert_history = 1;
+//    repeated Error error = 2;
+//}
+//
+//// suggestion
+//message Suggestion {
+//    SuggestionID suggestion_id = 1;
+//    string suggestion = 2;
+//}
+//
+//message SuggestionID {
+//    string alert_config_id = 1;
+//    string resource_id = 2;
+//    string alert_rule_id = 3;
+//}
+//
+//message SuggestionResponse {
+//    Suggestion suggestion = 2;
+//    Error error = 3;
+//}
+//
+//service AlertEngine {
+//    // enterprise
+//    rpc CreateEnterprise (Enterprise) returns (EnterpriseResponse) {
+//    }
+//
+//    rpc DeleteEnterprise (EnterpriseID) returns (EnterpriseResponse) {
+//    }
+//
+//    rpc UpdateEnterprise (Enterprise) returns (EnterpriseResponse) {
+//    }
+//
+//    rpc GetEnterprise (EnterpriseID) returns (GetEnterpriseResponse) {
+//    }
+//
+//    // product
+//    rpc CreateProduct (Product) returns (ProductResponse) {
+//    }
+//
+//    rpc DeleteProduct (ProductID) returns (ProductResponse) {
+//    }
+//
+//    rpc UpdateProduct (Product) returns (ProductResponse) {
+//    }
+//
+//    rpc GetProduct (ProductID) returns (ProductResponse) {
+//    }
+//
+//    // resource type
+//    rpc CreateResourceType (ResourceType) returns (ResourceTypeResponse) {
+//    }
+//
+//    rpc DeleteResourceType (ResourceTypeID) returns (ResourceTypeResponse) {
+//    }
+//
+//    rpc UpdateResourceType (ResourceType) returns (ResourceTypeResponse) {
+//    }
+//
+//    rpc GetResourceType (ResourceTypeID) returns (ResourceTypeResponse) {
+//    }
+//
+//    // alert rule
+//    rpc CreateAlertRule (AlertRule) returns (AlertRuleResponse) {
+//    }
+//
+//    rpc DeleteAlertRule (AlertRuleID) returns (AlertRuleResponse) {
+//    }
+//
+//    rpc UpdateAlertRule (AlertRule) returns (AlertRuleResponse) {
+//    }
+//
+//    rpc GetAlertRule (AlertRuleID) returns (AlertRuleResponse) {
+//    }
+//
+//    // silence
+//    rpc CreateSilence (Silence) returns (SilenceResponse) {
+//    }
+//
+//    rpc DeleteSilence (Silence) returns (SilenceResponse) {
+//    }
+//
+//    rpc UpdateSilence (Silence) returns (SilenceResponse) {
+//    }
+//
+//    rpc GetSilence (Silence) returns (SilenceResponse) {
+//    }
+//
+//    // alert
+//    rpc CreateAlertConfig (AlertConfig) returns (AlertConfigResponse) {
+//    }
+//
+//    rpc DeleteAlertConfig (AlertConfig) returns (AlertConfigResponse) {
+//    }
+//
+//    rpc UpdateAlertConfig (AlertConfig) returns (AlertConfigResponse) {
+//    }
+//
+//    rpc GetAlertConfig (AlertConfig) returns (AlertConfigResponse) {
+//    }
+//
+//    // history
+//    rpc GetAlertHistory (AlertHistoryRequest) returns (AlertHistoryResponse) {
+//    }
+//
+//    // suggestion
+//    rpc CreateSuggestion (Suggestion) returns (SuggestionResponse) {
+//    }
+//
+//    rpc DeleteSuggestion (Suggestion) returns (SuggestionResponse) {
+//    }
+//
+//    rpc UpdateSuggestion (Suggestion) returns (SuggestionResponse) {
+//    }
+//
+//    rpc GetSuggestion (Suggestion) returns (SuggestionResponse) {
+//    }
+//
+//    // resource
+//    rpc GetResource (Resource) returns (Resource) {
+//    }
+//
+//}

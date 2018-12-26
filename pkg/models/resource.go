@@ -2,9 +2,9 @@ package models
 
 import (
 	"errors"
-	"kubesphere.io/ks-alert/pkg/utils/dbutil"
-	"kubesphere.io/ks-alert/pkg/utils/idutil"
-	"kubesphere.io/ks-alert/pkg/utils/jsonutil"
+	"github.com/carmanzhang/ks-alert/pkg/utils/dbutil"
+	"github.com/carmanzhang/ks-alert/pkg/utils/idutil"
+	"github.com/carmanzhang/ks-alert/pkg/utils/jsonutil"
 	"time"
 )
 

@@ -4,7 +4,7 @@ import (
 	"time"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
-	"kubesphere.io/ks-alert/pkg/registry"
+	"github.com/carmanzhang/ks-alert/pkg/registry"
 )
 
 var clientLBConn *grpc.ClientConn

@@ -3,7 +3,7 @@ package models
 import (
 	"fmt"
 	"github.com/jinzhu/gorm"
-	"kubesphere.io/ks-alert/pkg/utils/dbutil"
+	"github.com/carmanzhang/ks-alert/pkg/utils/dbutil"
 )
 
 func init() {

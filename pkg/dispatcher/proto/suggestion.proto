@@ -1,0 +1,40 @@
+syntax = "proto3";
+package pb;
+option go_package = "pb";
+
+//import "google/api/annotations.proto";
+//import "protoc-gen-swagger/options/annotations.proto";
+import "error.proto";
+
+// suggestion
+message Suggestion {
+    SuggestionID suggestion_id = 1;
+    string suggestion = 2;
+}
+
+message SuggestionID {
+    string alert_config_id = 1;
+    string resource_id = 2;
+    string alert_rule_id = 3;
+}
+
+message SuggestionResponse {
+    Suggestion suggestion = 2;
+    Error error = 3;
+}
+
+service SuggestionHandler {
+
+    // suggestion
+    rpc CreateSuggestion (Suggestion) returns (SuggestionResponse) {
+    }
+
+    rpc DeleteSuggestion (Suggestion) returns (SuggestionResponse) {
+    }
+
+    rpc UpdateSuggestion (Suggestion) returns (SuggestionResponse) {
+    }
+
+    rpc GetSuggestion (Suggestion) returns (SuggestionResponse) {
+    }
+}

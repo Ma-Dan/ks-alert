@@ -4,9 +4,9 @@ import (
 	"flag"
 	"fmt"
 	"google.golang.org/grpc"
-	"kubesphere.io/ks-alert/pkg/dispatcher/handler"
-	"kubesphere.io/ks-alert/pkg/dispatcher/pb"
-	"kubesphere.io/ks-alert/pkg/registry"
+	"github.com/carmanzhang/ks-alert/pkg/dispatcher/handler"
+	"github.com/carmanzhang/ks-alert/pkg/dispatcher/pb"
+	"github.com/carmanzhang/ks-alert/pkg/registry"
 	"log"
 	"net"
 	"os"
@@ -61,6 +61,18 @@ func Run() {
 	}()
 	log.Printf("starting executor service at %s:%d", *dispatcherServiceHost, *dispatcherServicePort)
 	s := grpc.NewServer()
-	pb.RegisterAlertEngineServer(s, &handler.Server{})
+
+	pb.RegisterAlertConfigHandlerServer(s, &handler.AlertHandler{})
+	pb.RegisterAlertHistoryHandlerServer(s, &handler.AlertHistoryHandler{})
+
+	pb.RegisterEnterpriseHandlerServer(s, &handler.EnterpriseHandler{})
+	pb.RegisterProductHandlerServer(s, &handler.ProductHandler{})
+	pb.RegisterResourceTypeHandlerServer(s, &handler.ResourceTypeHandler{})
+	pb.RegisterAlertRuleHandlerServer(s, &handler.AlertRuleHandler{})
+
+	pb.RegisterResourceHandlerServer(s, &handler.ResourceHandler{})
+	pb.RegisterSilenceHandlerServer(s, &handler.SilenceHandler{})
+	pb.RegisterSuggestionHandlerServer(s, &handler.SuggestionHandler{})
+
 	s.Serve(lis)
 }

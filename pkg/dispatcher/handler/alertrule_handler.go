@@ -2,22 +2,23 @@ package handler
 
 import (
 	"context"
-	"kubesphere.io/ks-alert/pkg/dispatcher/pb"
+	"github.com/carmanzhang/ks-alert/pkg/dispatcher/pb"
 )
 
+type AlertRuleHandler struct {}
 // alert rule
-func (server Server) CreateAlertRule(ctx context.Context, alertRule *pb.AlertRule) (*pb.AlertRuleResponse, error) {
+func (server AlertRuleHandler) CreateAlertRule(ctx context.Context, alertRule *pb.AlertRule) (*pb.AlertRuleResponse, error) {
 	return nil, nil
 }
 
-func (server Server) DeleteAlertRule(ctx context.Context, alertRuleID *pb.AlertRuleID) (*pb.AlertRuleResponse, error) {
+func (server AlertRuleHandler) DeleteAlertRule(ctx context.Context, alertRuleID *pb.AlertRuleID) (*pb.AlertRuleResponse, error) {
 	return nil, nil
 }
 
-func (server Server) UpdateAlertRule(ctx context.Context, alertRule *pb.AlertRule) (*pb.AlertRuleResponse, error) {
+func (server AlertRuleHandler) UpdateAlertRule(ctx context.Context, alertRule *pb.AlertRule) (*pb.AlertRuleResponse, error) {
 	return nil, nil
 }
 
-func (server Server) GetAlertRule(ctx context.Context, alertRuleID *pb.AlertRuleID) (*pb.AlertRuleResponse, error) {
+func (server AlertRuleHandler) GetAlertRule(ctx context.Context, alertRuleID *pb.AlertRuleID) (*pb.AlertRuleResponse, error) {
 	return nil, nil
 }

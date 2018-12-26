@@ -2,21 +2,22 @@ package handler
 
 import (
 	"context"
-	"kubesphere.io/ks-alert/pkg/dispatcher/pb"
+	"github.com/carmanzhang/ks-alert/pkg/dispatcher/pb"
 )
 
+type EnterpriseHandler struct{}
 // enterprise
-func (server Server) CreateEnterprise(ctx context.Context, enterprise *pb.Enterprise) (*pb.EnterpriseResponse, error) {
+func (server EnterpriseHandler) CreateEnterprise(ctx context.Context, enterprise *pb.Enterprise) (*pb.EnterpriseResponse, error) {
 	return nil, nil
 }
 
-func (server Server) DeleteEnterprise(ctx context.Context, entID *pb.EnterpriseID) (*pb.EnterpriseResponse, error) {
+func (server EnterpriseHandler) DeleteEnterprise(ctx context.Context, entID *pb.EnterpriseID) (*pb.EnterpriseResponse, error) {
 	return nil, nil
 }
 
-func (server Server) UpdateEnterprise(ctx context.Context, ent *pb.Enterprise) (*pb.EnterpriseResponse, error) {
+func (server EnterpriseHandler) UpdateEnterprise(ctx context.Context, ent *pb.Enterprise) (*pb.EnterpriseResponse, error) {
 	return nil, nil
 }
-func (server Server) GetEnterprise(ctx context.Context, entID *pb.EnterpriseID) (*pb.GetEnterpriseResponse, error) {
+func (server EnterpriseHandler) GetEnterprise(ctx context.Context, entID *pb.EnterpriseID) (*pb.EnterpriseResponse, error) {
 	return nil, nil
 }

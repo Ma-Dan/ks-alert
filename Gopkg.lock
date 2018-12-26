@@ -2,7 +2,7 @@
 
 
 [[projects]]
-  digest = "1:d165ca09080062652209dcbd1d6ae06c45e09427087088788769cd1e86beeb7d"
+  digest = "1:3b4752b9c20eba78dc4468b12d9c6deb1a9a2d7cece0fc61731ab414b3ede9cf"
   name = "github.com/coreos/etcd"
   packages = [
     "auth/authpb",
@@ -13,11 +13,27 @@
     "etcdserver/api/v3rpc/rpctypes",
     "etcdserver/etcdserverpb",
     "mvcc/mvccpb",
+    "pkg/logger",
     "pkg/types",
   ]
   pruneopts = "UT"
-  revision = "27fc7e2296f506182f58ce846e48f36b34fe6842"
-  version = "v3.3.10"
+  revision = "211523fc883c8bed0e6898721ff0cc42b6a2016b"
+
+[[projects]]
+  digest = "1:5c1e58f68ac83cf9c05c6c6748cd91b830dd94be9d2e6480add3c6524bb86b68"
+  name = "github.com/coreos/go-systemd"
+  packages = ["journal"]
+  pruneopts = "UT"
+  revision = "9002847aa1425fb6ac49077c0a630b3b67e0fbfd"
+  version = "v18"
+
+[[projects]]
+  digest = "1:39ff4d4d6baca1ac63c6a03404b761d664be14a71bb5a4aca8fef643d0f66fef"
+  name = "github.com/coreos/pkg"
+  packages = ["capnslog"]
+  pruneopts = "UT"
+  revision = "97fdf19511ea361ae1c100dd393cc47f8dcfa1e1"
+  version = "v4"
 
 [[projects]]
   digest = "1:ffe9824d294da03b391f44e1ae8281281b4afc1bdaa9588c9097785e3af10cec"
@@ -44,7 +60,6 @@
   packages = ["."]
   pruneopts = "UT"
   revision = "0ca9ea5df5451ffdf184b4428c902747c2c11cd7"
-  version = "v1.0.0"
 
 [[projects]]
   digest = "1:ec6f9bf5e274c833c911923c9193867f3f18788c461f76f05f62bb1510e0ae65"
@@ -92,7 +107,6 @@
   ]
   pruneopts = "UT"
   revision = "aa810b61a9c79d51363740d207bb46cf8e620ed5"
-  version = "v1.2.0"
 
 [[projects]]
   branch = "master"
@@ -103,7 +117,7 @@
   revision = "d547d1d9531ed93dbdebcbff7f83e7c876a1e0ee"
 
 [[projects]]
-  digest = "1:1c04677d65beeda447f19f269cf61b50d1d6e5cc19d51d4f7d580f048ca81422"
+  digest = "1:f484bf62a72f760edb3fdded17d756de874f26e99b4c60f2c33c554035d86061"
   name = "github.com/grpc-ecosystem/grpc-gateway"
   packages = [
     "codegenerator",
@@ -115,8 +129,8 @@
     "utilities",
   ]
   pruneopts = "UT"
-  revision = "92583770e3f01b09a0d3e9bdf64321d8bebd48f2"
-  version = "v1.4.1"
+  revision = "719aaadb1a4f7b11606d454e266fe5c5f789796f"
+  version = "v1.6.3"
 
 [[projects]]
   digest = "1:420ec120a74b22e8a967f2a2928d89503e373848c0d4447d16ddbbbef9a9965c"
@@ -226,18 +240,6 @@
   version = "v1.2.2"
 
 [[projects]]
-  digest = "1:2a4beeb3013f9c0509ab5b2562c080f337b42eb4a2a169d4dc37f561039f1972"
-  name = "go.etcd.io/etcd"
-  packages = [
-    "clientv3",
-    "etcdserver/api/v3rpc/rpctypes",
-    "mvcc/mvccpb",
-  ]
-  pruneopts = "UT"
-  revision = "27fc7e2296f506182f58ce846e48f36b34fe6842"
-  version = "v3.3.10"
-
-[[projects]]
   branch = "master"
   digest = "1:89a0cb976397aa9157a45bb2b896d0bcd07ee095ac975e0f03c53250c402265e"
   name = "golang.org/x/net"
@@ -293,7 +295,6 @@
   version = "v1.4.0"
 
 [[projects]]
-  branch = "master"
   digest = "1:6c6b70cf6d2788d9f7dc6589bc88e0e1c7edc40612294431ebb7d09536d12240"
   name = "google.golang.org/genproto"
   packages = [
@@ -301,34 +302,28 @@
     "googleapis/rpc/status",
   ]
   pruneopts = "UT"
-  revision = "bd9b4fb69e2ffd37621a6caa54dcbead29b546f2"
+  revision = "383e8b2c3b9e36c4076b235b32537292176bae20"
 
 [[projects]]
-  digest = "1:8f56475624fb72854d06ca16c2f7032e3cea14a63074e9c199ba8d46431c1127"
+  digest = "1:75d7d67d6f2671bb5007fc2c33091726e97209dea72dfb67680138254c5d64db"
   name = "google.golang.org/grpc"
   packages = [
     ".",
     "balancer",
     "balancer/base",
     "balancer/roundrobin",
-    "binarylog/grpc_binarylog_v1",
     "codes",
     "connectivity",
     "credentials",
-    "credentials/internal",
     "encoding",
     "encoding/proto",
     "grpclog",
     "health/grpc_health_v1",
     "internal",
     "internal/backoff",
-    "internal/binarylog",
     "internal/channelz",
     "internal/envconfig",
     "internal/grpcrand",
-    "internal/grpcsync",
-    "internal/syscall",
-    "internal/transport",
     "keepalive",
     "metadata",
     "naming",
@@ -339,18 +334,18 @@
     "stats",
     "status",
     "tap",
+    "transport",
   ]
   pruneopts = "UT"
-  revision = "df014850f6dee74ba2fc94874043a9f3f75fbfd8"
-  version = "v1.17.0"
+  revision = "40a879c23a0dc77234d17e0699d074d5fd151bd0"
 
 [[projects]]
-  digest = "1:342378ac4dcb378a5448dd723f0784ae519383532f5e70ade24132c4c8693202"
+  digest = "1:4d2e5a73dc1500038e504a8d78b986630e3626dc027bc030ba5c75da257cdb96"
   name = "gopkg.in/yaml.v2"
   packages = ["."]
   pruneopts = "UT"
-  revision = "5420a8b6744d3b0345ab293f6fcba19c978f1183"
-  version = "v2.2.1"
+  revision = "51d6538a90f86fe93ac480b35f37b2be17fef232"
+  version = "v2.2.2"
 
 [[projects]]
   digest = "1:93153ae93df78ae288f0b601122f2a784df3187c9b3fae45c5960a36b52aa771"
@@ -394,6 +389,8 @@
     "github.com/coreos/etcd/clientv3/concurrency",
     "github.com/coreos/etcd/clientv3/namespace",
     "github.com/coreos/etcd/contrib/recipes",
+    "github.com/coreos/etcd/etcdserver/api/v3rpc/rpctypes",
+    "github.com/coreos/etcd/mvcc/mvccpb",
     "github.com/emicklei/go-restful",
     "github.com/golang/glog",
     "github.com/golang/protobuf/proto",
@@ -413,9 +410,6 @@
     "github.com/sony/sonyflake",
     "github.com/speps/go-hashids",
     "github.com/stretchr/testify/assert",
-    "go.etcd.io/etcd/clientv3",
-    "go.etcd.io/etcd/etcdserver/api/v3rpc/rpctypes",
-    "go.etcd.io/etcd/mvcc/mvccpb",
     "golang.org/x/net/context",
     "google.golang.org/grpc",
     "google.golang.org/grpc/naming",

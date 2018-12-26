@@ -1,9 +1,9 @@
 package grpcutil
 
 import (
+	"github.com/carmanzhang/ks-alert/pkg/executor/pb"
 	"google.golang.org/grpc"
-	"kubesphere.io/ks-alert/pkg/executor"
-	"k8s.io/klog/glog"
+	"github.com/golang/glog"
 )
 
 var grpcConnection *grpc.ClientConn
@@ -20,7 +20,7 @@ func GetExecutorGRPCClient(address... string) (*pb.ExecutorClient, error){
 
 		grpcConnection, err = grpc.Dial(addr, grpc.WithInsecure())
 		if err != nil {
-			glog.Errorln(err.Error())
+			glog.Error(err.Error())
 		}
 		return nil, err
 	}

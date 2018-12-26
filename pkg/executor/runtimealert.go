@@ -1,8 +1,8 @@
 package executor
 
 import (
-	"kubesphere.io/ks-alert/pkg/executor/pb"
-	"kubesphere.io/ks-alert/pkg/models"
+	"github.com/carmanzhang/ks-alert/pkg/executor/pb"
+	"github.com/carmanzhang/ks-alert/pkg/models"
 	"k8s.io/klog/glog"
 	"time"
 	"fmt"

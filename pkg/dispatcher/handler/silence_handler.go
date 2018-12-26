@@ -2,22 +2,24 @@ package handler
 
 import (
 	"context"
-	"kubesphere.io/ks-alert/pkg/dispatcher/pb"
+	"github.com/carmanzhang/ks-alert/pkg/dispatcher/pb"
 )
 
+type SilenceHandler struct{}
+
 // silence
-func (server Server) CreateSilence(ctx context.Context, silence *pb.Silence) (*pb.SilenceResponse, error) {
+func (server SilenceHandler) CreateSilence(ctx context.Context, silence *pb.Silence) (*pb.SilenceResponse, error) {
 	return nil, nil
 }
 
-func (server Server) DeleteSilence(ctx context.Context, silence *pb.Silence) (*pb.SilenceResponse, error) {
+func (server SilenceHandler) DeleteSilence(ctx context.Context, silence *pb.Silence) (*pb.SilenceResponse, error) {
 	return nil, nil
 }
 
-func (server Server) UpdateSilence(ctx context.Context, silence *pb.Silence) (*pb.SilenceResponse, error) {
+func (server SilenceHandler) UpdateSilence(ctx context.Context, silence *pb.Silence) (*pb.SilenceResponse, error) {
 	return nil, nil
 }
 
-func (server Server) GetSilence(ctx context.Context, silence *pb.Silence) (*pb.SilenceResponse, error) {
+func (server SilenceHandler) GetSilence(ctx context.Context, silence *pb.Silence) (*pb.SilenceResponse, error) {
 	return nil, nil
 }
