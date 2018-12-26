@@ -3,6 +3,7 @@ package models
 import "time"
 
 type AlertHistory struct {
+	// this ID is used for Paging
 	ID             uint32 `gorm:"primary_key;type:int(11) unsigned auto_increment;"`
 	AlertBindingID string `gorm:"type:varchar(50);not null;"`
 	AlertName      string `gorm:"type:varchar(50);not null;"`
@@ -18,7 +19,11 @@ type AlertHistory struct {
 
 	AlertRuleGroupID string `gorm:"type:varchar(50);not null;"`
 	TriggerAlertRule string `gorm:"type:text;not null;"`
-	Cause            string `gorm:"type:text;"`
+
+	SeverityID string `gorm:"type:varchar(50);not null;" json:"severity_id"`
+	SeverityCh string `gorm:"type:varchar(10);" json:"severity_ch"`
+
+	Cause string `gorm:"type:text;"`
 
 	//SilenceEnable  bool      `gorm:"type:boolean;not null;default:false;"`
 	SilenceStartAt time.Time `gorm:"not null;"`
@@ -30,7 +35,8 @@ type AlertHistory struct {
 	InitRepeatSendInterval    uint32 `gorm:"type:int unsigned;not null;"`
 	MaxRepeatSendInterval     uint32 `gorm:"type:int unsigned;not null;"`
 
-	RequestNotificationStatus string `gorm:"type:text;"`
+	RequestNotificationStatus string    `gorm:"type:text;"`
+	NotificationSendAt        time.Time `gorm:"not null;"`
 
 	CreatedAt time.Time `gorm:"not null;"`
 	UpdatedAt time.Time `gorm:"not null;"`

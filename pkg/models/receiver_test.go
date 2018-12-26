@@ -1,6 +1,7 @@
 package models
 
 import (
+	"fmt"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 	"time"
@@ -22,7 +23,6 @@ func TestCreateReceiverBindingGroupItem(t *testing.T) {
 			Email:        "zlahu@foxmail.com",
 			Phone:        "11111111111111",
 			Wechat:       "zhangliaish",
-			SeverityID:   (*severities)[0].SeverityID,
 			CreatedAt:    time.Now(),
 			UpdatedAt:    time.Now(),
 		})
@@ -34,7 +34,6 @@ func TestCreateReceiverBindingGroupItem(t *testing.T) {
 			Email:        "zlahu@foxmail.com",
 			Phone:        "222222222222222",
 			Wechat:       "zhangliaish",
-			SeverityID:   (*severities)[1].SeverityID,
 			CreatedAt:    time.Now(),
 			UpdatedAt:    time.Now(),
 		})
@@ -46,7 +45,6 @@ func TestCreateReceiverBindingGroupItem(t *testing.T) {
 			Email:        "zlahu@foxmail.com",
 			Phone:        "33333333333333",
 			Wechat:       "zhangliaish",
-			SeverityID:   (*severities)[2].SeverityID,
 			CreatedAt:    time.Now(),
 			UpdatedAt:    time.Now(),
 		})
@@ -62,8 +60,6 @@ func TestCreateReceiverBindingGroupItem(t *testing.T) {
 		})
 
 		receivers := []Receiver{*receiver01, *receiver02, *receiver03}
-
-		CreateReceiverBindingGroupItem(&receivers, receiverGroup)
-
+		fmt.Println(receiverGroup, receivers)
 	})
 }

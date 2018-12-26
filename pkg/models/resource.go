@@ -1,35 +1,33 @@
 package models
 
 import (
+	"errors"
 	"kubesphere.io/ks-alert/pkg/utils/dbutil"
 	"kubesphere.io/ks-alert/pkg/utils/idutil"
 	"kubesphere.io/ks-alert/pkg/utils/jsonutil"
 	"time"
-	"errors"
 )
 
 type Resource struct {
-	ResourceID      string `gorm:"primary_key" json:"-"`
-	ResourceName    string `gorm:"type:varchar(50);" json:"resource_name"`
-	ResourceTypeID  string `gorm:"type:varchar(50);" json:"resource_type_id"`
-	ResourceGroupID string `gorm:"not null;" json:"-"`
-
-	URIParams       Params `gorm:"-" json:"resource_uri_params, omitempty"`
-	URIParamsString string `gorm:"type:text;not null;" json:"-"`
-
-	CreatedAt time.Time `gorm:"not null;" json:"-"`
-	UpdatedAt time.Time `gorm:"not null;" json:"-"`
+	ResourceID      string    `gorm:"primary_key" json:"-"`
+	ResourceName    string    `gorm:"type:varchar(50);" json:"resource_name"`
+	ResourceTypeID  string    `gorm:"type:varchar(50);" json:"resource_type_id"`
+	ResourceGroupID string    `gorm:"not null;" json:"-"`
+	CreatedAt       time.Time `gorm:"not null;" json:"-"`
+	UpdatedAt       time.Time `gorm:"not null;" json:"-"`
 }
 
 type ResourceGroup struct {
 	ResourceGroupID   string     `gorm:"primary_key" json:"-"`
 	ResourceGroupName string     `gorm:"type:varchar(50);not null;" json:"resource_group_name"`
 	Resources         []Resource `gorm:"-" json:"resources"`
-	Description       string     `gorm:"type:text;" json:"desc"`
-	CreatedAt         time.Time  `gorm:"not null;" json:"-"`
-	UpdatedAt         time.Time  `gorm:"not null;" json:"-"`
-	//ResourceURITmpls  string `gorm:"type:text;not null;"`
-	//CreatedBy         string    `gorm:"type:varchar(50);not null;"`
+
+	URIParams       Params `gorm:"-" json:"resource_uri_params, omitempty"`
+	URIParamsString string `gorm:"type:text;not null;" json:"-"`
+
+	Description string    `gorm:"type:text;" json:"desc"`
+	CreatedAt   time.Time `gorm:"not null;" json:"-"`
+	UpdatedAt   time.Time `gorm:"not null;" json:"-"`
 }
 
 type ResourceType struct {
@@ -136,12 +134,6 @@ func CreateResources(resources *[]Resource, resourceGroup *ResourceGroup, uriPar
 		res.ResourceGroupID = resourceGroupID
 		res.UpdatedAt = time.Now()
 
-		if res.URIParams != nil {
-			res.URIParamsString = jsonutil.Marshal(res.URIParams)
-		}else if uriParams != nil {
-			res.URIParamsString = jsonutil.Marshal(uriParams)
-		}
-
 		err = db.Model(&Resource{}).Create(&res).Error
 		if err != nil {
 			return err
@@ -150,7 +142,6 @@ func CreateResources(resources *[]Resource, resourceGroup *ResourceGroup, uriPar
 
 	return nil
 }
-
 
 func CreateResourceGroup(resourceGroupName, description string) (*ResourceGroup, error) {
 
