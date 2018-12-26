@@ -5,10 +5,10 @@
 package etcdutil
 
 import (
-	"go.etcd.io/etcd/clientv3"
-	"go.etcd.io/etcd/clientv3/concurrency"
-	"go.etcd.io/etcd/clientv3/namespace"
-	"go.etcd.io/etcd/contrib/recipes"
+	"github.com/coreos/etcd/clientv3"
+	"github.com/coreos/etcd/clientv3/concurrency"
+	"github.com/coreos/etcd/clientv3/namespace"
+	"github.com/coreos/etcd/contrib/recipes"
 	"openpitrix.io/logger"
 	"time"
 )

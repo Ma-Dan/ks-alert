@@ -5,9 +5,9 @@ import (
 	"log"
 	"strings"
 	"time"
-	etcd3 "go.etcd.io/etcd/clientv3"
+	etcd3 "github.com/coreos/etcd/clientv3"
 	"golang.org/x/net/context"
-	"go.etcd.io/etcd/etcdserver/api/v3rpc/rpctypes"
+	"github.com/coreos/etcd/etcdserver/api/v3rpc/rpctypes"
 )
 
 // Prefix should start and end with no slash
