@@ -127,8 +127,7 @@ message AlertRule {
     string metric_id = 14;
     string metric_name = 15;
 
-    int32 version = 16;
-    string ref_alert_rule_id = 17;
+    string ref_alert_rule_id = 16;
 }
 
 message AlertRuleID {
