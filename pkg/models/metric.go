@@ -1,8 +1,8 @@
 package models
 
 import (
-	"kubesphere.io/ks-alert/pkg/utils/dbutil"
-	"kubesphere.io/ks-alert/pkg/utils/idutil"
+	"github.com/carmanzhang/ks-alert/pkg/utils/dbutil"
+	"github.com/carmanzhang/ks-alert/pkg/utils/idutil"
 	"time"
 )
 

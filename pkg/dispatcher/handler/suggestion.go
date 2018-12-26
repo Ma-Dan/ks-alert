@@ -2,22 +2,24 @@ package handler
 
 import (
 	"context"
-	"kubesphere.io/ks-alert/pkg/dispatcher/pb"
+	"github.com/carmanzhang/ks-alert/pkg/dispatcher/pb"
 )
 
+type SuggestionHandler struct{}
+
 // suggestion
-func (server Server) CreateSuggestion(ctx context.Context, suggestion *pb.Suggestion) (*pb.SuggestionResponse, error) {
+func (server SuggestionHandler) CreateSuggestion(ctx context.Context, suggestion *pb.Suggestion) (*pb.SuggestionResponse, error) {
 	return nil, nil
 }
 
-func (server Server) DeleteSuggestion(ctx context.Context, suggestion *pb.Suggestion) (*pb.SuggestionResponse, error) {
+func (server SuggestionHandler) DeleteSuggestion(ctx context.Context, suggestion *pb.Suggestion) (*pb.SuggestionResponse, error) {
 	return nil, nil
 }
 
-func (server Server) UpdateSuggestion(ctx context.Context, suggestion *pb.Suggestion) (*pb.SuggestionResponse, error) {
+func (server SuggestionHandler) UpdateSuggestion(ctx context.Context, suggestion *pb.Suggestion) (*pb.SuggestionResponse, error) {
 	return nil, nil
 }
 
-func (server Server) GetSuggestion(ctx context.Context, suggestion *pb.Suggestion) (*pb.SuggestionResponse, error) {
+func (server SuggestionHandler) GetSuggestion(ctx context.Context, suggestion *pb.Suggestion) (*pb.SuggestionResponse, error) {
 	return nil, nil
 }

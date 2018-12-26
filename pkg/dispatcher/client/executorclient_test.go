@@ -6,8 +6,8 @@ import (
 	"time"
 	"fmt"
 	"context"
-	"kubesphere.io/ks-alert/pkg/executor/pb"
-	"kubesphere.io/ks-alert/pkg/models"
+	"github.com/carmanzhang/ks-alert/pkg/executor/pb"
+	"github.com/carmanzhang/ks-alert/pkg/models"
 )
 
 func TestGetExecutorGrpcClient(t *testing.T) {

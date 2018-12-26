@@ -5,7 +5,7 @@ import (
 
 	"github.com/sony/sonyflake"
 	"github.com/speps/go-hashids"
-	"kubesphere.io/ks-alert/pkg/utils/stringutil"
+	"github.com/carmanzhang/ks-alert/pkg/utils/stringutil"
 )
 
 var sf *sonyflake.Sonyflake

@@ -11,9 +11,9 @@ import (
 	"time"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
-	"kubesphere.io/ks-alert/pkg/registry"
-	"kubesphere.io/ks-alert/pkg/executor/pb"
-	"kubesphere.io/ks-alert/pkg/executor"
+	"github.com/carmanzhang/ks-alert/pkg/registry"
+	"github.com/carmanzhang/ks-alert/pkg/executor/pb"
+	"github.com/carmanzhang/ks-alert/pkg/executor"
 )
 
 const (
