@@ -4,6 +4,10 @@ option go_package = "pb";
 
 // resource type
 message ResourceUriTmpls {
+    repeated ResourceUriTmpl resource_uri_tmpl = 1;
+}
+
+message ResourceUriTmpl {
     string uri_tmpl = 1;
     repeated string resource_name = 2;
     map<string, string> params = 3;

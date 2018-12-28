@@ -68,9 +68,11 @@ func Run() {
 	pb.RegisterEnterpriseHandlerServer(s, &handler.EnterpriseHandler{})
 	pb.RegisterProductHandlerServer(s, &handler.ProductHandler{})
 	pb.RegisterResourceTypeHandlerServer(s, &handler.ResourceTypeHandler{})
-	pb.RegisterAlertRuleHandlerServer(s, &handler.AlertRuleHandler{})
 
+	pb.RegisterAlertRuleHandlerServer(s, &handler.AlertRuleHandler{})
 	pb.RegisterResourceHandlerServer(s, &handler.ResourceHandler{})
+	pb.RegisterReceiverHandlerServer(s, &handler.ReceiverHandler{})
+
 	pb.RegisterSilenceHandlerServer(s, &handler.SilenceHandler{})
 	pb.RegisterSuggestionHandlerServer(s, &handler.SuggestionHandler{})
 

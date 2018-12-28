@@ -18,32 +18,30 @@ message ResourceType {
     string desc = 8;
 }
 
-message ResourceTypeID {
+message ResourceTypeSpec {
     string resource_type_id = 1;
+    // resource_type_name + product_name + enterprise_name
+    string resource_type_name = 2;
+    string product_id = 3;
+
 }
 
 message ResourceTypeResponse {
-    ResourceTypeID resource_type_id = 1;
-    ResourceType resource_type = 2;
-    Error error = 3; //optional
+    ResourceType resource_type = 1;
+    Error error = 2; //optional
 }
-
-//enum RepeatSendType {
-//    Fixed = 0;
-//    exponential = 1;
-//}
 
 service ResourceTypeHandler {
     // resource type
     rpc CreateResourceType (ResourceType) returns (ResourceTypeResponse) {
     }
 
-    rpc DeleteResourceType (ResourceTypeID) returns (ResourceTypeResponse) {
+    rpc DeleteResourceType (ResourceTypeSpec) returns (ResourceTypeResponse) {
     }
 
     rpc UpdateResourceType (ResourceType) returns (ResourceTypeResponse) {
     }
 
-    rpc GetResourceType (ResourceTypeID) returns (ResourceTypeResponse) {
+    rpc GetResourceType (ResourceTypeSpec) returns (ResourceTypeResponse) {
     }
 }

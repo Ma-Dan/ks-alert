@@ -16,6 +16,10 @@ message ResourceGroup {
     repeated Resource resources = 5;
 }
 
+message ResourceGroupSpec {
+    string resource_group_id = 1;
+}
+
 message Resource {
     string resource_id = 1;
     string resource_name = 2;
@@ -23,9 +27,22 @@ message Resource {
     string resource_type_id = 4;
 }
 
+message ResourceGroupResponse {
+    ResourceGroup resource_group = 1;
+    Error error = 2;
+}
 
 service ResourceHandler {
     // resource
-    rpc GetResource (Resource) returns (Resource) {
+    rpc CreateResource (ResourceGroup) returns (ResourceGroupResponse) {
+    }
+
+    rpc GetResource (ResourceGroupSpec) returns (ResourceGroupResponse) {
+    }
+
+    rpc UpdateResource (ResourceGroup) returns (ResourceGroupResponse) {
+    }
+
+    rpc DeleteResource (ResourceGroupSpec) returns (ResourceGroupResponse) {
     }
 }

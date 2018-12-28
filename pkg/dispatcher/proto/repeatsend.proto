@@ -2,6 +2,14 @@ syntax = "proto3";
 package pb;
 option go_package = "pb";
 
+message RepeatSend {
+    string current_repeat_interval = 1;
+    string next_repeat_interval = 2;
+    string init_repeat_interval = 3;
+    string max_repeat_interval = 4;
+    RepeatSendType repeat_send_type = 5;
+}
+
 enum RepeatSendType {
     Fixed = 0;
     exponential = 1;

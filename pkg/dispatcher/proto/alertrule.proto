@@ -12,62 +12,54 @@ message AlertRule {
     string alert_rule_id = 1;
     string alert_rule_name = 2;
 
-    RepeatSendType repeat_send_type = 3;
-    int32 init_reapeat_sender_interval = 4;
-    int32 max_repeat_send_interval = 5;
+    RepeatSend repeat_send = 3;
 
-    int32 consecutive_count = 6;
-    int32 period = 7;
+    int32 consecutive_count = 4;
+    int32 period = 5;
 
-    string condition_type = 8;
-    float threshold = 9;
-    string unit = 10;
-    int32 prefer_severity = 11;
-    bool enable = 12;
-    bool inhibit_rule_enable = 13;
+    string condition_type = 6;
+    float threshold = 7;
+    string unit = 8;
+    bool prefer_severity = 9;
+    bool enable = 10;
+    bool inhibit_rule_enable = 11;
 
-    string metric_id = 14;
-    string metric_name = 15;
+    string metric_id = 12;
+    string metric_name = 13;
 
-    string ref_alert_rule_id = 16;
+    string ref_alert_rule_id = 14;
 }
 
-message AlertRuleID {
-    string alert_rule_id = 1;
+message AlertRuleGroupSpec {
+    string alert_rule_group_id = 1;
+    // list/delete bulid-in alert rules
+    string resource_type = 2;
 }
 
-message AlertRuleResponse {
-    AlertRuleID alert_rule_id = 1;
-    AlertRule alert_rule = 2;
-    Error error = 3; //optional
+message AlertRuleGroupResponse {
+    AlertRuleGroup alert_rule_group = 1;
+    Error error = 2; //optional
 }
-
 
 // alert rule group
 message AlertRuleGroup {
     string receiver_group_id = 1;
     string receiver_group_name = 2;
-    //    Condition condition = 3;
-    //    enum Condition {
-    //        OR = 0;
-    //        AND = 1;
-    //        OTHER = 2;
-    //    }
     string desc = 3;
     repeated AlertRule alert_rules = 4;
 }
 
 service AlertRuleHandler {
     // alert rule
-    rpc CreateAlertRule (AlertRule) returns (AlertRuleResponse) {
+    rpc CreateAlertRule (AlertRuleGroup) returns (AlertRuleGroupResponse) {
     }
 
-    rpc DeleteAlertRule (AlertRuleID) returns (AlertRuleResponse) {
+    rpc DeleteAlertRule (AlertRuleGroupSpec) returns (AlertRuleGroupResponse) {
     }
 
-    rpc UpdateAlertRule (AlertRule) returns (AlertRuleResponse) {
+    rpc UpdateAlertRule (AlertRuleGroup) returns (AlertRuleGroupResponse) {
     }
 
-    rpc GetAlertRule (AlertRuleID) returns (AlertRuleResponse) {
+    rpc GetAlertRule (AlertRuleGroupSpec) returns (AlertRuleGroupResponse) {
     }
 }

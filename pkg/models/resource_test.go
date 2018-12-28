@@ -15,11 +15,10 @@ func TestAddSourceType(t *testing.T) {
 		ent, err := GetEnterprise(&Enterprise{EnterpriseName: "北京优帆科技有限公司武汉分公司"})
 		So(err, ShouldBeNil)
 
-		product, err := GetProducts(&Product{EnterpriseID: ent.EnterpriseID})
+		product, err := GetProduct(&Product{EnterpriseID: ent.EnterpriseID})
 		So(err, ShouldBeNil)
-		So(len(*product), ShouldEqual, 1)
 
-		productID := (*product)[0].ProductID
+		productID := (*product).ProductID
 
 		err = CreateSourceType(productID, "clusters", "", true, &ResourceURITmpls{
 			ResourceURITmpl: []ResourceURITmpl{
@@ -121,7 +120,7 @@ func TestGetResourceTypeByProductID(t *testing.T) {
 	Convey("add Source Type fo a product", t, func() {
 
 		productID := "product-4llxr47k7q82wz"
-		resourceTypes := GetResourceTypeByProductID(productID)
+		resourceTypes := GetResourceType(productID)
 
 		for _, rt := range *resourceTypes {
 			endpoint := rt.ResourceURITmpls

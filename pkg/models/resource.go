@@ -4,8 +4,8 @@ import (
 	"errors"
 	"github.com/carmanzhang/ks-alert/pkg/utils/dbutil"
 	"github.com/carmanzhang/ks-alert/pkg/utils/idutil"
-	"github.com/carmanzhang/ks-alert/pkg/utils/jsonutil"
 	"time"
+	"github.com/golang/glog"
 )
 
 type Resource struct {
@@ -31,7 +31,7 @@ type ResourceGroup struct {
 }
 
 type ResourceType struct {
-	ResourceTypeID   string `gorm:"primary_key"`
+	ResourceTypeID   string `gorm:"primary_key;not null;"`
 	ProductID        string `gorm:"not null;"`
 	ResourceTypeName string `gorm:"type:varchar(50);not null;"`
 	Description      string `gorm:"type:text;"`
@@ -39,7 +39,7 @@ type ResourceType struct {
 
 	// MonitorCenterHost and MonitorCenterPort will override the corresponding filed in struct `product`
 	MonitorCenterHost string `gorm:"type:varchar(128);"`
-	MonitorCenterPort int    `gorm:"type:int;"` //default:-1;
+	MonitorCenterPort int32    `gorm:"type:int;"` //default:-1;
 	// ResourceURITmpls struct -> json
 	ResourceURITmpls string `gorm:"type:text;not null;"`
 
@@ -80,11 +80,11 @@ type Resources []string
 type ResourceURITmpl struct {
 	URI       URI       `json:"uri_tmpl,omitempty"`
 	Params    Params    `json:"params,omitempty"`
-	Resources Resources `json:"resources,omitempty"`
+	Resources Resources `json:"resource_name,omitempty"`
 }
 
 type ResourceURITmpls struct {
-	ResourceURITmpl []ResourceURITmpl `json:"uri_tmpls"`
+	ResourceURITmpl []ResourceURITmpl `json:"resource_uri_tmpl"`
 }
 
 //func GetResourceGroups(resourceType *ResourceType) *[]ResourceGroup {
@@ -178,47 +178,62 @@ func CreateResourceGroup(resourceGroupName, description string) (*ResourceGroup,
 //	return &resourceTypes
 //}
 
-func GetResourceTypeByProductID(productID string) *[]ResourceType {
+func GetResourceType(resourceType *ResourceType) (*ResourceType, error) {
 	db, err := dbutil.DBClient()
 	if err != nil {
-		panic(err)
+		glog.Errorln(err.Error())
+		return nil, err
 	}
 
-	var resourceTypes []ResourceType
-	db.Model(&ResourceType{}).Where(&ResourceType{ProductID: productID}).Find(&resourceTypes)
+	var tp ResourceType
+	err = db.Model(&ResourceType{}).Where(resourceType).Find(&tp).Error
 
-	return &resourceTypes
+	if err != nil {
+		return nil, err
+	}
+	return &tp, nil
 }
 
-func GetAllResourceTypeCount(productID string) int {
+func CreateResourceType(resourceType *ResourceType) (*ResourceType, error){
 	db, err := dbutil.DBClient()
+
 	if err != nil {
-		panic(err)
+		glog.Errorln(err.Error())
+		return nil, err
 	}
 
-	var count int
-	db.Model(&Product{}).Where(&Product{ProductID: productID}).Count(&count)
+	resourceType.ResourceTypeID = idutil.GetUuid36("resource_type-")
 
-	return count
+	err = db.Model(&ResourceType{}).Create(resourceType).Error
+	return resourceType, err
+
 }
 
-func CreateSourceType(productID, resourceTypeName, description string, enable bool, resourceUri *ResourceURITmpls) error {
+func UpdateResourceType(resourceType *ResourceType) (error){
 	db, err := dbutil.DBClient()
+
 	if err != nil {
-		panic(err)
+		glog.Errorln(err.Error())
+		return err
 	}
 
-	var resourceType = &ResourceType{
-		ResourceTypeID:   idutil.GetUuid36("resource_type-"),
-		ResourceTypeName: resourceTypeName,
-		ProductID:        productID,
-		Enable:           enable,
-		Description:      description,
-		ResourceURITmpls: jsonutil.Marshal(resourceUri),
-		CreatedAt:        time.Now(),
-		UpdatedAt:        time.Now(),
+	if resourceType.ResourceTypeID != "" {
+		err = db.Model(resourceType).Where("resource_type_id = ?", resourceType.ResourceTypeID).Update(resourceType).Error
+	}else if resourceType.ProductID != "" && resourceType.ResourceTypeName != "" {
+		err = db.Model(resourceType).Where("product_id = ? and resource_type_name = ? ", resourceType.ProductID, resourceType.ResourceTypeName).Update(resourceType).Error
 	}
 
-	err = db.Model(&Product{}).Create(resourceType).Error
+	return err
+}
+
+func DeleteResourceType(resourceType *ResourceType) (error){
+	db, err := dbutil.DBClient()
+
+	if err != nil {
+		glog.Errorln(err.Error())
+		return err
+	}
+
+	err = db.Delete(resourceType).Error
 	return err
 }

@@ -10,9 +10,9 @@ import (
 func TestCreateReceiverBindingGroupItem(t *testing.T) {
 	Convey("test CreateReceiverBindingGroup Item", t, func() {
 
-		productID := "product-4llxr47k7q82wz"
+		//productID := "product-4llxr47k7q82wz"
 
-		severities := GetSeveritiesByProductID(productID)
+		//severities := GetSeveritiesByProductID(productID)
 
 		//		for _, severity := range *severities{
 		//			severity.SeverityID

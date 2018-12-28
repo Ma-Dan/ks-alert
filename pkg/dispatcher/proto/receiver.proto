@@ -2,6 +2,8 @@ syntax = "proto3";
 package pb;
 option go_package = "pb";
 
+import "error.proto";
+
 // receiver group
 message ReceiverGroup {
     string receiver_group_id = 1;
@@ -18,4 +20,28 @@ message Receiver {
     string email = 3;
     string phone = 4;
     string wechat = 5;
+}
+
+message ReceiverGroupSpec {
+    string receiver_group_id = 1;
+}
+
+message ReceiverGroupResponse {
+    ReceiverGroup receiver_group = 1;
+    Error error = 2;
+}
+
+service ReceiverHandler {
+    // Receiver
+    rpc CreateReceiver (ReceiverGroup) returns (ReceiverGroupResponse) {
+    }
+
+    rpc GetReceiver (ReceiverGroupSpec) returns (ReceiverGroupResponse) {
+    }
+
+    rpc UpdateReceiver (ReceiverGroup) returns (ReceiverGroupResponse) {
+    }
+
+    rpc DeleteReceiver (ReceiverGroupSpec) returns (ReceiverGroupResponse) {
+    }
 }

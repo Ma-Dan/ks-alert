@@ -16,3 +16,4 @@ message Error {
     ErrorCode code = 1;
     string text = 2; // optional
 }
+

@@ -2,10 +2,10 @@ package registry
 
 import (
 	"fmt"
-	etcd3 "github.com/coreos/etcd/clientv3"
+	etcd3 "go.etcd.io/etcd/clientv3"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/naming"
-	"github.com/coreos/etcd/mvcc/mvccpb"
+	"go.etcd.io/etcd/mvcc/mvccpb"
 )
 
 // watcher is the implementaion of grpc.naming.Watcher

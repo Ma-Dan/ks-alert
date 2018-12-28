@@ -32,15 +32,11 @@ message AlertHistory {
     string trigger_alert_rule = 15;
     repeated AlertRule alert_rules = 16;
 
-    RepeatSendType repeat_type = 17;
-    string current_repeat_interval = 18;
-    string next_repeat_interval = 19;
-    string init_repeat_interval = 20;
-    string max_repeat_interval = 21;
+    RepeatSend repeat_send = 17;
 
-    string request_notification_status = 22;
+    string request_notification_status = 18;
 
-    string event_time = 23;
+    string event_time = 19;
 }
 
 message AlertHistoryRequest {

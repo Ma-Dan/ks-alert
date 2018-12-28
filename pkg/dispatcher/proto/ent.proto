@@ -17,14 +17,14 @@ message Enterprise {
     string desc = 8;
 }
 
-message EnterpriseID {
+message EnterpriseSpec {
     string enterprise_id = 1;
+    string enterprise_name = 2;
 }
 
 message EnterpriseResponse {
-    string enterprise_id = 1;
-    Enterprise enterprise = 2;
-    Error error = 3; //optional
+    Enterprise enterprise = 1;
+    Error error = 2; //optional
 }
 
 service EnterpriseHandler {
@@ -32,12 +32,12 @@ service EnterpriseHandler {
     rpc CreateEnterprise (Enterprise) returns (EnterpriseResponse) {
     }
 
-    rpc DeleteEnterprise (EnterpriseID) returns (EnterpriseResponse) {
+    rpc DeleteEnterprise (EnterpriseSpec) returns (EnterpriseResponse) {
     }
 
     rpc UpdateEnterprise (Enterprise) returns (EnterpriseResponse) {
     }
 
-    rpc GetEnterprise (EnterpriseID) returns (EnterpriseResponse) {
+    rpc GetEnterprise (EnterpriseSpec) returns (EnterpriseResponse) {
     }
 }

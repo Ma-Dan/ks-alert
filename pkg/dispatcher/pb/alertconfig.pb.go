@@ -27,24 +27,30 @@ It has these top-level messages:
 	AlertHistoryRequest
 	AlertHistoryResponse
 	AlertRule
-	AlertRuleID
-	AlertRuleResponse
+	AlertRuleGroupSpec
+	AlertRuleGroupResponse
 	AlertRuleGroup
 	Enterprise
-	EnterpriseID
+	EnterpriseSpec
 	EnterpriseResponse
 	Error
 	Product
-	ProductID
+	ProductSpec
 	ProductResponse
 	ReceiverGroup
 	Receiver
+	ReceiverGroupSpec
+	ReceiverGroupResponse
+	RepeatSend
 	ResourceGroup
+	ResourceGroupSpec
 	Resource
+	ResourceGroupResponse
 	ResourceType
-	ResourceTypeID
+	ResourceTypeSpec
 	ResourceTypeResponse
 	ResourceUriTmpls
+	ResourceUriTmpl
 	SilenceID
 	Silence
 	SilenceResponse

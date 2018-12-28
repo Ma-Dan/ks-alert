@@ -14,13 +14,12 @@ func TestCreateMetric(t *testing.T) {
 		ent, err := GetEnterprise(&Enterprise{EnterpriseName: "北京优帆科技有限公司武汉分公司"})
 		So(err, ShouldBeNil)
 
-		product, err := GetProducts(&Product{EnterpriseID: ent.EnterpriseID})
+		product, err := GetProduct(&Product{EnterpriseID: ent.EnterpriseID})
 		So(err, ShouldBeNil)
-		So(len(*product), ShouldEqual, 1)
 
-		productID := (*product)[0].ProductID
+		productID := (*product).ProductID
 
-		resourceTypes := GetResourceTypeByProductID(productID)
+		resourceTypes := GetResourceType(productID)
 
 		// add various metrics for a specific resource type
 		for _, tp := range *resourceTypes {
