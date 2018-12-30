@@ -10,11 +10,11 @@ import (
 	"time"
 )
 
-var Bool2Int = map[bool]int8{false: 0, true: 1}
+var Bool2Int = map[bool]int8{true: 1, false: 0}
 
 type AlertRule struct {
 	AlertRuleID      string `gorm:"primary_key" json:"-"`
-	AlertRuleName    string `gorm:"primary_key" json:"-"`
+	AlertRuleName    string `gorm:"type:varchar(50);not null;" json:"-"`
 	AlertRuleGroupID string `gorm:"type:varchar(50);not null;" json:"-"`
 
 	MetricName string `gorm:"type:varchar(50);" json:"metric_name"`
@@ -50,7 +50,7 @@ type AlertRuleGroup struct {
 	AlertRuleGroupName string       `gorm:"type:varchar(50);not null;" json:"alert_rule_group_name"`
 	AlertRules         []*AlertRule `gorm:"-" json:"alert_rules"`
 	Description        string       `gorm:"type:text;" json:"desc"`
-	SystemRule         bool         `gorm:"type:boolean;"`
+	SystemRule         bool         `gorm:"type:boolean;not null;"`
 	ResourceTypeID     string       `gorm:"type:varchar(50);not null;"`
 	CreatedAt          time.Time    `gorm:"not null;" json:"-"`
 	UpdatedAt          time.Time    `gorm:"not null;" json:"-"`
@@ -60,11 +60,7 @@ func CreateAlertRuleGroup(alertRuleGroup *AlertRuleGroup) (*AlertRuleGroup, erro
 	// check if the build-in alert rule group exist?
 	if alertRuleGroup.SystemRule {
 		r := pb.AlertRuleGroupSpec{ResourceTypeId: alertRuleGroup.ResourceTypeID, SystemRule: true}
-		ruleGroup, err := GetAlertRuleGroup(&r)
-
-		if err != nil {
-			return nil, err
-		}
+		ruleGroup, _ := GetAlertRuleGroup(&r)
 
 		if ruleGroup != nil && ruleGroup.AlertRuleGroupID != "" {
 			// build-in alert rule group exist
@@ -97,9 +93,9 @@ func UpdateAlertRuleGroup(ruleGroup *AlertRuleGroup) error {
 
 	// update alert rule group
 	sql := fmt.Sprintf("UPDATE alert_rule_groups SET alert_rule_group_name='%s',description='%s',"+
-		"system_rule='%v',resource_type_id='%s', updated_at='%v' WHERE alert_rule_group_id='%s'",
+		"system_rule='%v', updated_at='%v' WHERE alert_rule_group_id='%s'",
 		ruleGroup.AlertRuleGroupName, ruleGroup.Description,
-		ruleGroup.SystemRule, ruleGroup.ResourceTypeID,
+		Bool2Int[ruleGroup.SystemRule],
 		ruleGroup.UpdatedAt, ruleGroup.AlertRuleGroupID)
 
 	fmt.Println(sql)
@@ -122,9 +118,11 @@ func UpdateAlertRuleGroup(ruleGroup *AlertRuleGroup) error {
 			"alert_rule_name='%s', metric_name='%s', condition_type='%s', perfer_severity='%v', "+
 			"threshold='%f', unit='%s', period='%d', consecutive_count='%d', inhibit_rule='%v', enable='%v', system_rule='%v', repeat_send_type='%d', "+
 			"init_repeat_send_interval='%d', max_repeat_send_count='%d', updated_at='%v' WHERE alert_rule_group_id='%s' AND alert_rule_id='%s'",
-			a.AlertRuleName, a.MetricName, a.ConditionType, a.PerferSeverity,
-			a.Threshold, a.Unit, a.Period, a.ConsecutiveCount, a.InhibitRule, a.Enable, a.SystemRule,
-			a.RepeatSendType, a.InitRepeatSendInterval, a.MaxRepeatSendCount, a.UpdatedAt, ruleGroup.AlertRuleGroupID, a.AlertRuleID)
+			a.AlertRuleName, a.MetricName, a.ConditionType, Bool2Int[a.PerferSeverity],
+			a.Threshold, a.Unit, a.Period, a.ConsecutiveCount, Bool2Int[a.InhibitRule],
+			Bool2Int[a.Enable], Bool2Int[ruleGroup.SystemRule],
+			a.RepeatSendType, a.InitRepeatSendInterval, a.MaxRepeatSendCount, time.Now(),
+			ruleGroup.AlertRuleGroupID, a.AlertRuleID)
 
 		fmt.Println(sql)
 		if err := tx.Exec(sql).Error; err != nil {
@@ -149,54 +147,67 @@ func GetAlertRuleGroup(ruleGroupSpec *pb.AlertRuleGroupSpec) (*AlertRuleGroup, e
 
 	// get alert rule group
 	if ruleGroupSpec.AlertRuleGroupId != "" {
-		db = db.Model(&AlertRuleGroup{}).Where(&AlertRuleGroup{AlertRuleGroupID: ruleGroupSpec.AlertRuleGroupId}).First(r)
+		db = db.Model(&AlertRuleGroup{}).Where(&AlertRuleGroup{AlertRuleGroupID: ruleGroupSpec.AlertRuleGroupId}).First(&r)
 	} else if ruleGroupSpec.ResourceTypeId != "" {
-		db = db.Model(&AlertRuleGroup{}).Where(&AlertRuleGroup{ResourceTypeID: ruleGroupSpec.ResourceTypeId, SystemRule: true}).First(r)
+		//x := &AlertRuleGroup{ResourceTypeID: ruleGroupSpec.ResourceTypeId, SystemRule: true}
+		err = db.Model(&AlertRuleGroup{}).Where("resource_type_id=? AND system_rule=?", ruleGroupSpec.ResourceTypeId, true).First(&r).Error
 	}
 
 	exist := db.RecordNotFound()
 
 	if exist {
-		return nil, nil
+		return nil, errors.New("record not found")
 	}
 
 	// get alert rules
 	if r.AlertRuleGroupID != "" {
-		var alertRules []*AlertRule
-		err := db.Model(&AlertRule{}).Where(&AlertRule{AlertRuleGroupID: ruleGroupSpec.AlertRuleGroupId}).Find(&alertRules).Error
+		var alertRules []AlertRule
+		err := db.Where(&AlertRule{AlertRuleGroupID: ruleGroupSpec.AlertRuleGroupId}).Find(&alertRules).Error
 		if err != nil {
-			return &r, db.Error
+			return &r, err
 		}
 
-		r.AlertRules = alertRules
+		var rulePtr []*AlertRule
+		for i := 0; i < len(alertRules); i++ {
+			rulePtr = append(rulePtr, &alertRules[i])
+		}
+
+		r.AlertRules = rulePtr
+
 		return &r, db.Error
 	}
 
-	return &r, db.Error
+	return &r, nil
 }
 
 func DeleteAlertRuleGroup(ruleGroupSpec *pb.AlertRuleGroupSpec) error {
 	db, err := dbutil.DBClient()
 
 	if err != nil {
-		glog.Errorln(err.Error())
 		return err
 	}
 
-	if ruleGroupSpec.AlertRuleGroupId != "" {
-		err = db.Delete(&AlertRuleGroup{AlertRuleGroupID: ruleGroupSpec.AlertRuleGroupId}).Error
-	} else if ruleGroupSpec.ResourceTypeId != "" {
-		err = db.Delete(&AlertRuleGroup{ResourceTypeID: ruleGroupSpec.ResourceTypeId, SystemRule: true}).Error
-	}
+	tx := db.Begin()
+
+	err = tx.Delete(&AlertRuleGroup{AlertRuleGroupID: ruleGroupSpec.AlertRuleGroupId}).Error
+	//err = db.Delete(&AlertRuleGroup{ResourceTypeID: ruleGroupSpec.ResourceTypeId, SystemRule: true}).Error
 
 	if err != nil {
-		glog.Errorln(err.Error())
+		tx.Rollback()
 		return err
 	}
-	// delete all alert rule
-	err = db.Delete(&AlertRule{AlertRuleGroupID: ruleGroupSpec.AlertRuleGroupId}).Error
 
-	return err
+	// delete all alert rule
+	err = tx.Delete(&AlertRule{AlertRuleGroupID: ruleGroupSpec.AlertRuleGroupId}).Error
+
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	tx.Commit()
+
+	return nil
 }
 
 func createAlertGroupAndRules(ruleGroup *AlertRuleGroup) error {
@@ -212,14 +223,15 @@ func createAlertGroupAndRules(ruleGroup *AlertRuleGroup) error {
 
 	tx := db.Begin()
 
+	systemRule := ruleGroup.SystemRule
+
 	// create alert rule group
 	item := fmt.Sprintf("('%s','%s','%s','%v','%s','%v','%v')", ruleGroup.AlertRuleGroupID, ruleGroup.AlertRuleGroupName, ruleGroup.Description,
-		Bool2Int[ruleGroup.SystemRule], ruleGroup.ResourceTypeID, ruleGroup.CreatedAt, ruleGroup.UpdatedAt)
+		Bool2Int[systemRule], ruleGroup.ResourceTypeID, ruleGroup.CreatedAt, ruleGroup.UpdatedAt)
 
 	sql := "INSERT INTO alert_rule_groups (alert_rule_group_id, alert_rule_group_name, " +
 		"description, system_rule, resource_type_id, created_at, updated_at) VALUES " + item
 
-	fmt.Println(sql)
 	if err := tx.Exec(sql).Error; err != nil {
 		tx.Rollback()
 		return err
@@ -240,14 +252,13 @@ func createAlertGroupAndRules(ruleGroup *AlertRuleGroup) error {
 
 		item := fmt.Sprintf("('%s','%s','%s','%s','%s','%v','%f','%s','%d','%d','%v','%v','%v','%d','%d','%d','%v','%v') ",
 			a.AlertRuleID, a.AlertRuleName, a.AlertRuleGroupID, a.MetricName, a.ConditionType, Bool2Int[a.PerferSeverity],
-			a.Threshold, a.Unit, a.Period, a.ConsecutiveCount, Bool2Int[a.InhibitRule], Bool2Int[a.Enable], Bool2Int[a.SystemRule],
+			a.Threshold, a.Unit, a.Period, a.ConsecutiveCount, Bool2Int[a.InhibitRule], Bool2Int[a.Enable], Bool2Int[systemRule],
 			a.RepeatSendType, a.InitRepeatSendInterval, a.MaxRepeatSendCount, a.CreatedAt, a.UpdatedAt)
 
 		sql = sql + item
 		if i != l-1 {
 			sql = sql + ","
 		}
-
 	}
 
 	fmt.Println(sql)

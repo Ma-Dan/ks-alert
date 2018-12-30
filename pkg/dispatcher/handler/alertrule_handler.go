@@ -27,7 +27,7 @@ func (server AlertRuleHandler) CreateAlertRule(ctx context.Context, ruleGroup *p
 			return &pb.AlertRuleGroupResponse{
 				Error: &pb.Error{
 					Code: pb.Error_INVALID_PARAM,
-					Text: "resource type is not exist",
+					Text: "resource type does not exist",
 				},
 			}, nil
 		}
@@ -65,7 +65,17 @@ func (server AlertRuleHandler) UpdateAlertRule(ctx context.Context, alertRule *p
 		}, nil
 	}
 
-	err := models.UpdateAlertRuleGroup(ConvertPB2AlertRuleGroup(alertRule))
+	_, err := models.GetAlertRuleGroup(&pb.AlertRuleGroupSpec{AlertRuleGroupId: alertRule.AlertRuleGroupId})
+	if err != nil {
+		return &pb.AlertRuleGroupResponse{
+			Error: &pb.Error{
+				Code: pb.Error_INVALID_PARAM,
+				Text: err.Error(),
+			},
+		}, nil
+	}
+
+	err = models.UpdateAlertRuleGroup(ConvertPB2AlertRuleGroup(alertRule))
 
 	var pErr *pb.Error
 	if err != nil {
@@ -92,7 +102,7 @@ func (server AlertRuleHandler) GetAlertRule(ctx context.Context, alertRuleSpec *
 	typeID := alertRuleSpec.ResourceTypeId
 	//systemRule := alertRuleSpec.SystemRule
 
-	if groupID == "" || typeID == "" {
+	if groupID == "" && typeID == "" {
 		return &pb.AlertRuleGroupResponse{
 			Error: &pb.Error{
 				Code: pb.Error_INVALID_PARAM,
@@ -129,13 +139,26 @@ func (server AlertRuleHandler) DeleteAlertRule(ctx context.Context, alertRuleSpe
 	typeID := alertRuleSpec.ResourceTypeId
 	//systemRule := alertRuleSpec.SystemRule
 
-	if groupID == "" || typeID == "" {
+	if groupID == "" && typeID == "" {
 		return &pb.AlertRuleGroupResponse{
 			Error: &pb.Error{
 				Code: pb.Error_INVALID_PARAM,
 				Text: "invalid param",
 			},
 		}, nil
+	} else if groupID == "" && typeID != "" {
+		// system rule group
+		ruleGroup, err := models.GetAlertRuleGroup(alertRuleSpec)
+		if err != nil {
+			return &pb.AlertRuleGroupResponse{
+				Error: &pb.Error{
+					Code: pb.Error_ACCESS_DENIED,
+					Text: err.Error(),
+				},
+			}, nil
+		}
+
+		groupID = ruleGroup.AlertRuleGroupID
 	}
 
 	err := models.DeleteAlertRuleGroup(alertRuleSpec)
@@ -173,6 +196,9 @@ func ConvertPB2AlertRuleGroup(pbRuleGroup *pb.AlertRuleGroup) *models.AlertRuleG
 }
 
 func ConvertAlertRuleGroup2PB(ruleGroup *models.AlertRuleGroup) *pb.AlertRuleGroup {
+	if ruleGroup == nil {
+		return nil
+	}
 	pbRuleGroup := &pb.AlertRuleGroup{
 		AlertRuleGroupId:   ruleGroup.AlertRuleGroupID,
 		AlertRuleGroupName: ruleGroup.AlertRuleGroupName,

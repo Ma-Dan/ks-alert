@@ -34,6 +34,8 @@ func TestCreateAlertRuleGroup(t *testing.T) {
 						RepeatSendType:         int32(pb.RepeatSendType_Fixed),
 						InitRepeatSendInterval: 60,
 						MaxRepeatSendCount:     4,
+						CreatedAt:              time.Now(),
+						UpdatedAt:              time.Now(),
 					},
 					&AlertRule{
 						AlertRuleName:          "namespace",
@@ -50,6 +52,8 @@ func TestCreateAlertRuleGroup(t *testing.T) {
 						RepeatSendType:         int32(pb.RepeatSendType_exponential),
 						InitRepeatSendInterval: 15,
 						MaxRepeatSendCount:     10,
+						CreatedAt:              time.Now(),
+						UpdatedAt:              time.Now(),
 					},
 				},
 			})
