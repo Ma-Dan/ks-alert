@@ -3,11 +3,9 @@ package pb;
 option go_package = "pb";
 
 message RepeatSend {
-    string current_repeat_interval = 1;
-    string next_repeat_interval = 2;
-    string init_repeat_interval = 3;
-    string max_repeat_interval = 4;
-    RepeatSendType repeat_send_type = 5;
+    uint32 init_repeat_send_interval = 1;
+    uint32 max_repeat_send_count = 2;
+    RepeatSendType repeat_send_type = 3;
 }
 
 enum RepeatSendType {

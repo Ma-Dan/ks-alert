@@ -2,8 +2,8 @@ package models
 
 import (
 	"fmt"
-	"github.com/jinzhu/gorm"
 	"github.com/carmanzhang/ks-alert/pkg/utils/dbutil"
+	"github.com/jinzhu/gorm"
 )
 
 func init() {
@@ -29,12 +29,6 @@ func createTables(db *gorm.DB) {
 
 	if !db.HasTable(&ResourceType{}) {
 		if err := db.Set("gorm:table_options", "ENGINE=InnoDB DEFAULT CHARSET=utf8").CreateTable(&ResourceType{}).Error; err != nil {
-			panic(err)
-		}
-	}
-
-	if !db.HasTable(&Metric{}) {
-		if err := db.Set("gorm:table_options", "ENGINE=InnoDB DEFAULT CHARSET=utf8").CreateTable(&Metric{}).Error; err != nil {
 			panic(err)
 		}
 	}

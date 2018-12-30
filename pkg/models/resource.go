@@ -4,8 +4,8 @@ import (
 	"errors"
 	"github.com/carmanzhang/ks-alert/pkg/utils/dbutil"
 	"github.com/carmanzhang/ks-alert/pkg/utils/idutil"
-	"time"
 	"github.com/golang/glog"
+	"time"
 )
 
 type Resource struct {
@@ -39,13 +39,13 @@ type ResourceType struct {
 
 	// MonitorCenterHost and MonitorCenterPort will override the corresponding filed in struct `product`
 	MonitorCenterHost string `gorm:"type:varchar(128);"`
-	MonitorCenterPort int32    `gorm:"type:int;"` //default:-1;
+	MonitorCenterPort int32  `gorm:"type:int;"` //default:-1;
 	// ResourceURITmpls struct -> json
 	ResourceURITmpls string `gorm:"type:text;not null;"`
 
-	CreatedAt      time.Time       `gorm:"not null;"`
-	UpdatedAt      time.Time       `gorm:"not null;"`
-	Metrics        []Metric        `gorm:"ForeignKey:ResourceTypeID;AssociationForeignKey:MetricID"`
+	CreatedAt time.Time `gorm:"not null;"`
+	UpdatedAt time.Time `gorm:"not null;"`
+	//Metrics        []Metric        `gorm:"ForeignKey:ResourceTypeID;AssociationForeignKey:MetricID"`
 	ResourceGroups []ResourceGroup `gorm:"ForeignKey:ResourceTypeID;AssociationForeignKey:ResourceGroupID"`
 }
 
@@ -186,15 +186,20 @@ func GetResourceType(resourceType *ResourceType) (*ResourceType, error) {
 	}
 
 	var tp ResourceType
-	err = db.Model(&ResourceType{}).Where(resourceType).Find(&tp).Error
+	db = db.Model(&ResourceType{}).Where(resourceType).First(&tp)
 
-	if err != nil {
+	if db.RecordNotFound() {
+		return nil, nil
+	}
+
+	if db.Error != nil {
 		return nil, err
 	}
+
 	return &tp, nil
 }
 
-func CreateResourceType(resourceType *ResourceType) (*ResourceType, error){
+func CreateResourceType(resourceType *ResourceType) (*ResourceType, error) {
 	db, err := dbutil.DBClient()
 
 	if err != nil {
@@ -209,7 +214,7 @@ func CreateResourceType(resourceType *ResourceType) (*ResourceType, error){
 
 }
 
-func UpdateResourceType(resourceType *ResourceType) (error){
+func UpdateResourceType(resourceType *ResourceType) error {
 	db, err := dbutil.DBClient()
 
 	if err != nil {
@@ -219,14 +224,14 @@ func UpdateResourceType(resourceType *ResourceType) (error){
 
 	if resourceType.ResourceTypeID != "" {
 		err = db.Model(resourceType).Where("resource_type_id = ?", resourceType.ResourceTypeID).Update(resourceType).Error
-	}else if resourceType.ProductID != "" && resourceType.ResourceTypeName != "" {
+	} else if resourceType.ProductID != "" && resourceType.ResourceTypeName != "" {
 		err = db.Model(resourceType).Where("product_id = ? and resource_type_name = ? ", resourceType.ProductID, resourceType.ResourceTypeName).Update(resourceType).Error
 	}
 
 	return err
 }
 
-func DeleteResourceType(resourceType *ResourceType) (error){
+func DeleteResourceType(resourceType *ResourceType) error {
 	db, err := dbutil.DBClient()
 
 	if err != nil {

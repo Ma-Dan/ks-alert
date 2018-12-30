@@ -11,29 +11,30 @@ import "repeatsend.proto";
 message AlertRule {
     string alert_rule_id = 1;
     string alert_rule_name = 2;
+    string alert_rule_group_id = 3;
 
-    RepeatSend repeat_send = 3;
+    string metric_name = 4;
 
-    int32 consecutive_count = 4;
-    int32 period = 5;
-
-    string condition_type = 6;
+    string condition_type = 5;
+    bool prefer_severity = 6;
     float threshold = 7;
     string unit = 8;
-    bool prefer_severity = 9;
-    bool enable = 10;
+    int32 period = 9;
+    int32 consecutive_count = 10;
+
     bool inhibit_rule_enable = 11;
+    bool enable = 12;
 
-    string metric_id = 12;
-    string metric_name = 13;
+    bool system_rule = 13;
 
-    string ref_alert_rule_id = 14;
+    RepeatSend repeat_send = 14;
 }
 
 message AlertRuleGroupSpec {
     string alert_rule_group_id = 1;
     // list/delete bulid-in alert rules
-    string resource_type = 2;
+    string resource_type_id = 2;
+    bool system_rule = 3;
 }
 
 message AlertRuleGroupResponse {
@@ -43,10 +44,12 @@ message AlertRuleGroupResponse {
 
 // alert rule group
 message AlertRuleGroup {
-    string receiver_group_id = 1;
-    string receiver_group_name = 2;
+    string alert_rule_group_id = 1;
+    string alert_rule_group_name = 2;
     string desc = 3;
     repeated AlertRule alert_rules = 4;
+    bool system_rule = 5;
+    string resource_type_id = 6;
 }
 
 service AlertRuleHandler {
