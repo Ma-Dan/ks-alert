@@ -17,66 +17,90 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
+type Message struct {
+	UserName  string `protobuf:"bytes,1,opt,name=user_name" json:"user_name,omitempty"`
+	UserId    string `protobuf:"bytes,2,opt,name=user_id" json:"user_id,omitempty"`
+	Timestamp int64  `protobuf:"varint,3,opt,name=timestamp" json:"timestamp,omitempty"`
+	Text      string `protobuf:"bytes,4,opt,name=text" json:"text,omitempty"`
+}
+
+func (m *Message) Reset()                    { *m = Message{} }
+func (m *Message) String() string            { return proto.CompactTextString(m) }
+func (*Message) ProtoMessage()               {}
+func (*Message) Descriptor() ([]byte, []int) { return fileDescriptor12, []int{0} }
+
+func (m *Message) GetUserName() string {
+	if m != nil {
+		return m.UserName
+	}
+	return ""
+}
+
+func (m *Message) GetUserId() string {
+	if m != nil {
+		return m.UserId
+	}
+	return ""
+}
+
+func (m *Message) GetTimestamp() int64 {
+	if m != nil {
+		return m.Timestamp
+	}
+	return 0
+}
+
+func (m *Message) GetText() string {
+	if m != nil {
+		return m.Text
+	}
+	return ""
+}
+
 // suggestion
 type Suggestion struct {
-	SuggestionId *SuggestionID `protobuf:"bytes,1,opt,name=suggestion_id" json:"suggestion_id,omitempty"`
-	Suggestion   string        `protobuf:"bytes,2,opt,name=suggestion" json:"suggestion,omitempty"`
+	AlertConfigId string     `protobuf:"bytes,1,opt,name=alert_config_id" json:"alert_config_id,omitempty"`
+	ResourceId    string     `protobuf:"bytes,2,opt,name=resource_id" json:"resource_id,omitempty"`
+	AlertRuleId   string     `protobuf:"bytes,3,opt,name=alert_rule_id" json:"alert_rule_id,omitempty"`
+	Messages      []*Message `protobuf:"bytes,4,rep,name=messages" json:"messages,omitempty"`
 }
 
 func (m *Suggestion) Reset()                    { *m = Suggestion{} }
 func (m *Suggestion) String() string            { return proto.CompactTextString(m) }
 func (*Suggestion) ProtoMessage()               {}
-func (*Suggestion) Descriptor() ([]byte, []int) { return fileDescriptor12, []int{0} }
+func (*Suggestion) Descriptor() ([]byte, []int) { return fileDescriptor12, []int{1} }
 
-func (m *Suggestion) GetSuggestionId() *SuggestionID {
-	if m != nil {
-		return m.SuggestionId
-	}
-	return nil
-}
-
-func (m *Suggestion) GetSuggestion() string {
-	if m != nil {
-		return m.Suggestion
-	}
-	return ""
-}
-
-type SuggestionID struct {
-	AlertConfigId string `protobuf:"bytes,1,opt,name=alert_config_id" json:"alert_config_id,omitempty"`
-	ResourceId    string `protobuf:"bytes,2,opt,name=resource_id" json:"resource_id,omitempty"`
-	AlertRuleId   string `protobuf:"bytes,3,opt,name=alert_rule_id" json:"alert_rule_id,omitempty"`
-}
-
-func (m *SuggestionID) Reset()                    { *m = SuggestionID{} }
-func (m *SuggestionID) String() string            { return proto.CompactTextString(m) }
-func (*SuggestionID) ProtoMessage()               {}
-func (*SuggestionID) Descriptor() ([]byte, []int) { return fileDescriptor12, []int{1} }
-
-func (m *SuggestionID) GetAlertConfigId() string {
+func (m *Suggestion) GetAlertConfigId() string {
 	if m != nil {
 		return m.AlertConfigId
 	}
 	return ""
 }
 
-func (m *SuggestionID) GetResourceId() string {
+func (m *Suggestion) GetResourceId() string {
 	if m != nil {
 		return m.ResourceId
 	}
 	return ""
 }
 
-func (m *SuggestionID) GetAlertRuleId() string {
+func (m *Suggestion) GetAlertRuleId() string {
 	if m != nil {
 		return m.AlertRuleId
 	}
 	return ""
 }
 
+func (m *Suggestion) GetMessages() []*Message {
+	if m != nil {
+		return m.Messages
+	}
+	return nil
+}
+
 type SuggestionResponse struct {
-	Suggestion *Suggestion `protobuf:"bytes,2,opt,name=suggestion" json:"suggestion,omitempty"`
-	Error      *Error      `protobuf:"bytes,3,opt,name=error" json:"error,omitempty"`
+	Suggestion *Suggestion `protobuf:"bytes,1,opt,name=suggestion" json:"suggestion,omitempty"`
+	Error      *Error      `protobuf:"bytes,2,opt,name=error" json:"error,omitempty"`
 }
 
 func (m *SuggestionResponse) Reset()                    { *m = SuggestionResponse{} }
@@ -99,8 +123,8 @@ func (m *SuggestionResponse) GetError() *Error {
 }
 
 func init() {
+	proto.RegisterType((*Message)(nil), "pb.Message")
 	proto.RegisterType((*Suggestion)(nil), "pb.Suggestion")
-	proto.RegisterType((*SuggestionID)(nil), "pb.SuggestionID")
 	proto.RegisterType((*SuggestionResponse)(nil), "pb.SuggestionResponse")
 }
 
@@ -116,8 +140,6 @@ const _ = grpc.SupportPackageIsVersion4
 
 type SuggestionHandlerClient interface {
 	// suggestion
-	CreateSuggestion(ctx context.Context, in *Suggestion, opts ...grpc.CallOption) (*SuggestionResponse, error)
-	DeleteSuggestion(ctx context.Context, in *Suggestion, opts ...grpc.CallOption) (*SuggestionResponse, error)
 	UpdateSuggestion(ctx context.Context, in *Suggestion, opts ...grpc.CallOption) (*SuggestionResponse, error)
 	GetSuggestion(ctx context.Context, in *Suggestion, opts ...grpc.CallOption) (*SuggestionResponse, error)
 }
@@ -128,24 +150,6 @@ type suggestionHandlerClient struct {
 
 func NewSuggestionHandlerClient(cc *grpc.ClientConn) SuggestionHandlerClient {
 	return &suggestionHandlerClient{cc}
-}
-
-func (c *suggestionHandlerClient) CreateSuggestion(ctx context.Context, in *Suggestion, opts ...grpc.CallOption) (*SuggestionResponse, error) {
-	out := new(SuggestionResponse)
-	err := grpc.Invoke(ctx, "/pb.SuggestionHandler/CreateSuggestion", in, out, c.cc, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *suggestionHandlerClient) DeleteSuggestion(ctx context.Context, in *Suggestion, opts ...grpc.CallOption) (*SuggestionResponse, error) {
-	out := new(SuggestionResponse)
-	err := grpc.Invoke(ctx, "/pb.SuggestionHandler/DeleteSuggestion", in, out, c.cc, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
 }
 
 func (c *suggestionHandlerClient) UpdateSuggestion(ctx context.Context, in *Suggestion, opts ...grpc.CallOption) (*SuggestionResponse, error) {
@@ -170,50 +174,12 @@ func (c *suggestionHandlerClient) GetSuggestion(ctx context.Context, in *Suggest
 
 type SuggestionHandlerServer interface {
 	// suggestion
-	CreateSuggestion(context.Context, *Suggestion) (*SuggestionResponse, error)
-	DeleteSuggestion(context.Context, *Suggestion) (*SuggestionResponse, error)
 	UpdateSuggestion(context.Context, *Suggestion) (*SuggestionResponse, error)
 	GetSuggestion(context.Context, *Suggestion) (*SuggestionResponse, error)
 }
 
 func RegisterSuggestionHandlerServer(s *grpc.Server, srv SuggestionHandlerServer) {
 	s.RegisterService(&_SuggestionHandler_serviceDesc, srv)
-}
-
-func _SuggestionHandler_CreateSuggestion_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Suggestion)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(SuggestionHandlerServer).CreateSuggestion(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/pb.SuggestionHandler/CreateSuggestion",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SuggestionHandlerServer).CreateSuggestion(ctx, req.(*Suggestion))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _SuggestionHandler_DeleteSuggestion_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Suggestion)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(SuggestionHandlerServer).DeleteSuggestion(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/pb.SuggestionHandler/DeleteSuggestion",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SuggestionHandlerServer).DeleteSuggestion(ctx, req.(*Suggestion))
-	}
-	return interceptor(ctx, in, info, handler)
 }
 
 func _SuggestionHandler_UpdateSuggestion_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -257,14 +223,6 @@ var _SuggestionHandler_serviceDesc = grpc.ServiceDesc{
 	HandlerType: (*SuggestionHandlerServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "CreateSuggestion",
-			Handler:    _SuggestionHandler_CreateSuggestion_Handler,
-		},
-		{
-			MethodName: "DeleteSuggestion",
-			Handler:    _SuggestionHandler_DeleteSuggestion_Handler,
-		},
-		{
 			MethodName: "UpdateSuggestion",
 			Handler:    _SuggestionHandler_UpdateSuggestion_Handler,
 		},
@@ -280,22 +238,23 @@ var _SuggestionHandler_serviceDesc = grpc.ServiceDesc{
 func init() { proto.RegisterFile("suggestion.proto", fileDescriptor12) }
 
 var fileDescriptor12 = []byte{
-	// 257 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x92, 0x3d, 0x4f, 0xc3, 0x30,
-	0x10, 0x86, 0x49, 0xf8, 0x90, 0x72, 0x26, 0x10, 0x0e, 0x01, 0x51, 0xa7, 0x2a, 0x0b, 0x9d, 0x32,
-	0x84, 0x09, 0x89, 0x09, 0x8a, 0xa0, 0x6b, 0x2b, 0x16, 0x96, 0x2a, 0x69, 0x8e, 0x28, 0x52, 0x14,
-	0x5b, 0x67, 0xe7, 0x3f, 0xf0, 0xb3, 0x51, 0x5c, 0x05, 0x13, 0xba, 0x65, 0xf4, 0xeb, 0xe7, 0x7d,
-	0xee, 0x2c, 0x19, 0x22, 0xdd, 0x55, 0x15, 0x69, 0x53, 0xcb, 0x36, 0x55, 0x2c, 0x8d, 0x44, 0x5f,
-	0x15, 0x33, 0x41, 0xcc, 0x92, 0xf7, 0x41, 0xb2, 0x02, 0xd8, 0xfc, 0x42, 0x78, 0x0f, 0xa1, 0xab,
-	0x6c, 0xeb, 0x32, 0xf6, 0xe6, 0xde, 0x42, 0x64, 0x51, 0xaa, 0x8a, 0xd4, 0x61, 0xab, 0x25, 0x22,
-	0x80, 0x03, 0x63, 0x7f, 0xee, 0x2d, 0x82, 0x64, 0x03, 0xe7, 0x23, 0xe6, 0x0e, 0x2e, 0xf3, 0x86,
-	0xd8, 0x6c, 0x77, 0xb2, 0xfd, 0xaa, 0xab, 0x41, 0x17, 0xe0, 0x35, 0x08, 0x26, 0x2d, 0x3b, 0xde,
-	0x51, 0x1f, 0xda, 0x36, 0xde, 0x40, 0xb8, 0xa7, 0xb9, 0x6b, 0x6c, 0x7c, 0x6c, 0xa5, 0x6b, 0x40,
-	0x27, 0x5d, 0x93, 0x56, 0xb2, 0xd5, 0x84, 0xc9, 0xc1, 0x78, 0x91, 0x5d, 0x8c, 0x97, 0xc4, 0x18,
-	0x4e, 0xed, 0x43, 0xad, 0x48, 0x64, 0x41, 0x7f, 0xfd, 0xda, 0x07, 0xd9, 0xb7, 0x0f, 0x57, 0x0e,
-	0x7c, 0xcf, 0xdb, 0xb2, 0x21, 0xc6, 0x27, 0x88, 0x5e, 0x98, 0x72, 0x43, 0x7f, 0x1c, 0xff, 0x9c,
-	0xb3, 0xdb, 0xf1, 0x79, 0xd8, 0x27, 0x39, 0xea, 0xdb, 0x4b, 0x6a, 0x68, 0x7a, 0xfb, 0x43, 0x95,
-	0x53, 0x67, 0x3f, 0x42, 0xf8, 0x46, 0x66, 0x4a, 0xf5, 0xf9, 0xe4, 0xd3, 0x57, 0x45, 0x71, 0x66,
-	0xff, 0xc2, 0xc3, 0x4f, 0x00, 0x00, 0x00, 0xff, 0xff, 0xb1, 0x9e, 0x61, 0xd7, 0x30, 0x02, 0x00,
-	0x00,
+	// 288 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x91, 0x4f, 0x4b, 0xc4, 0x30,
+	0x10, 0xc5, 0xed, 0x1f, 0x5d, 0x3b, 0x71, 0xdd, 0x6d, 0x44, 0x0d, 0x0b, 0x42, 0xe9, 0xa9, 0xa7,
+	0x1e, 0xea, 0x49, 0xf0, 0x24, 0x88, 0x5e, 0xf4, 0xb0, 0xe2, 0xc5, 0xcb, 0x92, 0x6e, 0xc7, 0x52,
+	0x68, 0x9b, 0x90, 0xa4, 0xe0, 0x87, 0xf0, 0x43, 0x4b, 0x52, 0xb5, 0xab, 0xc7, 0x3d, 0xe6, 0x97,
+	0x37, 0xef, 0xbd, 0x64, 0x60, 0xa9, 0x87, 0xba, 0x46, 0x6d, 0x1a, 0xd1, 0xe7, 0x52, 0x09, 0x23,
+	0xa8, 0x2f, 0xcb, 0x15, 0x41, 0xa5, 0x84, 0x1a, 0x41, 0xfa, 0x0c, 0xb3, 0x27, 0xd4, 0x9a, 0xd7,
+	0x48, 0x63, 0x88, 0x06, 0x8d, 0x6a, 0xd3, 0xf3, 0x0e, 0x99, 0x97, 0x78, 0x59, 0x44, 0x17, 0x30,
+	0x73, 0xa8, 0xa9, 0x98, 0xef, 0x40, 0x0c, 0x91, 0x69, 0x3a, 0xd4, 0x86, 0x77, 0x92, 0x05, 0x89,
+	0x97, 0x05, 0xf4, 0x04, 0x42, 0x83, 0x1f, 0x86, 0x85, 0x56, 0x90, 0x4a, 0x80, 0x97, 0xdf, 0x50,
+	0x7a, 0x09, 0x0b, 0xde, 0xa2, 0x32, 0x9b, 0xad, 0xe8, 0xdf, 0x9b, 0xda, 0xfa, 0x8c, 0xc6, 0x67,
+	0x40, 0x14, 0x6a, 0x31, 0xa8, 0x2d, 0x4e, 0xe6, 0xe7, 0x30, 0x1f, 0xd5, 0x6a, 0x68, 0x1d, 0x0e,
+	0x1c, 0xbe, 0x82, 0xe3, 0x6e, 0xac, 0xa8, 0x59, 0x98, 0x04, 0x19, 0x29, 0x48, 0x2e, 0xcb, 0xfc,
+	0xbb, 0x76, 0xba, 0x06, 0x3a, 0x25, 0xae, 0x51, 0x4b, 0xd1, 0x6b, 0xa4, 0x29, 0xc0, 0xf4, 0x78,
+	0x17, 0x4a, 0x8a, 0x53, 0x3b, 0xb6, 0xd3, 0x8e, 0xc1, 0xa1, 0xfb, 0x0a, 0x17, 0x4f, 0x8a, 0xc8,
+	0x5e, 0xdf, 0x5b, 0x50, 0x7c, 0x7a, 0x10, 0x4f, 0xc2, 0x47, 0xde, 0x57, 0x2d, 0x2a, 0x7a, 0x0b,
+	0xcb, 0x57, 0x59, 0x71, 0x83, 0x3b, 0x1e, 0xff, 0x3c, 0x57, 0x17, 0x7f, 0xcf, 0x3f, 0x7d, 0xd2,
+	0x03, 0x7a, 0x03, 0xf3, 0x07, 0x34, 0xfb, 0x8c, 0xde, 0x85, 0x6f, 0xbe, 0x2c, 0xcb, 0x23, 0xb7,
+	0xb1, 0xeb, 0xaf, 0x00, 0x00, 0x00, 0xff, 0xff, 0xb5, 0x27, 0x68, 0x24, 0xd6, 0x01, 0x00, 0x00,
 }

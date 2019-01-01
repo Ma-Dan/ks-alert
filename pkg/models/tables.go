@@ -93,5 +93,10 @@ func createTables(db *gorm.DB) {
 			panic(err)
 		}
 	}
+	if !db.HasTable(&Suggestion{}) {
+		if err := db.Set("gorm:table_options", "ENGINE=InnoDB DEFAULT CHARSET=utf8").CreateTable(&Suggestion{}).Error; err != nil {
+			panic(err)
+		}
+	}
 
 }

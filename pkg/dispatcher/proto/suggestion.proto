@@ -6,32 +6,28 @@ option go_package = "pb";
 //import "protoc-gen-swagger/options/annotations.proto";
 import "error.proto";
 
-// suggestion
-message Suggestion {
-    SuggestionID suggestion_id = 1;
-    string suggestion = 2;
+message Message {
+    string user_name = 1;
+    string user_id = 2;
+    int64 timestamp = 3;
+    string text = 4;
 }
 
-message SuggestionID {
+// suggestion
+message Suggestion {
     string alert_config_id = 1;
     string resource_id = 2;
     string alert_rule_id = 3;
+    repeated Message messages = 4;
 }
 
 message SuggestionResponse {
-    Suggestion suggestion = 2;
-    Error error = 3;
+    Suggestion suggestion = 1;
+    Error error = 2;
 }
 
 service SuggestionHandler {
-
     // suggestion
-    rpc CreateSuggestion (Suggestion) returns (SuggestionResponse) {
-    }
-
-    rpc DeleteSuggestion (Suggestion) returns (SuggestionResponse) {
-    }
-
     rpc UpdateSuggestion (Suggestion) returns (SuggestionResponse) {
     }
 

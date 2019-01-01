@@ -55,8 +55,8 @@ It has these top-level messages:
 	SilenceID
 	Silence
 	SilenceResponse
+	Message
 	Suggestion
-	SuggestionID
 	SuggestionResponse
 	SeveritySpec
 	Severity
