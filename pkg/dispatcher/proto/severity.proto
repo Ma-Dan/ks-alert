@@ -1,0 +1,47 @@
+syntax = "proto3";
+package pb;
+option go_package = "pb";
+
+//import "google/api/annotations.proto";
+//import "protoc-gen-swagger/options/annotations.proto";
+import "error.proto";
+
+// Severity
+message SeveritySpec {
+    string severity_id = 1;
+    string product_id = 2;
+    string product_name = 3;
+}
+
+message Severity {
+    string severity_id = 1;
+    string severity_ch = 2;
+    string severity_en = 3;
+    string product_id = 4;
+}
+
+message SeverityResponse {
+    Severity Severity = 1;
+    Error error = 2; //optional
+}
+
+message SeveritiesResponse {
+    repeated Severity Severity = 1;
+    Error error = 2; //optional
+}
+
+
+service SeverityHandler {
+    // Severity
+    rpc CreateSeverity (Severity) returns (SeverityResponse) {
+    }
+
+    rpc DeleteSeverity (SeveritySpec) returns (SeverityResponse) {
+    }
+
+    rpc UpdateSeverity (Severity) returns (SeverityResponse) {
+    }
+
+    rpc GetSeverity (SeveritySpec) returns (SeveritiesResponse) {
+    }
+}

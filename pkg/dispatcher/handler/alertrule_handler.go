@@ -211,7 +211,7 @@ func ConvertAlertRuleGroup2PB(ruleGroup *models.AlertRuleGroup) *pb.AlertRuleGro
 	return pbRuleGroup
 }
 
-func ConvertAlertRules2PB(alertRules []*models.AlertRule) []*pb.AlertRule {
+func ConvertAlertRules2PB(alertRules []models.AlertRule) []*pb.AlertRule {
 	if alertRules != nil {
 		l := len(alertRules)
 		var pbAlertRules = make([]*pb.AlertRule, l)
@@ -245,13 +245,13 @@ func ConvertAlertRules2PB(alertRules []*models.AlertRule) []*pb.AlertRule {
 	return nil
 }
 
-func ConvertPB2AlertRules(pbAlertRules []*pb.AlertRule) []*models.AlertRule {
+func ConvertPB2AlertRules(pbAlertRules []*pb.AlertRule) []models.AlertRule {
 	if pbAlertRules != nil {
 		l := len(pbAlertRules)
-		var alertRules = make([]*models.AlertRule, l)
+		var alertRules = make([]models.AlertRule, l)
 		for i := 0; i < l; i++ {
 			ptr := pbAlertRules[i]
-			alertRules[i] = &models.AlertRule{
+			alertRules[i] = models.AlertRule{
 				AlertRuleID:            ptr.AlertRuleId,
 				AlertRuleName:          ptr.AlertRuleName,
 				AlertRuleGroupID:       ptr.AlertRuleId,

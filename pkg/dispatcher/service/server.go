@@ -3,10 +3,10 @@ package service
 import (
 	"flag"
 	"fmt"
-	"google.golang.org/grpc"
 	"github.com/carmanzhang/ks-alert/pkg/dispatcher/handler"
 	"github.com/carmanzhang/ks-alert/pkg/dispatcher/pb"
 	"github.com/carmanzhang/ks-alert/pkg/registry"
+	"google.golang.org/grpc"
 	"log"
 	"net"
 	"os"
@@ -75,6 +75,7 @@ func Run() {
 
 	pb.RegisterSilenceHandlerServer(s, &handler.SilenceHandler{})
 	pb.RegisterSuggestionHandlerServer(s, &handler.SuggestionHandler{})
+	pb.RegisterSeverityHandlerServer(s, &handler.SeverityHandler{})
 
 	s.Serve(lis)
 }

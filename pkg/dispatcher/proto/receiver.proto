@@ -24,6 +24,7 @@ message Receiver {
 
 message ReceiverGroupSpec {
     string receiver_group_id = 1;
+    string receiver_id = 2;
 }
 
 message ReceiverGroupResponse {

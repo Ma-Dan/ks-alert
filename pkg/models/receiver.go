@@ -1,8 +1,10 @@
 package models
 
 import (
-	"github.com/carmanzhang/ks-alert/pkg/utils/dbutil"
+	"fmt"
 	"github.com/carmanzhang/ks-alert/pkg/utils/idutil"
+	"github.com/jinzhu/gorm"
+	"github.com/pkg/errors"
 	"time"
 )
 
@@ -16,56 +18,216 @@ type Receiver struct {
 	UpdatedAt    time.Time `gorm:"not null;" json:"-"`
 }
 
+type ReceiverBindingGroup struct {
+	ReceiverID      string    `gorm:"type:varchar(50);primary_key"`
+	ReceiverGroupID string    `gorm:"type:varchar(50);primary_key" json:"-"`
+	CreatedAt       time.Time `gorm:"not null;"`
+	UpdatedAt       time.Time `gorm:"not null;"`
+}
+
 type ReceiverGroup struct {
-	ReceiverGroupID   string     `gorm:"type:varchar(50);primary_key" json:"-"`
-	ReceiverGroupName string     `gorm:"type:varchar(50);not null;" json:"receiver_group_name"`
-	Webhook           string     `gorm:"type:varchar(50);" json:"webhook, omitempty"`
-	WebhookEnable     bool       `gorm:"type:bool;" json:"webhook_enable, omitempty"`
-	Receivers         []Receiver `gorm:"-" json:"receivers"`
-	Description       string     `gorm:"type:text;" json:"desc"`
-	CreatedAt         time.Time  `gorm:"not null;" json:"-"`
-	UpdatedAt         time.Time  `gorm:"not null;" json:"-"`
+	Action
+	ReceiverGroupID   string      `gorm:"type:varchar(50);primary_key" json:"-"`
+	ReceiverGroupName string      `gorm:"type:varchar(50);not null;" json:"receiver_group_name"`
+	Webhook           string      `gorm:"type:varchar(50);" json:"webhook, omitempty"`
+	WebhookEnable     bool        `gorm:"type:bool;" json:"webhook_enable, omitempty"`
+	Receivers         *[]Receiver `gorm:"-" json:"receivers"`
+	Description       string      `gorm:"type:text;" json:"desc"`
+	CreatedAt         time.Time   `gorm:"not null;" json:"-"`
+	UpdatedAt         time.Time   `gorm:"not null;" json:"-"`
 }
 
-func CreateReceiverGroup(receiverGroup *ReceiverGroup) (*ReceiverGroup, error) {
-	db, err := dbutil.DBClient()
-	if err != nil {
-		panic(err)
+func (r ReceiverGroup) Create(tx *gorm.DB, v interface{}) (interface{}, error) {
+	recvGroup, ok := v.(*ReceiverGroup)
+
+	if !ok {
+		return nil, errors.Errorf("type %v assert error", recvGroup)
 	}
 
-	receiverGroup.ReceiverGroupID = idutil.GetUuid36("receiver_group-")
+	recvGroup.ReceiverGroupID = idutil.GetUuid36("receiver_group-")
 
-	err = db.Model(&ReceiverGroup{}).Create(receiverGroup).Error
+	// create group
+	item := fmt.Sprintf("('%s','%s','%s','%v','%s','%v','%v')", recvGroup.ReceiverGroupID, recvGroup.ReceiverGroupName,
+		recvGroup.Webhook, Bool2Int[recvGroup.WebhookEnable], recvGroup.Description, recvGroup.CreatedAt, recvGroup.UpdatedAt)
 
-	return receiverGroup, err
-}
+	sql := "INSERT INTO receiver_groups (receiver_group_id, receiver_group_name, webhook, " +
+		"webhook_enable, description, created_at, updated_at) VALUES " + item
 
-func CreateReceivers(receivers *[]Receiver) (*[]Receiver, error) {
-	var createdReceiver []Receiver
+	if err := tx.Exec(sql).Error; err != nil {
+		tx.Rollback()
+		return nil, err
+	}
 
-	for i := 0; i < len(*receivers); i++ {
-		receiver, err := CreateReceiver(&(*receivers)[i])
-		if err != nil {
-			return &createdReceiver, err
+	// create item
+	sql = "INSERT INTO receivers (receiver_id, receiver_name, email, phone, wechat, created_at, updated_at) VALUES "
+
+	receivers := *recvGroup.Receivers
+	l := len(receivers)
+
+	var recvIds []string
+	var createdRrecvIds []string
+
+	for i := 0; i < l; i++ {
+		r := receivers[i]
+
+		// TODO need to validate the receiver_id exist
+		if r.ReceiverID != "" {
+			recvIds = append(recvIds, r.ReceiverID)
+			continue
 		}
-		createdReceiver = append(createdReceiver, *receiver)
+
+		recvId := idutil.GetUuid36("rule_id-")
+		createdRrecvIds = append(createdRrecvIds, recvId)
+
+		r.ReceiverID = recvId
+
+		item := fmt.Sprintf("('%s','%s','%s','%s','%s','%v','%v') ",
+			r.ReceiverID, r.ReceiverName, r.Email, r.Phone, r.Wechat, r.CreatedAt, r.UpdatedAt)
+
+		sql = sql + item
+		if i != l-1 {
+			sql = sql + ","
+		}
 	}
 
-	return &createdReceiver, nil
+	fmt.Println(sql)
+
+	if err := tx.Exec(sql).Error; err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+
+	sql = "INSERT INTO receiver_binding_groups (receiver_id, receiver_group_id, created_at, updated_at) VALUES "
+
+	recvIds = append(recvIds, createdRrecvIds...)
+
+	for i := 0; i < len(recvIds); i++ {
+
+		item := fmt.Sprintf("('%s','%s','%v','%v') ",
+			recvIds[i], recvGroup.ReceiverGroupID, time.Now(), time.Now())
+
+		sql = sql + item
+		if i != l-1 {
+			sql = sql + ","
+		}
+	}
+
+	if err := tx.Exec(sql).Error; err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+
+	return nil, nil
 }
 
-func CreateReceiver(receiver *Receiver) (*Receiver, error) {
+func (r ReceiverGroup) Update(tx *gorm.DB, v interface{}) (interface{}, error) {
 
-	db, err := dbutil.DBClient()
+	recvGroup, ok := v.(*ReceiverGroup)
+
+	if !ok {
+		return nil, errors.Errorf("type %v assert error", recvGroup)
+	}
+
+	sql := fmt.Sprintf("UPDATE receiver_groups SET receiver_group_name='%s', webhook='%s', "+
+		"webhook_enable='%v', description='%s', updated_at='%v' WHERE receiver_group_id='%s'", recvGroup.ReceiverGroupName,
+		recvGroup.Webhook, Bool2Int[recvGroup.WebhookEnable], recvGroup.Description, time.Now(), recvGroup.ReceiverGroupID)
+
+	if err := tx.Exec(sql).Error; err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+
+	receivers := *recvGroup.Receivers
+	l := len(receivers)
+
+	for i := 0; i < l; i++ {
+		r := receivers[i]
+
+		if r.ReceiverID == "" {
+			continue
+		}
+
+		sql = fmt.Sprintf("UPDATE receivers SET receiver_name='%s', email='%s', "+
+			"phone='%s', wechat='%s', updated_at='%v' WHERE receiver_id='%s'", r.ReceiverName,
+			r.Email, r.Phone, r.Wechat, time.Now(), r.ReceiverID)
+
+		if err := tx.Exec(sql).Error; err != nil {
+			tx.Rollback()
+			return nil, err
+		}
+	}
+
+	return nil, nil
+}
+
+func (r ReceiverGroup) Get(tx *gorm.DB, v interface{}) (interface{}, error) {
+
+	recvGroup, ok := v.(*ReceiverGroup)
+
+	if !ok {
+		return nil, errors.Errorf("type %v assert error", recvGroup)
+	}
+
+	var rg ReceiverGroup
+
+	err := tx.Model(&ReceiverGroup{}).Where("receiver_group_id=?", recvGroup.ReceiverGroupID).First(&rg).Error
+
 	if err != nil {
-		panic(err)
+		tx.Rollback()
+		return nil, err
 	}
 
-	if receiver.ReceiverID == "" {
-		receiver.ReceiverID = idutil.GetUuid36("receiver-")
-		err = db.Model(&Receiver{}).Create(receiver).Error
-		return receiver, err
+	exist := tx.RecordNotFound()
+
+	if exist {
+		return nil, errors.New("record not found")
 	}
 
-	return receiver, nil
+	if rg.ReceiverGroupID != "" {
+		var receivers []Receiver
+		//
+		sql := "SELECT r.* FROM receiver_binding_groups as rb LEFT JOIN receivers as r ON rb.receiver_id=r.receiver_id WHERE rb.receiver_group_id=?"
+
+		if err := tx.Exec(sql, rg.ReceiverGroupID).Find(&receivers).Error; err != nil {
+			tx.Rollback()
+			return nil, err
+		}
+
+		//err := tx.Find(&receivers, "receiver_group_id=?", rg.ReceiverGroupID).Error
+		//
+		//if err != nil {
+		//	tx.Rollback()
+		//	return nil, err
+		//}
+		rg.Receivers = &receivers
+
+		return &rg, nil
+	}
+
+	return nil, nil
+}
+
+func (r ReceiverGroup) Delete(tx *gorm.DB, v interface{}) (interface{}, error) {
+	recvGroup, ok := v.(*ReceiverGroup)
+
+	if !ok {
+		return nil, errors.Errorf("type %v assert error", recvGroup)
+	}
+
+	sql := "DELETE rg, rb FROM receiver_groups as rg LEFT JOIN receiver_binding_groups as rb ON rg.receiver_group_id=rb.receiver_group_id WHERE rg.receiver_group_id=?"
+
+	if err := tx.Exec(sql, recvGroup.ReceiverGroupID).Error; err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+
+	// delete receiver which is not in any receiver group
+	sql = "DELETE r FROM receivers as r LEFT JOIN receiver_binding_groups as rb ON r.receiver_id=rb.receiver_id WHERE rb.receiver_group_id IS NULL;"
+
+	if err := tx.Exec(sql).Error; err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+
+	return nil, nil
 }

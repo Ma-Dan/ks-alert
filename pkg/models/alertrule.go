@@ -46,14 +46,14 @@ type AlertRule struct {
 }
 
 type AlertRuleGroup struct {
-	AlertRuleGroupID   string       `gorm:"primary_key" json:"-"`
-	AlertRuleGroupName string       `gorm:"type:varchar(50);not null;" json:"alert_rule_group_name"`
-	AlertRules         []*AlertRule `gorm:"-" json:"alert_rules"`
-	Description        string       `gorm:"type:text;" json:"desc"`
-	SystemRule         bool         `gorm:"type:boolean;not null;"`
-	ResourceTypeID     string       `gorm:"type:varchar(50);not null;"`
-	CreatedAt          time.Time    `gorm:"not null;" json:"-"`
-	UpdatedAt          time.Time    `gorm:"not null;" json:"-"`
+	AlertRuleGroupID   string      `gorm:"primary_key" json:"-"`
+	AlertRuleGroupName string      `gorm:"type:varchar(50);not null;" json:"alert_rule_group_name"`
+	AlertRules         []AlertRule `gorm:"-" json:"alert_rules"`
+	Description        string      `gorm:"type:text;" json:"desc"`
+	SystemRule         bool        `gorm:"type:boolean;not null;"`
+	ResourceTypeID     string      `gorm:"type:varchar(50);not null;"`
+	CreatedAt          time.Time   `gorm:"not null;" json:"-"`
+	UpdatedAt          time.Time   `gorm:"not null;" json:"-"`
 }
 
 func CreateAlertRuleGroup(alertRuleGroup *AlertRuleGroup) (*AlertRuleGroup, error) {
@@ -162,17 +162,20 @@ func GetAlertRuleGroup(ruleGroupSpec *pb.AlertRuleGroupSpec) (*AlertRuleGroup, e
 	// get alert rules
 	if r.AlertRuleGroupID != "" {
 		var alertRules []AlertRule
-		err := db.Where(&AlertRule{AlertRuleGroupID: ruleGroupSpec.AlertRuleGroupId}).Find(&alertRules).Error
+		err := db.Debug().Find(&alertRules, "alert_rule_group_id=?", r.AlertRuleGroupID).Error
+		//err := db.Where(&AlertRule{AlertRuleGroupID: ruleGroupSpec.AlertRuleGroupId}).Find(&alertRules).Error
+		//db.Exec("SELECT * FROM alert_rules WHERE alert_rule_group_id=?", ruleGroupSpec.AlertRuleGroupId).First(&alertRules)
+
 		if err != nil {
 			return &r, err
 		}
 
-		var rulePtr []*AlertRule
-		for i := 0; i < len(alertRules); i++ {
-			rulePtr = append(rulePtr, &alertRules[i])
-		}
+		//var rulePtr []*AlertRule
+		//for i := 0; i < len(alertRules); i++ {
+		//	rulePtr = append(rulePtr, &alertRules[i])
+		//}
 
-		r.AlertRules = rulePtr
+		r.AlertRules = alertRules
 
 		return &r, db.Error
 	}
@@ -191,6 +194,7 @@ func DeleteAlertRuleGroup(ruleGroupSpec *pb.AlertRuleGroupSpec) error {
 
 	err = tx.Delete(&AlertRuleGroup{AlertRuleGroupID: ruleGroupSpec.AlertRuleGroupId}).Error
 	//err = db.Delete(&AlertRuleGroup{ResourceTypeID: ruleGroupSpec.ResourceTypeId, SystemRule: true}).Error
+	//err = tx.Exec("DELETE from alert_rule_group WHERE alert_rule_group_id=?", ruleGroupSpec.AlertRuleGroupId).Error
 
 	if err != nil {
 		tx.Rollback()
@@ -199,6 +203,7 @@ func DeleteAlertRuleGroup(ruleGroupSpec *pb.AlertRuleGroupSpec) error {
 
 	// delete all alert rule
 	err = tx.Delete(&AlertRule{AlertRuleGroupID: ruleGroupSpec.AlertRuleGroupId}).Error
+	//err = tx.Exec("DELETE from alert_rule WHERE alert_rule_group_id=?", ruleGroupSpec.AlertRuleGroupId).Error
 
 	if err != nil {
 		tx.Rollback()

@@ -18,8 +18,8 @@ func TestCreateAlertRuleGroup(t *testing.T) {
 				CreatedAt:          time.Now(),
 				Description:        "desc",
 				ResourceTypeID:     "xxxxxxxxxxxxxxx",
-				AlertRules: []*AlertRule{
-					&AlertRule{
+				AlertRules: []AlertRule{
+					AlertRule{
 						AlertRuleName:          "namespace",
 						MetricName:             "namespace_cpu",
 						ConditionType:          ">",
@@ -37,7 +37,7 @@ func TestCreateAlertRuleGroup(t *testing.T) {
 						CreatedAt:              time.Now(),
 						UpdatedAt:              time.Now(),
 					},
-					&AlertRule{
+					AlertRule{
 						AlertRuleName:          "namespace",
 						MetricName:             "namespace_memory",
 						ConditionType:          ">",
@@ -76,8 +76,8 @@ func TestUpdateAlertRuleGroup(t *testing.T) {
 				Description:        "descdescdesc",
 				ResourceTypeID:     "yyyyyyyyy",
 				AlertRuleGroupID:   "rule_group-w7p5wm31j92330",
-				AlertRules: []*AlertRule{
-					&AlertRule{
+				AlertRules: []AlertRule{
+					AlertRule{
 						AlertRuleName:          "workspace",
 						MetricName:             "workspace_cpu",
 						ConditionType:          ">",
@@ -94,7 +94,7 @@ func TestUpdateAlertRuleGroup(t *testing.T) {
 						MaxRepeatSendCount:     4,
 						AlertRuleID:            "rule_id-n6mklr01j92330",
 					},
-					&AlertRule{
+					AlertRule{
 						AlertRuleName:          "workspace",
 						MetricName:             "workspace_memory",
 						ConditionType:          ">",
@@ -116,6 +116,21 @@ func TestUpdateAlertRuleGroup(t *testing.T) {
 			if err != nil {
 				fmt.Println(err)
 			}
+		})
+	})
+}
+
+func TestGetAlertRuleGroup(t *testing.T) {
+	Convey("test get alert rule group", t, func() {
+		Convey("test get", func() {
+			group, err := GetAlertRuleGroup(&pb.AlertRuleGroupSpec{
+				AlertRuleGroupId: "rule_group-n3no33k98nw330",
+			})
+
+			if err != nil {
+				fmt.Println(err.Error())
+			}
+			fmt.Println(group)
 		})
 	})
 }

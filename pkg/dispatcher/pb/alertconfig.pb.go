@@ -18,6 +18,7 @@ It is generated from these files:
 	resourceuritmpl.proto
 	silence.proto
 	suggestion.proto
+	severity.proto
 
 It has these top-level messages:
 	AlertConfig
@@ -57,6 +58,10 @@ It has these top-level messages:
 	Suggestion
 	SuggestionID
 	SuggestionResponse
+	SeveritySpec
+	Severity
+	SeverityResponse
+	SeveritiesResponse
 */
 package pb
 

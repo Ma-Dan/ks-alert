@@ -6,6 +6,7 @@ import (
 	_ "github.com/jinzhu/gorm/dialects/mysql"
 )
 
+// TODO need to support db connection pool
 var db *gorm.DB
 
 func init() {

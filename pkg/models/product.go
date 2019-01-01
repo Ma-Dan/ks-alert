@@ -1,9 +1,9 @@
 package models
 
 import (
-	"k8s.io/klog/glog"
 	"github.com/carmanzhang/ks-alert/pkg/utils/dbutil"
 	"github.com/carmanzhang/ks-alert/pkg/utils/idutil"
+	"k8s.io/klog/glog"
 	"time"
 )
 
@@ -47,7 +47,7 @@ func GetProduct(product *Product) (*Product, error) {
 	}
 
 	var products Product
-	db.Model(&Product{}).Where(product).Find(&products)
+	db.Model(&Product{}).Where(product).First(&products)
 	return &products, err
 }
 
@@ -70,18 +70,17 @@ func DeleteProduct(prod *Product) error {
 		db.Delete(&Product{ProductID: prodID})
 		glog.Errorln(db.Error)
 		return db.Error
-	}else if prodName != "" {
+	} else if prodName != "" {
 		db.Delete(&Product{ProductName: prodName})
 		glog.Errorln(db.Error)
 		return db.Error
 	}
 
 	// TODO need to delete related items in table `resource type` `alert rule` ...
- 	return nil
+	return nil
 }
 
-
-func UpdateProduct(prod *Product) (error)  {
+func UpdateProduct(prod *Product) error {
 	db, err := dbutil.DBClient()
 
 	if err != nil {
@@ -92,7 +91,7 @@ func UpdateProduct(prod *Product) (error)  {
 	if prod.ProductID != "" {
 		err = db.Model(prod).Where("product_id = ?", prod.ProductID).Update(prod).Error
 
-	}else if prod.ProductName != "" {
+	} else if prod.ProductName != "" {
 		err = db.Model(prod).Where("product_name = ?", prod.ProductName).Update(prod).Error
 	}
 

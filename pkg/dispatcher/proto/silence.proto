@@ -16,7 +16,7 @@ message SilenceID {
 message Silence {
     SilenceID silence_id = 1;
     int32 dutation = 2;
-    int64 end_timestamp = 3;
+    int64 start_timestamp = 3;
 }
 
 message SilenceResponse {
