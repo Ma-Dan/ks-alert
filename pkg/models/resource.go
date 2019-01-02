@@ -7,6 +7,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
+	"strings"
 	"time"
 )
 
@@ -147,26 +148,14 @@ func (r ResourceGroup) Create(tx *gorm.DB, v interface{}) (interface{}, error) {
 	}
 
 	// create item
-	sql = "INSERT INTO resources (resource_id, resource_name, resource_group_id, created_at, updated_at) VALUES "
-
 	l := len(resourceWithName)
 	for i := 0; i < l; i++ {
 		r := resourceWithName[i]
-
-		resId := idutil.GetUuid36("resource-")
-		r.ResourceID = resId
+		r.ResourceID = idutil.GetUuid36("resource-")
 		r.ResourceGroupID = resGroup.ResourceGroupID
-
-		item := fmt.Sprintf("('%s','%s','%s','%v','%v') ",
-			r.ResourceID, r.ResourceName, resGroup.ResourceGroupID, r.CreatedAt, r.UpdatedAt)
-
-		sql = sql + item
-		if i != l-1 {
-			sql = sql + ","
-		}
 	}
 
-	if err := tx.Debug().Exec(sql).Error; err != nil {
+	if err := CreateOrUpdateResources(tx, resourceWithName); err != nil {
 		tx.Rollback()
 		return nil, err
 	}
@@ -196,32 +185,34 @@ func (r ResourceGroup) Update(tx *gorm.DB, v interface{}) (interface{}, error) {
 	}
 
 	// 2. update resource group
-	// update alert rule group
-	sql := fmt.Sprintf("UPDATE alert_rule_groups SET alert_rule_group_name='%s',description='%s',"+
-		"system_rule='%v', updated_at='%v' WHERE alert_rule_group_id='%s'",
-		ruleGroup.AlertRuleGroupName, ruleGroup.Description,
-		Bool2Int[ruleGroup.SystemRule],
-		ruleGroup.UpdatedAt, ruleGroup.AlertRuleGroupID)
-
-	fmt.Println(sql)
+	sql := fmt.Sprintf("UPDATE resource_groups SET resource_group_name='%s',description='%s',"+
+		"uri_params='%v', updated_at='%v' WHERE resource_group_id='%s'",
+		resGroup.ResourceGroupName, resGroup.Description,
+		resGroup.URIParams, time.Now(), resGroup.ResourceGroupID)
 
 	if err := tx.Exec(sql).Error; err != nil {
 		tx.Rollback()
-		return err
-	}
-
-	// 2. delete resource group
-	_, err = r.Delete(tx, v)
-
-	if err != nil {
 		return nil, err
 	}
 
-	// 3. create resource group
-	createDate := rg.CreatedAt
-	resGroup.CreatedAt = createDate
+	// 3. delete resources or update resource
+	var needDeleted, needUpdated = CompareResources(resGroup.Resources, rg.Resources, resGroup.ResourceGroupID)
 
-	return r.Create(tx, resGroup)
+	err = DeleteResources(tx, resGroup.ResourceGroupID, needDeleted)
+
+	if err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+
+	err = CreateOrUpdateResources(tx, needUpdated)
+
+	if err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+
+	return nil, nil
 }
 
 func (r ResourceGroup) Get(tx *gorm.DB, v interface{}) (interface{}, error) {
@@ -248,22 +239,14 @@ func (r ResourceGroup) Get(tx *gorm.DB, v interface{}) (interface{}, error) {
 	}
 
 	if rg.ResourceGroupID != "" {
-		var resources []Resource
-		sql := "SELECT r.* FROM resources as r WHERE r.resource_group_id=?"
+		resources, err := GetResources(tx, rg.ResourceGroupID)
 
-		if err := tx.Debug().Raw(sql, rg.ResourceGroupID).Scan(&resources).Error; err != nil {
+		if err != nil {
 			tx.Rollback()
-			return nil, err
+			return &rg, err
 		}
 
-		l := len(resources)
-		var ptrs = make([]*Resource, l)
-
-		for i := 0; i < l; i++ {
-			ptrs[i] = &resources[i]
-		}
-
-		rg.Resources = ptrs
+		rg.Resources = resources
 		return &rg, nil
 	}
 
@@ -287,26 +270,28 @@ func (r ResourceGroup) Delete(tx *gorm.DB, v interface{}) (interface{}, error) {
 	return nil, nil
 }
 
-// batch resources crud
-func CreateResources(tx *gorm.DB, resources *[]*Resource) error {
-	// create item
+// resources crud
+func CreateOrUpdateResources(tx *gorm.DB, resources []*Resource) error {
 	sql := "INSERT INTO resources (resource_id, resource_name, resource_group_id, created_at, updated_at) VALUES "
 
-	l := len(*resources)
+	l := len(resources)
 	for i := 0; i < l; i++ {
-		r := (*resources)[i]
+		r := (resources)[i]
 
-		resId := idutil.GetUuid36("resource-")
-		r.ResourceID = resId
+		if strings.Trim(r.ResourceID, " ") == "" {
+			r.ResourceID = idutil.GetUuid36("resource-")
+		}
 
 		item := fmt.Sprintf("('%s','%s','%s','%v','%v') ",
-			r.ResourceID, r.ResourceName, r.ResourceGroupID, r.CreatedAt, r.UpdatedAt)
+			r.ResourceID, r.ResourceName, r.ResourceGroupID, time.Now(), time.Now())
 
 		sql = sql + item
 		if i != l-1 {
 			sql = sql + ","
 		}
 	}
+	// on duplicate key update
+	sql = sql + "on duplicate key update resource_name=values(resource_name),updated_at=values(updated_at)"
 
 	if err := tx.Debug().Exec(sql).Error; err != nil {
 		return err
@@ -315,11 +300,74 @@ func CreateResources(tx *gorm.DB, resources *[]*Resource) error {
 	return nil
 }
 
-func UpdateResources(tx *gorm.DB, v interface{}) (interface{}, error) {
+func GetResources(tx *gorm.DB, rgID string) ([]*Resource, error) {
+	var resources []Resource
+	sql := "SELECT r.* FROM resources as r WHERE r.resource_group_id=?"
+
+	if err := tx.Debug().Raw(sql, rgID).Scan(&resources).Error; err != nil {
+		return nil, err
+	}
+
+	l := len(resources)
+	var ptrs = make([]*Resource, l)
+
+	for i := 0; i < l; i++ {
+		ptrs[i] = &resources[i]
+	}
+	return ptrs, nil
 }
 
-func GetResources(tx *gorm.DB, v interface{}) (interface{}, error) {
+func CompareResources(p []*Resource, q []*Resource, rgID string) ([]*Resource, []*Resource) {
+	l := len(q)
+
+	var resID = make(map[string]bool)
+
+	for i := 0; i < l; i++ {
+		resID[q[i].ResourceID] = true
+	}
+
+	l = len(p)
+	var needDeleted []*Resource
+	var needUpdated []*Resource
+	for i := 0; i < l; i++ {
+		r := p[i].ResourceID
+		_, ok := resID[r]
+
+		if r != "" && !ok {
+			needDeleted = append(needDeleted, p[i])
+		} else {
+			p[i].ResourceGroupID = rgID
+			needUpdated = append(needUpdated, p[i])
+		}
+	}
+
+	return needDeleted, needUpdated
 }
 
-func DeleteResources(tx *gorm.DB, v interface{}) (interface{}, error) {
+func DeleteResources(tx *gorm.DB, rgID string, resources []*Resource) error {
+
+	if rgID == "" {
+		return errors.New("resource group id is null")
+	}
+
+	if len(resources) == 0 {
+		if err := tx.Debug().Exec("DELETE r FROM resources as r WHERE r.resource_group_id=?", rgID).Error; err != nil {
+			return err
+		}
+
+	} else {
+		var ids []string
+		for i := 0; i < len(resources); i++ {
+			id := resources[i].ResourceID
+			if id != "" {
+				ids = append(ids, id)
+			}
+		}
+
+		if err := tx.Debug().Exec("DELETE r FROM resources as r WHERE r.resource_group_id=? AND r.resource_id IN (?)", rgID, ids).Error; err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
