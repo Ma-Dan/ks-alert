@@ -31,9 +31,9 @@ type AlertHistory struct {
 
 	RepeatSendType            string `gorm:"type:varchar(10);not null;"`
 	CurrentRepeatSendInterval uint32 `gorm:"type:int unsigned;not null;"`
-	NextRepeatSendInterval    uint32 `gorm:"type:int unsigned;not null;"`
+	CurrentRepeatSendCount    uint32 `gorm:"type:int unsigned;not null;"`
 	InitRepeatSendInterval    uint32 `gorm:"type:int unsigned;not null;"`
-	MaxRepeatSendInterval     uint32 `gorm:"type:int unsigned;not null;"`
+	MaxRepeatSendCount        uint32 `gorm:"type:int unsigned;not null;"`
 
 	RequestNotificationStatus string    `gorm:"type:text;"`
 	NotificationSendAt        time.Time `gorm:"not null;"`
