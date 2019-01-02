@@ -14,7 +14,6 @@ const (
 	RuleGroup     TP = "RuleGroup"
 	ReceiverGroup TP = "ReceiverGroup"
 	ResourceGroup TP = "ResourceGroup"
-	Severity      TP = "Severity"
 )
 
 const (
@@ -43,6 +42,7 @@ func DoTransactionAction(v interface{}, tp TP, method string) (interface{}, erro
 
 	if tp == AlertConfig || tp == RuleGroup {
 		// create rule group
+		res, err = CallReflect(models.AlertRuleGroup{}, method, tx, v)
 	}
 
 	if tp == AlertConfig || tp == ReceiverGroup {
@@ -52,6 +52,7 @@ func DoTransactionAction(v interface{}, tp TP, method string) (interface{}, erro
 
 	if tp == AlertConfig || tp == ResourceGroup {
 		// create resource group
+		res, err = CallReflect(models.ResourceGroup{}, method, tx, v)
 	}
 
 	// TODO need to validate closing db connection

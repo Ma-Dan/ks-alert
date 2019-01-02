@@ -45,10 +45,11 @@ func (server ReceiverHandler) CreateReceiver(ctx context.Context, pbRecvGroup *p
 func (server ReceiverHandler) DeleteReceiver(ctx context.Context, receiverSpec *pb.ReceiverGroupSpec) (*pb.ReceiverGroupResponse, error) {
 	recvGroupID := receiverSpec.ReceiverGroupId
 
-	if recvGroupID != "" {
+	if recvGroupID == "" {
 		return nil, errors.New("receiver group id must be specified")
 	}
 
+	// TODO only delete one receiver in a receiver group
 	//recvID := receiverSpec.ReceiverId
 	recvGroup := &models.ReceiverGroup{
 		ReceiverGroupID: recvGroupID,
@@ -62,7 +63,7 @@ func (server ReceiverHandler) DeleteReceiver(ctx context.Context, receiverSpec *
 		return nil, err
 	}
 
-	return nil, nil
+	return &pb.ReceiverGroupResponse{}, nil
 }
 
 func (server ReceiverHandler) UpdateReceiver(ctx context.Context, pbRecvGroup *pb.ReceiverGroup) (*pb.ReceiverGroupResponse, error) {

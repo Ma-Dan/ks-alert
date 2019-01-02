@@ -90,11 +90,13 @@ func (r ReceiverGroup) Create(tx *gorm.DB, v interface{}) (interface{}, error) {
 		}
 	}
 
-	fmt.Println(sql)
+	if len(createdRrecvIds) > 0 {
+		fmt.Println(sql)
 
-	if err := tx.Exec(sql).Error; err != nil {
-		tx.Rollback()
-		return nil, err
+		if err := tx.Exec(sql).Error; err != nil {
+			tx.Rollback()
+			return nil, err
+		}
 	}
 
 	sql = "INSERT INTO receiver_binding_groups (receiver_id, receiver_group_id, created_at, updated_at) VALUES "
@@ -120,6 +122,7 @@ func (r ReceiverGroup) Create(tx *gorm.DB, v interface{}) (interface{}, error) {
 	return nil, nil
 }
 
+// TODO this function is not feasible
 func (r ReceiverGroup) Update(tx *gorm.DB, v interface{}) (interface{}, error) {
 
 	recvGroup, ok := v.(*ReceiverGroup)
@@ -128,36 +131,31 @@ func (r ReceiverGroup) Update(tx *gorm.DB, v interface{}) (interface{}, error) {
 		return nil, errors.Errorf("type %v assert error", recvGroup)
 	}
 
-	sql := fmt.Sprintf("UPDATE receiver_groups SET receiver_group_name='%s', webhook='%s', "+
-		"webhook_enable='%v', description='%s', updated_at='%v' WHERE receiver_group_id='%s'", recvGroup.ReceiverGroupName,
-		recvGroup.Webhook, Bool2Int[recvGroup.WebhookEnable], recvGroup.Description, time.Now(), recvGroup.ReceiverGroupID)
+	// 1. get group first
+	vget, err := r.Get(tx, v)
 
-	if err := tx.Exec(sql).Error; err != nil {
-		tx.Rollback()
+	if err != nil {
 		return nil, err
 	}
 
-	receivers := *recvGroup.Receivers
-	l := len(receivers)
+	rg := vget.(*ReceiverGroup)
 
-	for i := 0; i < l; i++ {
-		r := receivers[i]
-
-		if r.ReceiverID == "" {
-			continue
-		}
-
-		sql = fmt.Sprintf("UPDATE receivers SET receiver_name='%s', email='%s', "+
-			"phone='%s', wechat='%s', updated_at='%v' WHERE receiver_id='%s'", r.ReceiverName,
-			r.Email, r.Phone, r.Wechat, time.Now(), r.ReceiverID)
-
-		if err := tx.Exec(sql).Error; err != nil {
-			tx.Rollback()
-			return nil, err
-		}
+	if rg == nil || rg.ReceiverGroupID == "" {
+		return nil, errors.Errorf("resource group id: %s not exist", recvGroup.ReceiverGroupID)
 	}
 
-	return nil, nil
+	// 2. delete group
+	_, err = r.Delete(tx, v)
+
+	if err != nil {
+		return nil, err
+	}
+
+	// 3. create item
+	createDate := rg.CreatedAt
+	recvGroup.CreatedAt = createDate
+
+	return r.Create(tx, recvGroup)
 }
 
 func (r ReceiverGroup) Get(tx *gorm.DB, v interface{}) (interface{}, error) {
