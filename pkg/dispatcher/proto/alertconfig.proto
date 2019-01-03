@@ -8,6 +8,7 @@ import "error.proto";
 import "receiver.proto";
 import "alertrule.proto";
 import "resource.proto";
+//import "google/protobuf/timestamp.proto";
 
 // alert config
 message AlertConfig {
@@ -20,32 +21,31 @@ message AlertConfig {
     string severity_id = 6;
     string severity_ch = 7;
 
-    enum UpdateType {
-        RECEIVER = 0;
-        ALERTRULE = 1;
-        RESOURCE = 2;
-        SEVERITY = 3;
-        EFFECTIVETIME = 4;
-        ENABLE = 5;
-        DESC = 6;
-    }
-
-    UpdateType update_type = 8;
-
-    string enable_time = 9;
-    string disable_time = 10;
-    bool enable = 11;
-    string desc = 12;
+    //    enum UpdateType {
+    //        RECEIVER = 0;
+    //        ALERTRULE = 1;
+    //        RESOURCE = 2;
+    //        SEVERITY = 3;
+    //        EFFECTIVETIME = 4;
+    //        ENABLE = 5;
+    //        DESC = 6;
+    //    }
+    //
+    //    UpdateType update_type = 8;
+    string enable_start = 8;
+    string enable_end = 9;
+//    google.protobuf.Timestamp enable_start = 8;
+//    google.protobuf.Timestamp enable_end = 9;
+    string desc = 10;
 }
 
-message AlertConfigID {
+message AlertConfigSpec {
     string alert_config_id = 1;
 }
 
 message AlertConfigResponse {
-    AlertConfigID alert_config_id = 1;
-    AlertConfig alert_config = 2;
-    Error error = 3; //optional
+    AlertConfig alert_config = 1;
+    Error error = 2;
 }
 
 service AlertConfigHandler {
@@ -53,12 +53,12 @@ service AlertConfigHandler {
     rpc CreateAlertConfig (AlertConfig) returns (AlertConfigResponse) {
     }
 
-    rpc DeleteAlertConfig (AlertConfig) returns (AlertConfigResponse) {
+    rpc DeleteAlertConfig (AlertConfigSpec) returns (AlertConfigResponse) {
     }
 
     rpc UpdateAlertConfig (AlertConfig) returns (AlertConfigResponse) {
     }
 
-    rpc GetAlertConfig (AlertConfig) returns (AlertConfigResponse) {
+    rpc GetAlertConfig (AlertConfigSpec) returns (AlertConfigResponse) {
     }
 }

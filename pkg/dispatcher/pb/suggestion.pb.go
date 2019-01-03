@@ -3,13 +3,12 @@
 
 package pb
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
-
 import (
-	context "golang.org/x/net/context"
+	context "context"
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
 	grpc "google.golang.org/grpc"
+	math "math"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -17,17 +16,46 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the proto package it is being compiled against.
+// A compilation error at this line likely means your copy of the
+// proto package needs to be updated.
+const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
+
 type Message struct {
-	UserName  string `protobuf:"bytes,1,opt,name=user_name" json:"user_name,omitempty"`
-	UserId    string `protobuf:"bytes,2,opt,name=user_id" json:"user_id,omitempty"`
-	Timestamp int64  `protobuf:"varint,3,opt,name=timestamp" json:"timestamp,omitempty"`
-	Text      string `protobuf:"bytes,4,opt,name=text" json:"text,omitempty"`
+	UserName             string   `protobuf:"bytes,1,opt,name=user_name,json=userName,proto3" json:"user_name,omitempty"`
+	UserId               string   `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Timestamp            int64    `protobuf:"varint,3,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	Text                 string   `protobuf:"bytes,4,opt,name=text,proto3" json:"text,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *Message) Reset()                    { *m = Message{} }
-func (m *Message) String() string            { return proto.CompactTextString(m) }
-func (*Message) ProtoMessage()               {}
-func (*Message) Descriptor() ([]byte, []int) { return fileDescriptor12, []int{0} }
+func (m *Message) Reset()         { *m = Message{} }
+func (m *Message) String() string { return proto.CompactTextString(m) }
+func (*Message) ProtoMessage()    {}
+func (*Message) Descriptor() ([]byte, []int) {
+	return fileDescriptor_ef76f964fb1cde52, []int{0}
+}
+
+func (m *Message) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Message.Unmarshal(m, b)
+}
+func (m *Message) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Message.Marshal(b, m, deterministic)
+}
+func (m *Message) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Message.Merge(m, src)
+}
+func (m *Message) XXX_Size() int {
+	return xxx_messageInfo_Message.Size(m)
+}
+func (m *Message) XXX_DiscardUnknown() {
+	xxx_messageInfo_Message.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Message proto.InternalMessageInfo
 
 func (m *Message) GetUserName() string {
 	if m != nil {
@@ -59,16 +87,39 @@ func (m *Message) GetText() string {
 
 // suggestion
 type Suggestion struct {
-	AlertConfigId string     `protobuf:"bytes,1,opt,name=alert_config_id" json:"alert_config_id,omitempty"`
-	ResourceId    string     `protobuf:"bytes,2,opt,name=resource_id" json:"resource_id,omitempty"`
-	AlertRuleId   string     `protobuf:"bytes,3,opt,name=alert_rule_id" json:"alert_rule_id,omitempty"`
-	Messages      []*Message `protobuf:"bytes,4,rep,name=messages" json:"messages,omitempty"`
+	AlertConfigId        string     `protobuf:"bytes,1,opt,name=alert_config_id,json=alertConfigId,proto3" json:"alert_config_id,omitempty"`
+	ResourceId           string     `protobuf:"bytes,2,opt,name=resource_id,json=resourceId,proto3" json:"resource_id,omitempty"`
+	AlertRuleId          string     `protobuf:"bytes,3,opt,name=alert_rule_id,json=alertRuleId,proto3" json:"alert_rule_id,omitempty"`
+	Messages             []*Message `protobuf:"bytes,4,rep,name=messages,proto3" json:"messages,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}   `json:"-"`
+	XXX_unrecognized     []byte     `json:"-"`
+	XXX_sizecache        int32      `json:"-"`
 }
 
-func (m *Suggestion) Reset()                    { *m = Suggestion{} }
-func (m *Suggestion) String() string            { return proto.CompactTextString(m) }
-func (*Suggestion) ProtoMessage()               {}
-func (*Suggestion) Descriptor() ([]byte, []int) { return fileDescriptor12, []int{1} }
+func (m *Suggestion) Reset()         { *m = Suggestion{} }
+func (m *Suggestion) String() string { return proto.CompactTextString(m) }
+func (*Suggestion) ProtoMessage()    {}
+func (*Suggestion) Descriptor() ([]byte, []int) {
+	return fileDescriptor_ef76f964fb1cde52, []int{1}
+}
+
+func (m *Suggestion) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Suggestion.Unmarshal(m, b)
+}
+func (m *Suggestion) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Suggestion.Marshal(b, m, deterministic)
+}
+func (m *Suggestion) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Suggestion.Merge(m, src)
+}
+func (m *Suggestion) XXX_Size() int {
+	return xxx_messageInfo_Suggestion.Size(m)
+}
+func (m *Suggestion) XXX_DiscardUnknown() {
+	xxx_messageInfo_Suggestion.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Suggestion proto.InternalMessageInfo
 
 func (m *Suggestion) GetAlertConfigId() string {
 	if m != nil {
@@ -99,14 +150,37 @@ func (m *Suggestion) GetMessages() []*Message {
 }
 
 type SuggestionResponse struct {
-	Suggestion *Suggestion `protobuf:"bytes,1,opt,name=suggestion" json:"suggestion,omitempty"`
-	Error      *Error      `protobuf:"bytes,2,opt,name=error" json:"error,omitempty"`
+	Suggestion           *Suggestion `protobuf:"bytes,1,opt,name=suggestion,proto3" json:"suggestion,omitempty"`
+	Error                *Error      `protobuf:"bytes,2,opt,name=error,proto3" json:"error,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}    `json:"-"`
+	XXX_unrecognized     []byte      `json:"-"`
+	XXX_sizecache        int32       `json:"-"`
 }
 
-func (m *SuggestionResponse) Reset()                    { *m = SuggestionResponse{} }
-func (m *SuggestionResponse) String() string            { return proto.CompactTextString(m) }
-func (*SuggestionResponse) ProtoMessage()               {}
-func (*SuggestionResponse) Descriptor() ([]byte, []int) { return fileDescriptor12, []int{2} }
+func (m *SuggestionResponse) Reset()         { *m = SuggestionResponse{} }
+func (m *SuggestionResponse) String() string { return proto.CompactTextString(m) }
+func (*SuggestionResponse) ProtoMessage()    {}
+func (*SuggestionResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_ef76f964fb1cde52, []int{2}
+}
+
+func (m *SuggestionResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_SuggestionResponse.Unmarshal(m, b)
+}
+func (m *SuggestionResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_SuggestionResponse.Marshal(b, m, deterministic)
+}
+func (m *SuggestionResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_SuggestionResponse.Merge(m, src)
+}
+func (m *SuggestionResponse) XXX_Size() int {
+	return xxx_messageInfo_SuggestionResponse.Size(m)
+}
+func (m *SuggestionResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_SuggestionResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_SuggestionResponse proto.InternalMessageInfo
 
 func (m *SuggestionResponse) GetSuggestion() *Suggestion {
 	if m != nil {
@@ -128,6 +202,33 @@ func init() {
 	proto.RegisterType((*SuggestionResponse)(nil), "pb.SuggestionResponse")
 }
 
+func init() { proto.RegisterFile("suggestion.proto", fileDescriptor_ef76f964fb1cde52) }
+
+var fileDescriptor_ef76f964fb1cde52 = []byte{
+	// 336 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x92, 0x31, 0x4f, 0xeb, 0x30,
+	0x14, 0x85, 0x5f, 0x9a, 0xbc, 0xb6, 0xb9, 0x51, 0xdf, 0x2b, 0x77, 0x80, 0xa8, 0x20, 0xb5, 0xca,
+	0x00, 0x9d, 0x32, 0x84, 0x09, 0x89, 0x09, 0x84, 0xa0, 0x03, 0x0c, 0x41, 0x2c, 0x2c, 0x95, 0xd3,
+	0x5c, 0xa2, 0x48, 0x49, 0x6c, 0x6c, 0x47, 0xe2, 0x47, 0xf0, 0x2b, 0xf8, 0xa5, 0xc8, 0x4e, 0x69,
+	0xaa, 0x8e, 0x6c, 0xc9, 0x77, 0xcf, 0xf5, 0x39, 0x3e, 0x32, 0x4c, 0x55, 0x5b, 0x14, 0xa4, 0x74,
+	0xc9, 0x9b, 0x58, 0x48, 0xae, 0x39, 0x0e, 0x44, 0x36, 0x0b, 0x48, 0x4a, 0x2e, 0x3b, 0x10, 0xbd,
+	0xc3, 0xe8, 0x91, 0x94, 0x62, 0x05, 0xe1, 0x29, 0xf8, 0xad, 0x22, 0xb9, 0x6e, 0x58, 0x4d, 0xa1,
+	0xb3, 0x70, 0x96, 0x7e, 0x3a, 0x36, 0xe0, 0x89, 0xd5, 0x84, 0x27, 0x30, 0xb2, 0xc3, 0x32, 0x0f,
+	0x07, 0x76, 0x34, 0x34, 0xbf, 0xab, 0x1c, 0xcf, 0xc0, 0xd7, 0x65, 0x4d, 0x4a, 0xb3, 0x5a, 0x84,
+	0xee, 0xc2, 0x59, 0xba, 0x69, 0x0f, 0x10, 0xc1, 0xd3, 0xf4, 0xa1, 0x43, 0xcf, 0xee, 0xd8, 0xef,
+	0xe8, 0xcb, 0x01, 0x78, 0xde, 0x05, 0xc3, 0x73, 0xf8, 0xcf, 0x2a, 0x92, 0x7a, 0xbd, 0xe1, 0xcd,
+	0x5b, 0x59, 0x18, 0x87, 0xce, 0x7c, 0x62, 0xf1, 0xad, 0xa5, 0xab, 0x1c, 0xe7, 0x10, 0x48, 0x52,
+	0xbc, 0x95, 0x1b, 0xea, 0x53, 0xc0, 0x0f, 0x5a, 0xe5, 0x18, 0x41, 0xb7, 0xb1, 0x96, 0x6d, 0x65,
+	0x25, 0xae, 0x95, 0x04, 0x16, 0xa6, 0x6d, 0x65, 0x34, 0x17, 0x30, 0xae, 0xbb, 0xeb, 0xaa, 0xd0,
+	0x5b, 0xb8, 0xcb, 0x20, 0x09, 0x62, 0x91, 0xc5, 0xdb, 0x0a, 0xd2, 0xdd, 0x30, 0x22, 0xc0, 0x3e,
+	0x63, 0x4a, 0x4a, 0xf0, 0x46, 0x11, 0xc6, 0x00, 0x7d, 0xa5, 0x36, 0x66, 0x90, 0xfc, 0x33, 0x07,
+	0xec, 0x69, 0xf7, 0x14, 0x38, 0x87, 0xbf, 0xb6, 0x6c, 0x9b, 0x36, 0x48, 0x7c, 0x23, 0xbd, 0x33,
+	0x20, 0xed, 0x78, 0xf2, 0xe9, 0xc0, 0x51, 0xbf, 0xfb, 0xc0, 0x9a, 0xbc, 0x22, 0x89, 0xd7, 0x30,
+	0x7d, 0x11, 0x39, 0xd3, 0xb4, 0x57, 0xd3, 0x81, 0xcd, 0xec, 0xf8, 0xc0, 0x76, 0x1b, 0x31, 0xfa,
+	0x83, 0x57, 0x30, 0xb9, 0x27, 0xfd, 0x9b, 0xd5, 0x1b, 0xef, 0x75, 0x20, 0xb2, 0x6c, 0x68, 0x9f,
+	0xc6, 0xe5, 0x77, 0x00, 0x00, 0x00, 0xff, 0xff, 0xa3, 0x21, 0xd8, 0x38, 0x3f, 0x02, 0x00, 0x00,
+}
+
 // Reference imports to suppress errors if they are not otherwise used.
 var _ context.Context
 var _ grpc.ClientConn
@@ -136,8 +237,9 @@ var _ grpc.ClientConn
 // is compatible with the grpc package it is being compiled against.
 const _ = grpc.SupportPackageIsVersion4
 
-// Client API for SuggestionHandler service
-
+// SuggestionHandlerClient is the client API for SuggestionHandler service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type SuggestionHandlerClient interface {
 	// suggestion
 	UpdateSuggestion(ctx context.Context, in *Suggestion, opts ...grpc.CallOption) (*SuggestionResponse, error)
@@ -154,7 +256,7 @@ func NewSuggestionHandlerClient(cc *grpc.ClientConn) SuggestionHandlerClient {
 
 func (c *suggestionHandlerClient) UpdateSuggestion(ctx context.Context, in *Suggestion, opts ...grpc.CallOption) (*SuggestionResponse, error) {
 	out := new(SuggestionResponse)
-	err := grpc.Invoke(ctx, "/pb.SuggestionHandler/UpdateSuggestion", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/pb.SuggestionHandler/UpdateSuggestion", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -163,15 +265,14 @@ func (c *suggestionHandlerClient) UpdateSuggestion(ctx context.Context, in *Sugg
 
 func (c *suggestionHandlerClient) GetSuggestion(ctx context.Context, in *Suggestion, opts ...grpc.CallOption) (*SuggestionResponse, error) {
 	out := new(SuggestionResponse)
-	err := grpc.Invoke(ctx, "/pb.SuggestionHandler/GetSuggestion", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/pb.SuggestionHandler/GetSuggestion", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// Server API for SuggestionHandler service
-
+// SuggestionHandlerServer is the server API for SuggestionHandler service.
 type SuggestionHandlerServer interface {
 	// suggestion
 	UpdateSuggestion(context.Context, *Suggestion) (*SuggestionResponse, error)
@@ -233,28 +334,4 @@ var _SuggestionHandler_serviceDesc = grpc.ServiceDesc{
 	},
 	Streams:  []grpc.StreamDesc{},
 	Metadata: "suggestion.proto",
-}
-
-func init() { proto.RegisterFile("suggestion.proto", fileDescriptor12) }
-
-var fileDescriptor12 = []byte{
-	// 288 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x91, 0x4f, 0x4b, 0xc4, 0x30,
-	0x10, 0xc5, 0xed, 0x1f, 0x5d, 0x3b, 0x71, 0xdd, 0x6d, 0x44, 0x0d, 0x0b, 0x42, 0xe9, 0xa9, 0xa7,
-	0x1e, 0xea, 0x49, 0xf0, 0x24, 0x88, 0x5e, 0xf4, 0xb0, 0xe2, 0xc5, 0xcb, 0x92, 0x6e, 0xc7, 0x52,
-	0x68, 0x9b, 0x90, 0xa4, 0xe0, 0x87, 0xf0, 0x43, 0x4b, 0x52, 0xb5, 0xab, 0xc7, 0x3d, 0xe6, 0x97,
-	0x37, 0xef, 0xbd, 0x64, 0x60, 0xa9, 0x87, 0xba, 0x46, 0x6d, 0x1a, 0xd1, 0xe7, 0x52, 0x09, 0x23,
-	0xa8, 0x2f, 0xcb, 0x15, 0x41, 0xa5, 0x84, 0x1a, 0x41, 0xfa, 0x0c, 0xb3, 0x27, 0xd4, 0x9a, 0xd7,
-	0x48, 0x63, 0x88, 0x06, 0x8d, 0x6a, 0xd3, 0xf3, 0x0e, 0x99, 0x97, 0x78, 0x59, 0x44, 0x17, 0x30,
-	0x73, 0xa8, 0xa9, 0x98, 0xef, 0x40, 0x0c, 0x91, 0x69, 0x3a, 0xd4, 0x86, 0x77, 0x92, 0x05, 0x89,
-	0x97, 0x05, 0xf4, 0x04, 0x42, 0x83, 0x1f, 0x86, 0x85, 0x56, 0x90, 0x4a, 0x80, 0x97, 0xdf, 0x50,
-	0x7a, 0x09, 0x0b, 0xde, 0xa2, 0x32, 0x9b, 0xad, 0xe8, 0xdf, 0x9b, 0xda, 0xfa, 0x8c, 0xc6, 0x67,
-	0x40, 0x14, 0x6a, 0x31, 0xa8, 0x2d, 0x4e, 0xe6, 0xe7, 0x30, 0x1f, 0xd5, 0x6a, 0x68, 0x1d, 0x0e,
-	0x1c, 0xbe, 0x82, 0xe3, 0x6e, 0xac, 0xa8, 0x59, 0x98, 0x04, 0x19, 0x29, 0x48, 0x2e, 0xcb, 0xfc,
-	0xbb, 0x76, 0xba, 0x06, 0x3a, 0x25, 0xae, 0x51, 0x4b, 0xd1, 0x6b, 0xa4, 0x29, 0xc0, 0xf4, 0x78,
-	0x17, 0x4a, 0x8a, 0x53, 0x3b, 0xb6, 0xd3, 0x8e, 0xc1, 0xa1, 0xfb, 0x0a, 0x17, 0x4f, 0x8a, 0xc8,
-	0x5e, 0xdf, 0x5b, 0x50, 0x7c, 0x7a, 0x10, 0x4f, 0xc2, 0x47, 0xde, 0x57, 0x2d, 0x2a, 0x7a, 0x0b,
-	0xcb, 0x57, 0x59, 0x71, 0x83, 0x3b, 0x1e, 0xff, 0x3c, 0x57, 0x17, 0x7f, 0xcf, 0x3f, 0x7d, 0xd2,
-	0x03, 0x7a, 0x03, 0xf3, 0x07, 0x34, 0xfb, 0x8c, 0xde, 0x85, 0x6f, 0xbe, 0x2c, 0xcb, 0x23, 0xb7,
-	0xb1, 0xeb, 0xaf, 0x00, 0x00, 0x00, 0xff, 0xff, 0xb5, 0x27, 0x68, 0x24, 0xd6, 0x01, 0x00, 0x00,
 }

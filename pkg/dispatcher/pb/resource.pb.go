@@ -3,13 +3,12 @@
 
 package pb
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
-
 import (
-	context "golang.org/x/net/context"
+	context "context"
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
 	grpc "google.golang.org/grpc"
+	math "math"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -17,20 +16,49 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the proto package it is being compiled against.
+// A compilation error at this line likely means your copy of the
+// proto package needs to be updated.
+const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
+
 // resource group
 type ResourceGroup struct {
-	ResourceGroupId   string            `protobuf:"bytes,1,opt,name=resource_group_id" json:"resource_group_id,omitempty"`
-	ResourceGroupName string            `protobuf:"bytes,2,opt,name=resource_group_name" json:"resource_group_name,omitempty"`
-	ResourceUriTmpls  *ResourceUriTmpls `protobuf:"bytes,3,opt,name=resource_uri_tmpls" json:"resource_uri_tmpls,omitempty"`
-	Desc              string            `protobuf:"bytes,4,opt,name=desc" json:"desc,omitempty"`
-	ResourceTypeId    string            `protobuf:"bytes,5,opt,name=resource_type_id" json:"resource_type_id,omitempty"`
-	Resources         []*Resource       `protobuf:"bytes,6,rep,name=resources" json:"resources,omitempty"`
+	ResourceGroupId      string            `protobuf:"bytes,1,opt,name=resource_group_id,json=resourceGroupId,proto3" json:"resource_group_id,omitempty"`
+	ResourceGroupName    string            `protobuf:"bytes,2,opt,name=resource_group_name,json=resourceGroupName,proto3" json:"resource_group_name,omitempty"`
+	ResourceUriTmpls     *ResourceUriTmpls `protobuf:"bytes,3,opt,name=resource_uri_tmpls,json=resourceUriTmpls,proto3" json:"resource_uri_tmpls,omitempty"`
+	Desc                 string            `protobuf:"bytes,4,opt,name=desc,proto3" json:"desc,omitempty"`
+	ResourceTypeId       string            `protobuf:"bytes,5,opt,name=resource_type_id,json=resourceTypeId,proto3" json:"resource_type_id,omitempty"`
+	Resources            []*Resource       `protobuf:"bytes,6,rep,name=resources,proto3" json:"resources,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
+	XXX_unrecognized     []byte            `json:"-"`
+	XXX_sizecache        int32             `json:"-"`
 }
 
-func (m *ResourceGroup) Reset()                    { *m = ResourceGroup{} }
-func (m *ResourceGroup) String() string            { return proto.CompactTextString(m) }
-func (*ResourceGroup) ProtoMessage()               {}
-func (*ResourceGroup) Descriptor() ([]byte, []int) { return fileDescriptor8, []int{0} }
+func (m *ResourceGroup) Reset()         { *m = ResourceGroup{} }
+func (m *ResourceGroup) String() string { return proto.CompactTextString(m) }
+func (*ResourceGroup) ProtoMessage()    {}
+func (*ResourceGroup) Descriptor() ([]byte, []int) {
+	return fileDescriptor_d1b72f771c35e3b8, []int{0}
+}
+
+func (m *ResourceGroup) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ResourceGroup.Unmarshal(m, b)
+}
+func (m *ResourceGroup) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ResourceGroup.Marshal(b, m, deterministic)
+}
+func (m *ResourceGroup) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ResourceGroup.Merge(m, src)
+}
+func (m *ResourceGroup) XXX_Size() int {
+	return xxx_messageInfo_ResourceGroup.Size(m)
+}
+func (m *ResourceGroup) XXX_DiscardUnknown() {
+	xxx_messageInfo_ResourceGroup.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ResourceGroup proto.InternalMessageInfo
 
 func (m *ResourceGroup) GetResourceGroupId() string {
 	if m != nil {
@@ -75,13 +103,36 @@ func (m *ResourceGroup) GetResources() []*Resource {
 }
 
 type ResourceGroupSpec struct {
-	ResourceGroupId string `protobuf:"bytes,1,opt,name=resource_group_id" json:"resource_group_id,omitempty"`
+	ResourceGroupId      string   `protobuf:"bytes,1,opt,name=resource_group_id,json=resourceGroupId,proto3" json:"resource_group_id,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *ResourceGroupSpec) Reset()                    { *m = ResourceGroupSpec{} }
-func (m *ResourceGroupSpec) String() string            { return proto.CompactTextString(m) }
-func (*ResourceGroupSpec) ProtoMessage()               {}
-func (*ResourceGroupSpec) Descriptor() ([]byte, []int) { return fileDescriptor8, []int{1} }
+func (m *ResourceGroupSpec) Reset()         { *m = ResourceGroupSpec{} }
+func (m *ResourceGroupSpec) String() string { return proto.CompactTextString(m) }
+func (*ResourceGroupSpec) ProtoMessage()    {}
+func (*ResourceGroupSpec) Descriptor() ([]byte, []int) {
+	return fileDescriptor_d1b72f771c35e3b8, []int{1}
+}
+
+func (m *ResourceGroupSpec) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ResourceGroupSpec.Unmarshal(m, b)
+}
+func (m *ResourceGroupSpec) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ResourceGroupSpec.Marshal(b, m, deterministic)
+}
+func (m *ResourceGroupSpec) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ResourceGroupSpec.Merge(m, src)
+}
+func (m *ResourceGroupSpec) XXX_Size() int {
+	return xxx_messageInfo_ResourceGroupSpec.Size(m)
+}
+func (m *ResourceGroupSpec) XXX_DiscardUnknown() {
+	xxx_messageInfo_ResourceGroupSpec.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ResourceGroupSpec proto.InternalMessageInfo
 
 func (m *ResourceGroupSpec) GetResourceGroupId() string {
 	if m != nil {
@@ -91,15 +142,38 @@ func (m *ResourceGroupSpec) GetResourceGroupId() string {
 }
 
 type Resource struct {
-	ResourceId      string `protobuf:"bytes,1,opt,name=resource_id" json:"resource_id,omitempty"`
-	ResourceName    string `protobuf:"bytes,2,opt,name=resource_name" json:"resource_name,omitempty"`
-	ResourceGroupId string `protobuf:"bytes,3,opt,name=resource_group_id" json:"resource_group_id,omitempty"`
+	ResourceId           string   `protobuf:"bytes,1,opt,name=resource_id,json=resourceId,proto3" json:"resource_id,omitempty"`
+	ResourceName         string   `protobuf:"bytes,2,opt,name=resource_name,json=resourceName,proto3" json:"resource_name,omitempty"`
+	ResourceGroupId      string   `protobuf:"bytes,3,opt,name=resource_group_id,json=resourceGroupId,proto3" json:"resource_group_id,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *Resource) Reset()                    { *m = Resource{} }
-func (m *Resource) String() string            { return proto.CompactTextString(m) }
-func (*Resource) ProtoMessage()               {}
-func (*Resource) Descriptor() ([]byte, []int) { return fileDescriptor8, []int{2} }
+func (m *Resource) Reset()         { *m = Resource{} }
+func (m *Resource) String() string { return proto.CompactTextString(m) }
+func (*Resource) ProtoMessage()    {}
+func (*Resource) Descriptor() ([]byte, []int) {
+	return fileDescriptor_d1b72f771c35e3b8, []int{2}
+}
+
+func (m *Resource) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Resource.Unmarshal(m, b)
+}
+func (m *Resource) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Resource.Marshal(b, m, deterministic)
+}
+func (m *Resource) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Resource.Merge(m, src)
+}
+func (m *Resource) XXX_Size() int {
+	return xxx_messageInfo_Resource.Size(m)
+}
+func (m *Resource) XXX_DiscardUnknown() {
+	xxx_messageInfo_Resource.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Resource proto.InternalMessageInfo
 
 func (m *Resource) GetResourceId() string {
 	if m != nil {
@@ -123,14 +197,37 @@ func (m *Resource) GetResourceGroupId() string {
 }
 
 type ResourceGroupResponse struct {
-	ResourceGroup *ResourceGroup `protobuf:"bytes,1,opt,name=resource_group" json:"resource_group,omitempty"`
-	Error         *Error         `protobuf:"bytes,2,opt,name=error" json:"error,omitempty"`
+	ResourceGroup        *ResourceGroup `protobuf:"bytes,1,opt,name=resource_group,json=resourceGroup,proto3" json:"resource_group,omitempty"`
+	Error                *Error         `protobuf:"bytes,2,opt,name=error,proto3" json:"error,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
+	XXX_unrecognized     []byte         `json:"-"`
+	XXX_sizecache        int32          `json:"-"`
 }
 
-func (m *ResourceGroupResponse) Reset()                    { *m = ResourceGroupResponse{} }
-func (m *ResourceGroupResponse) String() string            { return proto.CompactTextString(m) }
-func (*ResourceGroupResponse) ProtoMessage()               {}
-func (*ResourceGroupResponse) Descriptor() ([]byte, []int) { return fileDescriptor8, []int{3} }
+func (m *ResourceGroupResponse) Reset()         { *m = ResourceGroupResponse{} }
+func (m *ResourceGroupResponse) String() string { return proto.CompactTextString(m) }
+func (*ResourceGroupResponse) ProtoMessage()    {}
+func (*ResourceGroupResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_d1b72f771c35e3b8, []int{3}
+}
+
+func (m *ResourceGroupResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ResourceGroupResponse.Unmarshal(m, b)
+}
+func (m *ResourceGroupResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ResourceGroupResponse.Marshal(b, m, deterministic)
+}
+func (m *ResourceGroupResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ResourceGroupResponse.Merge(m, src)
+}
+func (m *ResourceGroupResponse) XXX_Size() int {
+	return xxx_messageInfo_ResourceGroupResponse.Size(m)
+}
+func (m *ResourceGroupResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_ResourceGroupResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ResourceGroupResponse proto.InternalMessageInfo
 
 func (m *ResourceGroupResponse) GetResourceGroup() *ResourceGroup {
 	if m != nil {
@@ -153,6 +250,37 @@ func init() {
 	proto.RegisterType((*ResourceGroupResponse)(nil), "pb.ResourceGroupResponse")
 }
 
+func init() { proto.RegisterFile("resource.proto", fileDescriptor_d1b72f771c35e3b8) }
+
+var fileDescriptor_d1b72f771c35e3b8 = []byte{
+	// 390 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xa4, 0x53, 0x4d, 0x6f, 0xa2, 0x40,
+	0x18, 0x5e, 0xf1, 0x23, 0xeb, 0x8b, 0xe2, 0x32, 0xbb, 0x26, 0xac, 0x17, 0x0d, 0x7b, 0x21, 0x1e,
+	0x38, 0xb0, 0x97, 0xde, 0x6a, 0xad, 0x8d, 0xf5, 0xd2, 0x03, 0xd5, 0x4b, 0x2f, 0x04, 0xe4, 0x4d,
+	0x43, 0xa2, 0x32, 0x19, 0xe0, 0x60, 0xd2, 0x3f, 0xd2, 0x4b, 0x7f, 0x6b, 0xc3, 0xe0, 0x8c, 0xa0,
+	0xa6, 0x49, 0xdb, 0x9b, 0x79, 0xde, 0xe7, 0x2b, 0x8f, 0x03, 0x68, 0x0c, 0x93, 0x38, 0x63, 0x6b,
+	0xb4, 0x29, 0x8b, 0xd3, 0x98, 0x28, 0x34, 0x18, 0xa8, 0xc8, 0x58, 0xcc, 0x0a, 0x60, 0xd0, 0x17,
+	0x84, 0x8c, 0x45, 0xe9, 0x96, 0x6e, 0x0a, 0xd8, 0x7c, 0x55, 0xa0, 0xeb, 0x1e, 0x2e, 0x73, 0x16,
+	0x67, 0x94, 0x8c, 0x41, 0x17, 0x54, 0xef, 0x39, 0x47, 0xbc, 0x28, 0x34, 0x6a, 0xa3, 0x9a, 0xd5,
+	0x76, 0x7b, 0xac, 0xcc, 0x5c, 0x84, 0xc4, 0x86, 0xdf, 0x27, 0xdc, 0x9d, 0xbf, 0x45, 0x43, 0xe1,
+	0x6c, 0xbd, 0xc2, 0x7e, 0xf0, 0xb7, 0x48, 0xa6, 0x40, 0x24, 0x3f, 0x63, 0x91, 0x97, 0x17, 0x49,
+	0x8c, 0xfa, 0xa8, 0x66, 0xa9, 0xce, 0x1f, 0x9b, 0x06, 0xb6, 0xa8, 0xb2, 0x62, 0xd1, 0x32, 0xbf,
+	0xb9, 0xbf, 0xd8, 0x09, 0x42, 0x08, 0x34, 0x42, 0x4c, 0xd6, 0x46, 0x83, 0x87, 0xf0, 0xdf, 0xc4,
+	0x02, 0xc9, 0xf3, 0xd2, 0x3d, 0xc5, 0xbc, 0x72, 0x93, 0xdf, 0xe5, 0x2e, 0xcb, 0x3d, 0xc5, 0x45,
+	0x48, 0xc6, 0xd0, 0x16, 0x48, 0x62, 0xb4, 0x46, 0x75, 0x4b, 0x75, 0x3a, 0xe5, 0x60, 0xf7, 0x78,
+	0x36, 0xaf, 0x41, 0xaf, 0x4c, 0xf3, 0x48, 0x71, 0xfd, 0x99, 0x79, 0xcc, 0x17, 0xf8, 0x29, 0x0c,
+	0xc8, 0x10, 0x54, 0xa9, 0x93, 0x0a, 0x10, 0xd0, 0x22, 0x24, 0xff, 0xa0, 0x2b, 0x09, 0xa5, 0x15,
+	0x3b, 0x02, 0xe4, 0x03, 0x5e, 0x4c, 0xaf, 0x5f, 0x4e, 0x67, 0xd0, 0xaf, 0xd4, 0x77, 0x31, 0xa1,
+	0xf1, 0x2e, 0x41, 0x72, 0x75, 0x7c, 0x2d, 0x85, 0x09, 0x6f, 0xa3, 0x3a, 0x7a, 0x79, 0x88, 0x42,
+	0xd2, 0xad, 0x98, 0x92, 0x21, 0x34, 0xf9, 0x9b, 0xe2, 0xdd, 0x54, 0xa7, 0x9d, 0x0b, 0xee, 0x72,
+	0xc0, 0x2d, 0x70, 0xe7, 0x4d, 0x81, 0x9e, 0x70, 0xb8, 0xf7, 0x77, 0xe1, 0x06, 0x19, 0x99, 0x80,
+	0x76, 0xcb, 0xd0, 0x4f, 0x51, 0x6e, 0x71, 0x1e, 0x34, 0xf8, 0x7b, 0x9e, 0x7d, 0xa8, 0x6b, 0xfe,
+	0x20, 0x37, 0xa0, 0xce, 0x31, 0x95, 0xf2, 0xfe, 0x19, 0x37, 0xff, 0x67, 0x3e, 0xb6, 0x98, 0x80,
+	0xb6, 0xa2, 0xe1, 0x77, 0x4a, 0xcc, 0x40, 0x9b, 0xe1, 0x06, 0x4b, 0x0e, 0x5f, 0xe8, 0x31, 0x6d,
+	0x3c, 0x29, 0x34, 0x08, 0x5a, 0xfc, 0xe3, 0xfb, 0xff, 0x1e, 0x00, 0x00, 0xff, 0xff, 0xcb, 0xe7,
+	0xc2, 0x2c, 0xb6, 0x03, 0x00, 0x00,
+}
+
 // Reference imports to suppress errors if they are not otherwise used.
 var _ context.Context
 var _ grpc.ClientConn
@@ -161,8 +289,9 @@ var _ grpc.ClientConn
 // is compatible with the grpc package it is being compiled against.
 const _ = grpc.SupportPackageIsVersion4
 
-// Client API for ResourceHandler service
-
+// ResourceHandlerClient is the client API for ResourceHandler service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type ResourceHandlerClient interface {
 	// resource
 	CreateResource(ctx context.Context, in *ResourceGroup, opts ...grpc.CallOption) (*ResourceGroupResponse, error)
@@ -181,7 +310,7 @@ func NewResourceHandlerClient(cc *grpc.ClientConn) ResourceHandlerClient {
 
 func (c *resourceHandlerClient) CreateResource(ctx context.Context, in *ResourceGroup, opts ...grpc.CallOption) (*ResourceGroupResponse, error) {
 	out := new(ResourceGroupResponse)
-	err := grpc.Invoke(ctx, "/pb.ResourceHandler/CreateResource", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/pb.ResourceHandler/CreateResource", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -190,7 +319,7 @@ func (c *resourceHandlerClient) CreateResource(ctx context.Context, in *Resource
 
 func (c *resourceHandlerClient) GetResource(ctx context.Context, in *ResourceGroupSpec, opts ...grpc.CallOption) (*ResourceGroupResponse, error) {
 	out := new(ResourceGroupResponse)
-	err := grpc.Invoke(ctx, "/pb.ResourceHandler/GetResource", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/pb.ResourceHandler/GetResource", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -199,7 +328,7 @@ func (c *resourceHandlerClient) GetResource(ctx context.Context, in *ResourceGro
 
 func (c *resourceHandlerClient) UpdateResource(ctx context.Context, in *ResourceGroup, opts ...grpc.CallOption) (*ResourceGroupResponse, error) {
 	out := new(ResourceGroupResponse)
-	err := grpc.Invoke(ctx, "/pb.ResourceHandler/UpdateResource", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/pb.ResourceHandler/UpdateResource", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -208,15 +337,14 @@ func (c *resourceHandlerClient) UpdateResource(ctx context.Context, in *Resource
 
 func (c *resourceHandlerClient) DeleteResource(ctx context.Context, in *ResourceGroupSpec, opts ...grpc.CallOption) (*ResourceGroupResponse, error) {
 	out := new(ResourceGroupResponse)
-	err := grpc.Invoke(ctx, "/pb.ResourceHandler/DeleteResource", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/pb.ResourceHandler/DeleteResource", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// Server API for ResourceHandler service
-
+// ResourceHandlerServer is the server API for ResourceHandler service.
 type ResourceHandlerServer interface {
 	// resource
 	CreateResource(context.Context, *ResourceGroup) (*ResourceGroupResponse, error)
@@ -324,32 +452,4 @@ var _ResourceHandler_serviceDesc = grpc.ServiceDesc{
 	},
 	Streams:  []grpc.StreamDesc{},
 	Metadata: "resource.proto",
-}
-
-func init() { proto.RegisterFile("resource.proto", fileDescriptor8) }
-
-var fileDescriptor8 = []byte{
-	// 342 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xa4, 0x52, 0xcd, 0x4e, 0xf2, 0x40,
-	0x14, 0xfd, 0x5a, 0x7e, 0xf2, 0x71, 0x07, 0xaa, 0x0c, 0x36, 0x19, 0x70, 0x21, 0xe9, 0x0a, 0x37,
-	0x8d, 0xa9, 0x2f, 0x80, 0x8a, 0xc1, 0xad, 0x28, 0x1b, 0x63, 0x42, 0x28, 0xbd, 0x31, 0x4d, 0x80,
-	0x4e, 0x66, 0xda, 0x85, 0x2f, 0xe3, 0xc3, 0xf8, 0x64, 0x66, 0xa6, 0xce, 0x58, 0xc4, 0xb0, 0xd0,
-	0xed, 0x39, 0xe7, 0x9e, 0x73, 0xcf, 0xdc, 0x01, 0x4f, 0xa0, 0xcc, 0x0a, 0xb1, 0xc2, 0x90, 0x8b,
-	0x2c, 0xcf, 0xa8, 0xcb, 0xe3, 0x01, 0x41, 0x21, 0x32, 0x51, 0x02, 0x03, 0xdf, 0x08, 0x0a, 0x91,
-	0xe6, 0x1b, 0xbe, 0x2e, 0xe1, 0xe0, 0xdd, 0x81, 0xce, 0xec, 0x93, 0x99, 0x8a, 0xac, 0xe0, 0xb4,
-	0x0f, 0x5d, 0x23, 0x5d, 0xbc, 0x28, 0x64, 0x91, 0x26, 0xcc, 0x19, 0x3a, 0xa3, 0x16, 0x3d, 0x85,
-	0xde, 0x37, 0x6a, 0xbb, 0xdc, 0x20, 0x73, 0x35, 0x79, 0x01, 0xd4, 0x92, 0x85, 0x48, 0x17, 0x2a,
-	0x44, 0xb2, 0xda, 0xd0, 0x19, 0x91, 0xe8, 0x24, 0xe4, 0x71, 0x68, 0x62, 0xe6, 0x22, 0x7d, 0x54,
-	0x1c, 0x6d, 0x43, 0x3d, 0x41, 0xb9, 0x62, 0x75, 0x3d, 0xcf, 0xe0, 0xd8, 0xce, 0xe7, 0xaf, 0x1c,
-	0x55, 0x6c, 0x43, 0x33, 0x67, 0xd0, 0x32, 0x8c, 0x64, 0xcd, 0x61, 0x6d, 0x44, 0xa2, 0x76, 0xd5,
-	0x30, 0x08, 0xa1, 0xbb, 0xd3, 0xe1, 0x81, 0xe3, 0xea, 0x40, 0x8f, 0xe0, 0x1e, 0xfe, 0x1b, 0x3d,
-	0xed, 0x01, 0xb1, 0x32, 0x5b, 0xd4, 0x87, 0x8e, 0x05, 0x2b, 0x15, 0x7f, 0xb4, 0xac, 0x69, 0xcb,
-	0x67, 0xf0, 0x77, 0x56, 0x98, 0xa1, 0xe4, 0xd9, 0x56, 0x22, 0x3d, 0xff, 0x3a, 0x4d, 0x39, 0xa3,
-	0x23, 0x48, 0xd4, 0xad, 0x36, 0x28, 0x5f, 0x9e, 0x41, 0x43, 0x5f, 0x4c, 0xa7, 0x91, 0xa8, 0xa5,
-	0x14, 0xb7, 0x0a, 0x88, 0xde, 0x5c, 0x38, 0x32, 0xda, 0xbb, 0xe5, 0x36, 0x59, 0xa3, 0xa0, 0x63,
-	0xf0, 0x6e, 0x04, 0x2e, 0x73, 0xb4, 0x55, 0xf6, 0x2d, 0x07, 0xfd, 0x3d, 0xc8, 0x2c, 0x16, 0xfc,
-	0xa3, 0x57, 0x40, 0xa6, 0x98, 0xdb, 0x71, 0x7f, 0x4f, 0xab, 0xde, 0xf1, 0xb0, 0xc5, 0x18, 0xbc,
-	0x39, 0x4f, 0xfe, 0xb2, 0xc4, 0x04, 0xbc, 0x09, 0xae, 0xb1, 0xe2, 0xf0, 0x8b, 0x3d, 0xae, 0xeb,
-	0x4f, 0x2e, 0x8f, 0xe3, 0xa6, 0xfe, 0xd3, 0x97, 0x1f, 0x01, 0x00, 0x00, 0xff, 0xff, 0x7d, 0x96,
-	0xdd, 0x44, 0x0d, 0x03, 0x00, 0x00,
 }

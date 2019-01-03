@@ -3,13 +3,12 @@
 
 package pb
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
-
 import (
-	context "golang.org/x/net/context"
+	context "context"
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
 	grpc "google.golang.org/grpc"
+	math "math"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -17,21 +16,50 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the proto package it is being compiled against.
+// A compilation error at this line likely means your copy of the
+// proto package needs to be updated.
+const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
+
 type Enterprise struct {
-	EnterpriseId   string `protobuf:"bytes,1,opt,name=enterprise_id" json:"enterprise_id,omitempty"`
-	EnterpriseName string `protobuf:"bytes,2,opt,name=enterprise_name" json:"enterprise_name,omitempty"`
-	HomePage       string `protobuf:"bytes,3,opt,name=home_page" json:"home_page,omitempty"`
-	Address        string `protobuf:"bytes,4,opt,name=address" json:"address,omitempty"`
-	Phone          string `protobuf:"bytes,5,opt,name=phone" json:"phone,omitempty"`
-	Email          string `protobuf:"bytes,6,opt,name=email" json:"email,omitempty"`
-	Contacts       string `protobuf:"bytes,7,opt,name=contacts" json:"contacts,omitempty"`
-	Desc           string `protobuf:"bytes,8,opt,name=desc" json:"desc,omitempty"`
+	EnterpriseId         string   `protobuf:"bytes,1,opt,name=enterprise_id,json=enterpriseId,proto3" json:"enterprise_id,omitempty"`
+	EnterpriseName       string   `protobuf:"bytes,2,opt,name=enterprise_name,json=enterpriseName,proto3" json:"enterprise_name,omitempty"`
+	HomePage             string   `protobuf:"bytes,3,opt,name=home_page,json=homePage,proto3" json:"home_page,omitempty"`
+	Address              string   `protobuf:"bytes,4,opt,name=address,proto3" json:"address,omitempty"`
+	Phone                string   `protobuf:"bytes,5,opt,name=phone,proto3" json:"phone,omitempty"`
+	Email                string   `protobuf:"bytes,6,opt,name=email,proto3" json:"email,omitempty"`
+	Contacts             string   `protobuf:"bytes,7,opt,name=contacts,proto3" json:"contacts,omitempty"`
+	Desc                 string   `protobuf:"bytes,8,opt,name=desc,proto3" json:"desc,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *Enterprise) Reset()                    { *m = Enterprise{} }
-func (m *Enterprise) String() string            { return proto.CompactTextString(m) }
-func (*Enterprise) ProtoMessage()               {}
-func (*Enterprise) Descriptor() ([]byte, []int) { return fileDescriptor3, []int{0} }
+func (m *Enterprise) Reset()         { *m = Enterprise{} }
+func (m *Enterprise) String() string { return proto.CompactTextString(m) }
+func (*Enterprise) ProtoMessage()    {}
+func (*Enterprise) Descriptor() ([]byte, []int) {
+	return fileDescriptor_077dec8aae1e7756, []int{0}
+}
+
+func (m *Enterprise) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Enterprise.Unmarshal(m, b)
+}
+func (m *Enterprise) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Enterprise.Marshal(b, m, deterministic)
+}
+func (m *Enterprise) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Enterprise.Merge(m, src)
+}
+func (m *Enterprise) XXX_Size() int {
+	return xxx_messageInfo_Enterprise.Size(m)
+}
+func (m *Enterprise) XXX_DiscardUnknown() {
+	xxx_messageInfo_Enterprise.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Enterprise proto.InternalMessageInfo
 
 func (m *Enterprise) GetEnterpriseId() string {
 	if m != nil {
@@ -90,14 +118,37 @@ func (m *Enterprise) GetDesc() string {
 }
 
 type EnterpriseSpec struct {
-	EnterpriseId   string `protobuf:"bytes,1,opt,name=enterprise_id" json:"enterprise_id,omitempty"`
-	EnterpriseName string `protobuf:"bytes,2,opt,name=enterprise_name" json:"enterprise_name,omitempty"`
+	EnterpriseId         string   `protobuf:"bytes,1,opt,name=enterprise_id,json=enterpriseId,proto3" json:"enterprise_id,omitempty"`
+	EnterpriseName       string   `protobuf:"bytes,2,opt,name=enterprise_name,json=enterpriseName,proto3" json:"enterprise_name,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *EnterpriseSpec) Reset()                    { *m = EnterpriseSpec{} }
-func (m *EnterpriseSpec) String() string            { return proto.CompactTextString(m) }
-func (*EnterpriseSpec) ProtoMessage()               {}
-func (*EnterpriseSpec) Descriptor() ([]byte, []int) { return fileDescriptor3, []int{1} }
+func (m *EnterpriseSpec) Reset()         { *m = EnterpriseSpec{} }
+func (m *EnterpriseSpec) String() string { return proto.CompactTextString(m) }
+func (*EnterpriseSpec) ProtoMessage()    {}
+func (*EnterpriseSpec) Descriptor() ([]byte, []int) {
+	return fileDescriptor_077dec8aae1e7756, []int{1}
+}
+
+func (m *EnterpriseSpec) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_EnterpriseSpec.Unmarshal(m, b)
+}
+func (m *EnterpriseSpec) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_EnterpriseSpec.Marshal(b, m, deterministic)
+}
+func (m *EnterpriseSpec) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_EnterpriseSpec.Merge(m, src)
+}
+func (m *EnterpriseSpec) XXX_Size() int {
+	return xxx_messageInfo_EnterpriseSpec.Size(m)
+}
+func (m *EnterpriseSpec) XXX_DiscardUnknown() {
+	xxx_messageInfo_EnterpriseSpec.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_EnterpriseSpec proto.InternalMessageInfo
 
 func (m *EnterpriseSpec) GetEnterpriseId() string {
 	if m != nil {
@@ -114,14 +165,37 @@ func (m *EnterpriseSpec) GetEnterpriseName() string {
 }
 
 type EnterpriseResponse struct {
-	Enterprise *Enterprise `protobuf:"bytes,1,opt,name=enterprise" json:"enterprise,omitempty"`
-	Error      *Error      `protobuf:"bytes,2,opt,name=error" json:"error,omitempty"`
+	Enterprise           *Enterprise `protobuf:"bytes,1,opt,name=enterprise,proto3" json:"enterprise,omitempty"`
+	Error                *Error      `protobuf:"bytes,2,opt,name=error,proto3" json:"error,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}    `json:"-"`
+	XXX_unrecognized     []byte      `json:"-"`
+	XXX_sizecache        int32       `json:"-"`
 }
 
-func (m *EnterpriseResponse) Reset()                    { *m = EnterpriseResponse{} }
-func (m *EnterpriseResponse) String() string            { return proto.CompactTextString(m) }
-func (*EnterpriseResponse) ProtoMessage()               {}
-func (*EnterpriseResponse) Descriptor() ([]byte, []int) { return fileDescriptor3, []int{2} }
+func (m *EnterpriseResponse) Reset()         { *m = EnterpriseResponse{} }
+func (m *EnterpriseResponse) String() string { return proto.CompactTextString(m) }
+func (*EnterpriseResponse) ProtoMessage()    {}
+func (*EnterpriseResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_077dec8aae1e7756, []int{2}
+}
+
+func (m *EnterpriseResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_EnterpriseResponse.Unmarshal(m, b)
+}
+func (m *EnterpriseResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_EnterpriseResponse.Marshal(b, m, deterministic)
+}
+func (m *EnterpriseResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_EnterpriseResponse.Merge(m, src)
+}
+func (m *EnterpriseResponse) XXX_Size() int {
+	return xxx_messageInfo_EnterpriseResponse.Size(m)
+}
+func (m *EnterpriseResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_EnterpriseResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_EnterpriseResponse proto.InternalMessageInfo
 
 func (m *EnterpriseResponse) GetEnterprise() *Enterprise {
 	if m != nil {
@@ -143,6 +217,33 @@ func init() {
 	proto.RegisterType((*EnterpriseResponse)(nil), "pb.EnterpriseResponse")
 }
 
+func init() { proto.RegisterFile("ent.proto", fileDescriptor_077dec8aae1e7756) }
+
+var fileDescriptor_077dec8aae1e7756 = []byte{
+	// 330 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x92, 0xbb, 0x4e, 0xc3, 0x30,
+	0x14, 0x86, 0x69, 0xe8, 0x2d, 0xa7, 0xb4, 0x94, 0x23, 0x84, 0xac, 0x32, 0x80, 0xc2, 0x00, 0x53,
+	0x86, 0xb2, 0x16, 0x09, 0x71, 0x11, 0xb0, 0x20, 0x54, 0xc4, 0xc2, 0x40, 0xe5, 0xc4, 0x47, 0x6d,
+	0xa5, 0xc4, 0xb6, 0x6c, 0x3f, 0x08, 0x2f, 0xca, 0x3b, 0xa0, 0x38, 0x94, 0xa4, 0x1d, 0x18, 0x2a,
+	0xb6, 0xfc, 0x5f, 0x3e, 0xfb, 0x8f, 0x73, 0x0c, 0x21, 0x49, 0x17, 0x6b, 0xa3, 0x9c, 0xc2, 0x40,
+	0x27, 0xa3, 0x1e, 0x19, 0xa3, 0x4c, 0x09, 0xa2, 0xaf, 0x06, 0xc0, 0xbd, 0x74, 0x64, 0xb4, 0x59,
+	0x5a, 0xc2, 0x33, 0xe8, 0xd3, 0x6f, 0x9a, 0x2d, 0x05, 0x6b, 0x9c, 0x36, 0x2e, 0xc2, 0xe9, 0x5e,
+	0x05, 0x9f, 0x04, 0x9e, 0xc3, 0x7e, 0x4d, 0x92, 0x3c, 0x27, 0x16, 0x78, 0x6d, 0x50, 0xe1, 0x67,
+	0x9e, 0x13, 0x1e, 0x43, 0xb8, 0x50, 0x39, 0xcd, 0x34, 0x9f, 0x13, 0xdb, 0xf5, 0x4a, 0xb7, 0x00,
+	0x2f, 0x7c, 0x4e, 0xc8, 0xa0, 0xc3, 0x85, 0x30, 0x64, 0x2d, 0x6b, 0xfa, 0x57, 0xab, 0x88, 0x87,
+	0xd0, 0xd2, 0x0b, 0x25, 0x89, 0xb5, 0x3c, 0x2f, 0x43, 0x41, 0x29, 0xe7, 0xcb, 0x8c, 0xb5, 0x4b,
+	0xea, 0x03, 0x8e, 0xa0, 0x9b, 0x2a, 0xe9, 0x78, 0xea, 0x2c, 0xeb, 0x94, 0x0d, 0xab, 0x8c, 0x08,
+	0x4d, 0x41, 0x36, 0x65, 0x5d, 0xcf, 0xfd, 0x73, 0xf4, 0x01, 0x83, 0xea, 0xb8, 0xaf, 0x9a, 0xd2,
+	0xff, 0x3d, 0x72, 0x44, 0x80, 0xd5, 0xfe, 0x53, 0xb2, 0x5a, 0x49, 0x4b, 0x18, 0x03, 0x54, 0x9e,
+	0x2f, 0xe8, 0x8d, 0x07, 0xb1, 0x4e, 0xe2, 0x9a, 0x5b, 0x33, 0xf0, 0x04, 0x5a, 0x7e, 0x48, 0xbe,
+	0xa4, 0x37, 0x0e, 0xbd, 0x5a, 0x80, 0x69, 0xc9, 0xc7, 0x9f, 0x01, 0x1c, 0x54, 0x6b, 0x1f, 0xb9,
+	0x14, 0x19, 0x19, 0x9c, 0xc0, 0xf0, 0xd6, 0x10, 0x77, 0x54, 0x9b, 0xe8, 0x46, 0xcd, 0xe8, 0x68,
+	0xa3, 0xf6, 0xe7, 0x13, 0xa3, 0x1d, 0xbc, 0x86, 0xe1, 0x1d, 0x65, 0xb4, 0xb6, 0x1a, 0xd7, 0xed,
+	0xe2, 0x87, 0xfd, 0xb1, 0xc3, 0x04, 0x86, 0x6f, 0x5a, 0x6c, 0xdb, 0x7f, 0x05, 0xfd, 0x07, 0x72,
+	0xdb, 0x96, 0xdf, 0x34, 0xdf, 0x03, 0x9d, 0x24, 0x6d, 0x7f, 0xad, 0x2f, 0xbf, 0x03, 0x00, 0x00,
+	0xff, 0xff, 0x29, 0xdb, 0x48, 0xcc, 0xf4, 0x02, 0x00, 0x00,
+}
+
 // Reference imports to suppress errors if they are not otherwise used.
 var _ context.Context
 var _ grpc.ClientConn
@@ -151,8 +252,9 @@ var _ grpc.ClientConn
 // is compatible with the grpc package it is being compiled against.
 const _ = grpc.SupportPackageIsVersion4
 
-// Client API for EnterpriseHandler service
-
+// EnterpriseHandlerClient is the client API for EnterpriseHandler service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type EnterpriseHandlerClient interface {
 	// enterprise
 	CreateEnterprise(ctx context.Context, in *Enterprise, opts ...grpc.CallOption) (*EnterpriseResponse, error)
@@ -171,7 +273,7 @@ func NewEnterpriseHandlerClient(cc *grpc.ClientConn) EnterpriseHandlerClient {
 
 func (c *enterpriseHandlerClient) CreateEnterprise(ctx context.Context, in *Enterprise, opts ...grpc.CallOption) (*EnterpriseResponse, error) {
 	out := new(EnterpriseResponse)
-	err := grpc.Invoke(ctx, "/pb.EnterpriseHandler/CreateEnterprise", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/pb.EnterpriseHandler/CreateEnterprise", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -180,7 +282,7 @@ func (c *enterpriseHandlerClient) CreateEnterprise(ctx context.Context, in *Ente
 
 func (c *enterpriseHandlerClient) DeleteEnterprise(ctx context.Context, in *EnterpriseSpec, opts ...grpc.CallOption) (*EnterpriseResponse, error) {
 	out := new(EnterpriseResponse)
-	err := grpc.Invoke(ctx, "/pb.EnterpriseHandler/DeleteEnterprise", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/pb.EnterpriseHandler/DeleteEnterprise", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -189,7 +291,7 @@ func (c *enterpriseHandlerClient) DeleteEnterprise(ctx context.Context, in *Ente
 
 func (c *enterpriseHandlerClient) UpdateEnterprise(ctx context.Context, in *Enterprise, opts ...grpc.CallOption) (*EnterpriseResponse, error) {
 	out := new(EnterpriseResponse)
-	err := grpc.Invoke(ctx, "/pb.EnterpriseHandler/UpdateEnterprise", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/pb.EnterpriseHandler/UpdateEnterprise", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -198,15 +300,14 @@ func (c *enterpriseHandlerClient) UpdateEnterprise(ctx context.Context, in *Ente
 
 func (c *enterpriseHandlerClient) GetEnterprise(ctx context.Context, in *EnterpriseSpec, opts ...grpc.CallOption) (*EnterpriseResponse, error) {
 	out := new(EnterpriseResponse)
-	err := grpc.Invoke(ctx, "/pb.EnterpriseHandler/GetEnterprise", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/pb.EnterpriseHandler/GetEnterprise", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// Server API for EnterpriseHandler service
-
+// EnterpriseHandlerServer is the server API for EnterpriseHandler service.
 type EnterpriseHandlerServer interface {
 	// enterprise
 	CreateEnterprise(context.Context, *Enterprise) (*EnterpriseResponse, error)
@@ -314,29 +415,4 @@ var _EnterpriseHandler_serviceDesc = grpc.ServiceDesc{
 	},
 	Streams:  []grpc.StreamDesc{},
 	Metadata: "ent.proto",
-}
-
-func init() { proto.RegisterFile("ent.proto", fileDescriptor3) }
-
-var fileDescriptor3 = []byte{
-	// 292 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x92, 0xcf, 0x4e, 0x83, 0x40,
-	0x10, 0x87, 0x05, 0xa1, 0x2d, 0x83, 0xb4, 0x74, 0x13, 0x75, 0xd3, 0x93, 0xe1, 0xe4, 0x89, 0x03,
-	0x5e, 0x6b, 0xd2, 0xf8, 0x27, 0x7a, 0xae, 0xf1, 0xe2, 0xa5, 0x59, 0xd8, 0x89, 0x25, 0x81, 0xdd,
-	0xcd, 0xee, 0x3e, 0x88, 0x4f, 0xe0, 0xb3, 0x1a, 0xd6, 0x54, 0xc0, 0x83, 0x89, 0x3d, 0xfe, 0xbe,
-	0x19, 0xbe, 0x19, 0x26, 0x0b, 0x11, 0x0a, 0x9b, 0x2b, 0x2d, 0xad, 0x24, 0xbe, 0x2a, 0x57, 0x31,
-	0x6a, 0x2d, 0xf5, 0x37, 0xc8, 0x3e, 0x3d, 0x80, 0x47, 0x61, 0x51, 0x2b, 0x5d, 0x1b, 0x24, 0xe7,
-	0x90, 0xe0, 0x4f, 0xda, 0xd5, 0x9c, 0x7a, 0x57, 0xde, 0x75, 0x44, 0x2e, 0x61, 0x31, 0xc0, 0x82,
-	0xb5, 0x48, 0x7d, 0x57, 0x58, 0x42, 0xb4, 0x97, 0x2d, 0xee, 0x14, 0x7b, 0x47, 0x7a, 0xea, 0xd0,
-	0x02, 0xa6, 0x8c, 0x73, 0x8d, 0xc6, 0xd0, 0xc0, 0x81, 0x04, 0x42, 0xb5, 0x97, 0x02, 0x69, 0x78,
-	0x88, 0xd8, 0xb2, 0xba, 0xa1, 0x13, 0x17, 0x53, 0x98, 0x55, 0x52, 0x58, 0x56, 0x59, 0x43, 0xa7,
-	0x8e, 0x9c, 0x41, 0xc0, 0xd1, 0x54, 0x74, 0xd6, 0xa5, 0x6c, 0x03, 0xf3, 0x7e, 0xbf, 0x17, 0x85,
-	0xd5, 0x7f, 0x77, 0xcc, 0xb6, 0x40, 0x7a, 0xc3, 0x16, 0x8d, 0x92, 0xc2, 0x20, 0xc9, 0x00, 0xfa,
-	0x76, 0xa7, 0x88, 0x8b, 0x79, 0xae, 0xca, 0x7c, 0x70, 0x0d, 0x0a, 0xa1, 0xbb, 0x95, 0x13, 0xc5,
-	0x45, 0xe4, 0xca, 0x1d, 0x28, 0x3e, 0x7c, 0x58, 0xf6, 0x8d, 0xcf, 0x4c, 0xf0, 0x06, 0x35, 0x59,
-	0x43, 0x7a, 0xaf, 0x91, 0x59, 0x1c, 0x38, 0x7e, 0x39, 0x57, 0x17, 0xe3, 0x7c, 0xd8, 0x27, 0x3b,
-	0x21, 0x1b, 0x48, 0x1f, 0xb0, 0xc1, 0xd1, 0xd7, 0x64, 0xdc, 0xdd, 0xfd, 0xff, 0x1f, 0x86, 0x35,
-	0xa4, 0xaf, 0x8a, 0x1f, 0x3b, 0xff, 0x16, 0x92, 0x27, 0xb4, 0xc7, 0x0e, 0xbf, 0x0b, 0xde, 0x7c,
-	0x55, 0x96, 0x13, 0xf7, 0xac, 0x6e, 0xbe, 0x02, 0x00, 0x00, 0xff, 0xff, 0x84, 0x03, 0x52, 0x4e,
-	0x74, 0x02, 0x00, 0x00,
 }
