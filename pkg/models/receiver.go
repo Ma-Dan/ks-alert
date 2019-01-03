@@ -54,7 +54,6 @@ func (r ReceiverGroup) Create(tx *gorm.DB, v interface{}) (interface{}, error) {
 		"webhook_enable, description, created_at, updated_at) VALUES " + item
 
 	if err := tx.Exec(sql).Error; err != nil {
-		tx.Rollback()
 		return nil, err
 	}
 
@@ -71,10 +70,10 @@ func (r ReceiverGroup) Create(tx *gorm.DB, v interface{}) (interface{}, error) {
 		r := receivers[i]
 
 		// TODO need to validate the receiver_id exist
-		if r.ReceiverID != "" {
-			recvIds = append(recvIds, r.ReceiverID)
-			continue
-		}
+		//if r.ReceiverID != "" {
+		//	recvIds = append(recvIds, r.ReceiverID)
+		//	continue
+		//}
 
 		recvId := idutil.GetUuid36("rule_id-")
 		createdRrecvIds = append(createdRrecvIds, recvId)
@@ -94,7 +93,6 @@ func (r ReceiverGroup) Create(tx *gorm.DB, v interface{}) (interface{}, error) {
 		fmt.Println(sql)
 
 		if err := tx.Exec(sql).Error; err != nil {
-			tx.Rollback()
 			return nil, err
 		}
 	}
@@ -115,11 +113,10 @@ func (r ReceiverGroup) Create(tx *gorm.DB, v interface{}) (interface{}, error) {
 	}
 
 	if err := tx.Exec(sql).Error; err != nil {
-		tx.Rollback()
 		return nil, err
 	}
 
-	return nil, nil
+	return recvGroup, nil
 }
 
 // TODO this function is not feasible
@@ -171,7 +168,6 @@ func (r ReceiverGroup) Get(tx *gorm.DB, v interface{}) (interface{}, error) {
 	err := tx.Model(&ReceiverGroup{}).Where("receiver_group_id=?", recvGroup.ReceiverGroupID).First(&rg).Error
 
 	if err != nil {
-		tx.Rollback()
 		return nil, err
 	}
 
@@ -187,7 +183,6 @@ func (r ReceiverGroup) Get(tx *gorm.DB, v interface{}) (interface{}, error) {
 		sql := "SELECT r.* FROM receiver_binding_groups as rb LEFT JOIN receivers as r ON rb.receiver_id=r.receiver_id WHERE rb.receiver_group_id=?"
 
 		if err := tx.Exec(sql, rg.ReceiverGroupID).Find(&receivers).Error; err != nil {
-			tx.Rollback()
 			return nil, err
 		}
 
@@ -215,7 +210,6 @@ func (r ReceiverGroup) Delete(tx *gorm.DB, v interface{}) (interface{}, error) {
 	sql := "DELETE rg, rb FROM receiver_groups as rg LEFT JOIN receiver_binding_groups as rb ON rg.receiver_group_id=rb.receiver_group_id WHERE rg.receiver_group_id=?"
 
 	if err := tx.Exec(sql, recvGroup.ReceiverGroupID).Error; err != nil {
-		tx.Rollback()
 		return nil, err
 	}
 
@@ -223,7 +217,6 @@ func (r ReceiverGroup) Delete(tx *gorm.DB, v interface{}) (interface{}, error) {
 	sql = "DELETE r FROM receivers as r LEFT JOIN receiver_binding_groups as rb ON r.receiver_id=rb.receiver_id WHERE rb.receiver_group_id IS NULL;"
 
 	if err := tx.Exec(sql).Error; err != nil {
-		tx.Rollback()
 		return nil, err
 	}
 

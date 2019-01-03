@@ -81,8 +81,8 @@ func createTables(db *gorm.DB) {
 		}
 	}
 
-	if !db.HasTable(&AlertBinding{}) {
-		if err := db.Set("gorm:table_options", "ENGINE=InnoDB DEFAULT CHARSET=utf8").CreateTable(&AlertBinding{}).Error; err != nil {
+	if !db.HasTable(&AlertConfig{}) {
+		if err := db.Set("gorm:table_options", "ENGINE=InnoDB DEFAULT CHARSET=utf8").CreateTable(&AlertConfig{}).Error; err != nil {
 			fmt.Print(err)
 			panic(err)
 		}

@@ -1,12 +1,11 @@
 package models
 
 import (
-	"errors"
 	"fmt"
 	"github.com/carmanzhang/ks-alert/pkg/dispatcher/pb"
-	"github.com/carmanzhang/ks-alert/pkg/utils/dbutil"
 	"github.com/carmanzhang/ks-alert/pkg/utils/idutil"
-	"github.com/golang/glog"
+	"github.com/jinzhu/gorm"
+	"github.com/pkg/errors"
 	"time"
 )
 
@@ -46,6 +45,7 @@ type AlertRule struct {
 }
 
 type AlertRuleGroup struct {
+	Action
 	AlertRuleGroupID   string      `gorm:"primary_key" json:"-"`
 	AlertRuleGroupName string      `gorm:"type:varchar(50);not null;" json:"alert_rule_group_name"`
 	AlertRules         []AlertRule `gorm:"-" json:"alert_rules"`
@@ -56,178 +56,9 @@ type AlertRuleGroup struct {
 	UpdatedAt          time.Time   `gorm:"not null;" json:"-"`
 }
 
-func CreateAlertRuleGroup(alertRuleGroup *AlertRuleGroup) (*AlertRuleGroup, error) {
-	// check if the build-in alert rule group exist?
-	if alertRuleGroup.SystemRule {
-		r := pb.AlertRuleGroupSpec{ResourceTypeId: alertRuleGroup.ResourceTypeID, SystemRule: true}
-		ruleGroup, _ := GetAlertRuleGroup(&r)
-
-		if ruleGroup != nil && ruleGroup.AlertRuleGroupID != "" {
-			// build-in alert rule group exist
-			return nil, errors.New("build-in rules exists for the current resource type")
-		}
-	}
-
-	alertRuleGroup.AlertRuleGroupID = idutil.GetUuid36("rule_group-")
-
-	// do create
-	err := createAlertGroupAndRules(alertRuleGroup)
-	if err != nil {
-		return nil, err
-	}
-
-	return alertRuleGroup, nil
-}
-
-func UpdateAlertRuleGroup(ruleGroup *AlertRuleGroup) error {
-	alertRules := ruleGroup.AlertRules
-
-	db, err := dbutil.DBClient()
-
-	if err != nil {
-		glog.Errorln(err.Error())
-		return err
-	}
-
-	tx := db.Begin()
-
-	// update alert rule group
-	sql := fmt.Sprintf("UPDATE alert_rule_groups SET alert_rule_group_name='%s',description='%s',"+
-		"system_rule='%v', updated_at='%v' WHERE alert_rule_group_id='%s'",
-		ruleGroup.AlertRuleGroupName, ruleGroup.Description,
-		Bool2Int[ruleGroup.SystemRule],
-		ruleGroup.UpdatedAt, ruleGroup.AlertRuleGroupID)
-
-	fmt.Println(sql)
-
-	if err := tx.Exec(sql).Error; err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	// update alert rules
-	l := len(alertRules)
-	for i := 0; i < l; i++ {
-		a := alertRules[i]
-
-		if a.AlertRuleID == "" {
-			continue
-		}
-
-		sql = fmt.Sprintf("UPDATE alert_rules SET "+
-			"alert_rule_name='%s', metric_name='%s', condition_type='%s', perfer_severity='%v', "+
-			"threshold='%f', unit='%s', period='%d', consecutive_count='%d', inhibit_rule='%v', enable='%v', system_rule='%v', repeat_send_type='%d', "+
-			"init_repeat_send_interval='%d', max_repeat_send_count='%d', updated_at='%v' WHERE alert_rule_group_id='%s' AND alert_rule_id='%s'",
-			a.AlertRuleName, a.MetricName, a.ConditionType, Bool2Int[a.PerferSeverity],
-			a.Threshold, a.Unit, a.Period, a.ConsecutiveCount, Bool2Int[a.InhibitRule],
-			Bool2Int[a.Enable], Bool2Int[ruleGroup.SystemRule],
-			a.RepeatSendType, a.InitRepeatSendInterval, a.MaxRepeatSendCount, time.Now(),
-			ruleGroup.AlertRuleGroupID, a.AlertRuleID)
-
-		fmt.Println(sql)
-		if err := tx.Exec(sql).Error; err != nil {
-			tx.Rollback()
-			return err
-		}
-	}
-
-	tx.Commit()
-
-	return nil
-}
-
-func GetAlertRuleGroup(ruleGroupSpec *pb.AlertRuleGroupSpec) (*AlertRuleGroup, error) {
-	db, err := dbutil.DBClient()
-
-	if err != nil {
-		glog.Errorln(err.Error())
-		return nil, err
-	}
-	var r AlertRuleGroup
-
-	// get alert rule group
-	if ruleGroupSpec.AlertRuleGroupId != "" {
-		db = db.Model(&AlertRuleGroup{}).Where(&AlertRuleGroup{AlertRuleGroupID: ruleGroupSpec.AlertRuleGroupId}).First(&r)
-	} else if ruleGroupSpec.ResourceTypeId != "" {
-		//x := &AlertRuleGroup{ResourceTypeID: ruleGroupSpec.ResourceTypeId, SystemRule: true}
-		err = db.Model(&AlertRuleGroup{}).Where("resource_type_id=? AND system_rule=?", ruleGroupSpec.ResourceTypeId, true).First(&r).Error
-	}
-
-	exist := db.RecordNotFound()
-
-	if exist {
-		return nil, errors.New("record not found")
-	}
-
-	// get alert rules
-	if r.AlertRuleGroupID != "" {
-		var alertRules []AlertRule
-		err := db.Debug().Find(&alertRules, "alert_rule_group_id=?", r.AlertRuleGroupID).Error
-		//err := db.Where(&AlertRule{AlertRuleGroupID: ruleGroupSpec.AlertRuleGroupId}).Find(&alertRules).Error
-		//db.Exec("SELECT * FROM alert_rules WHERE alert_rule_group_id=?", ruleGroupSpec.AlertRuleGroupId).First(&alertRules)
-
-		if err != nil {
-			return &r, err
-		}
-
-		//var rulePtr []*AlertRule
-		//for i := 0; i < len(alertRules); i++ {
-		//	rulePtr = append(rulePtr, &alertRules[i])
-		//}
-
-		r.AlertRules = alertRules
-
-		return &r, db.Error
-	}
-
-	return &r, nil
-}
-
-func DeleteAlertRuleGroup(ruleGroupSpec *pb.AlertRuleGroupSpec) error {
-	db, err := dbutil.DBClient()
-
-	if err != nil {
-		return err
-	}
-
-	tx := db.Begin()
-
-	err = tx.Delete(&AlertRuleGroup{AlertRuleGroupID: ruleGroupSpec.AlertRuleGroupId}).Error
-	//err = db.Delete(&AlertRuleGroup{ResourceTypeID: ruleGroupSpec.ResourceTypeId, SystemRule: true}).Error
-	//err = tx.Exec("DELETE from alert_rule_group WHERE alert_rule_group_id=?", ruleGroupSpec.AlertRuleGroupId).Error
-
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	// delete all alert rule
-	err = tx.Delete(&AlertRule{AlertRuleGroupID: ruleGroupSpec.AlertRuleGroupId}).Error
-	//err = tx.Exec("DELETE from alert_rule WHERE alert_rule_group_id=?", ruleGroupSpec.AlertRuleGroupId).Error
-
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	tx.Commit()
-
-	return nil
-}
-
-func createAlertGroupAndRules(ruleGroup *AlertRuleGroup) error {
+func createAlertGroupAndRules(tx *gorm.DB, ruleGroup *AlertRuleGroup) error {
 
 	alertRules := ruleGroup.AlertRules
-
-	db, err := dbutil.DBClient()
-
-	if err != nil {
-		glog.Errorln(err.Error())
-		return err
-	}
-
-	tx := db.Begin()
-
 	systemRule := ruleGroup.SystemRule
 
 	// create alert rule group
@@ -238,7 +69,6 @@ func createAlertGroupAndRules(ruleGroup *AlertRuleGroup) error {
 		"description, system_rule, resource_type_id, created_at, updated_at) VALUES " + item
 
 	if err := tx.Exec(sql).Error; err != nil {
-		tx.Rollback()
 		return err
 	}
 
@@ -267,12 +97,138 @@ func createAlertGroupAndRules(ruleGroup *AlertRuleGroup) error {
 	}
 
 	fmt.Println(sql)
+
 	if err := tx.Exec(sql).Error; err != nil {
-		tx.Rollback()
 		return err
 	}
-	tx.Commit()
-
 	return nil
+}
 
+func (r AlertRuleGroup) Create(tx *gorm.DB, v interface{}) (interface{}, error) {
+	alertRuleGroup := v.(*AlertRuleGroup)
+	// check if the build-in alert rule group exist?
+	if alertRuleGroup.SystemRule {
+		rule := pb.AlertRuleGroupSpec{ResourceTypeId: alertRuleGroup.ResourceTypeID, SystemRule: true}
+		ruleGroup, _ := r.Get(tx, &rule)
+
+		if ruleGroup != nil && ruleGroup.(*AlertRuleGroup).AlertRuleGroupID != "" {
+			// build-in alert rule group exist
+			return nil, errors.New("build-in rules exists for the current resource type")
+		}
+	}
+
+	alertRuleGroup.AlertRuleGroupID = idutil.GetUuid36("rule_group-")
+
+	// do create
+	err := createAlertGroupAndRules(tx, alertRuleGroup)
+	if err != nil {
+		return nil, err
+	}
+
+	return alertRuleGroup, nil
+}
+
+func (r AlertRuleGroup) Update(tx *gorm.DB, v interface{}) (interface{}, error) {
+	ruleGroup := v.(*AlertRuleGroup)
+	alertRules := ruleGroup.AlertRules
+
+	// update alert rule group
+	sql := fmt.Sprintf("UPDATE alert_rule_groups SET alert_rule_group_name='%s',description='%s',"+
+		"system_rule='%v', updated_at='%v' WHERE alert_rule_group_id='%s'",
+		ruleGroup.AlertRuleGroupName, ruleGroup.Description,
+		Bool2Int[ruleGroup.SystemRule],
+		ruleGroup.UpdatedAt, ruleGroup.AlertRuleGroupID)
+
+	fmt.Println(sql)
+
+	if err := tx.Exec(sql).Error; err != nil {
+		return nil, err
+	}
+
+	// update alert rules
+	l := len(alertRules)
+	for i := 0; i < l; i++ {
+		a := alertRules[i]
+
+		if a.AlertRuleID == "" {
+			continue
+		}
+
+		sql = fmt.Sprintf("UPDATE alert_rules SET "+
+			"alert_rule_name='%s', metric_name='%s', condition_type='%s', perfer_severity='%v', "+
+			"threshold='%f', unit='%s', period='%d', consecutive_count='%d', inhibit_rule='%v', enable='%v', system_rule='%v', repeat_send_type='%d', "+
+			"init_repeat_send_interval='%d', max_repeat_send_count='%d', updated_at='%v' WHERE alert_rule_group_id='%s' AND alert_rule_id='%s'",
+			a.AlertRuleName, a.MetricName, a.ConditionType, Bool2Int[a.PerferSeverity],
+			a.Threshold, a.Unit, a.Period, a.ConsecutiveCount, Bool2Int[a.InhibitRule],
+			Bool2Int[a.Enable], Bool2Int[ruleGroup.SystemRule],
+			a.RepeatSendType, a.InitRepeatSendInterval, a.MaxRepeatSendCount, time.Now(),
+			ruleGroup.AlertRuleGroupID, a.AlertRuleID)
+
+		fmt.Println(sql)
+		if err := tx.Exec(sql).Error; err != nil {
+			return nil, err
+		}
+	}
+
+	return nil, nil
+}
+
+func (r AlertRuleGroup) Get(tx *gorm.DB, v interface{}) (interface{}, error) {
+	ruleGroupSpec := v.(*pb.AlertRuleGroupSpec)
+
+	var rg AlertRuleGroup
+
+	// get alert rule group
+	if ruleGroupSpec.AlertRuleGroupId != "" {
+		tx.Model(&AlertRuleGroup{}).Where(&AlertRuleGroup{AlertRuleGroupID: ruleGroupSpec.AlertRuleGroupId}).First(&rg)
+	} else if ruleGroupSpec.ResourceTypeId != "" {
+		//x := &AlertRuleGroup{ResourceTypeID: ruleGroupSpec.ResourceTypeId, SystemRule: true}
+		tx.Model(&AlertRuleGroup{}).Where("resource_type_id=? AND system_rule=?", ruleGroupSpec.ResourceTypeId, true).First(&rg)
+	}
+
+	exist := tx.RecordNotFound()
+
+	if exist {
+		return nil, errors.New("record not found")
+	}
+
+	// get alert rules
+	if rg.AlertRuleGroupID != "" {
+		var alertRules []AlertRule
+		err := tx.Debug().Find(&alertRules, "alert_rule_group_id=?", rg.AlertRuleGroupID).Error
+		//err := db.Where(&AlertRule{AlertRuleGroupID: ruleGroupSpec.AlertRuleGroupId}).Find(&alertRules).Error
+		//db.Exec("SELECT * FROM alert_rules WHERE alert_rule_group_id=?", ruleGroupSpec.AlertRuleGroupId).First(&alertRules)
+
+		if err != nil {
+			return &rg, err
+		}
+
+		rg.AlertRules = alertRules
+
+		return &rg, tx.Error
+	}
+
+	return &rg, nil
+}
+
+func (r AlertRuleGroup) Delete(tx *gorm.DB, v interface{}) (interface{}, error) {
+	ruleGroupSpec := v.(*pb.AlertRuleGroupSpec)
+
+	err := tx.Delete(&AlertRuleGroup{AlertRuleGroupID: ruleGroupSpec.AlertRuleGroupId}).Error
+	//err = db.Delete(&AlertRuleGroup{ResourceTypeID: ruleGroupSpec.ResourceTypeId, SystemRule: true}).Error
+	//err = tx.Exec("DELETE from alert_rule_group WHERE alert_rule_group_id=?", ruleGroupSpec.AlertRuleGroupId).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	// delete all alert rule
+	err = tx.Delete(&AlertRule{AlertRuleGroupID: ruleGroupSpec.AlertRuleGroupId}).Error
+	//err = tx.Exec("DELETE from alert_rule WHERE alert_rule_group_id=?", ruleGroupSpec.AlertRuleGroupId).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return nil, nil
 }

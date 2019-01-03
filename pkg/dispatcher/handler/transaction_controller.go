@@ -4,6 +4,7 @@ import (
 	"github.com/carmanzhang/ks-alert/pkg/models"
 	"github.com/carmanzhang/ks-alert/pkg/utils/dbutil"
 	"github.com/pkg/errors"
+	"k8s.io/klog/glog"
 	"reflect"
 )
 
@@ -37,22 +38,76 @@ func DoTransactionAction(v interface{}, tp TP, method string) (interface{}, erro
 	var err error
 
 	if tp == AlertConfig {
-		// create alert config itself include config name and description...
+
+		alertConfig := v.(*models.AlertConfig)
+
+		ruleGroup := alertConfig.AlertRuleGroup
+		ruleGroupResponse, err := CallReflect(models.AlertRuleGroup{}, method, tx, ruleGroup)
+
+		if err != nil {
+			tx.Rollback()
+			glog.Errorln(err.Error())
+		}
+
+		receiverGroup := alertConfig.ReceiverGroup
+		recvGroupResponse, err := CallReflect(models.ReceiverGroup{}, method, tx, receiverGroup)
+
+		if err != nil {
+			tx.Rollback()
+			glog.Errorln(err.Error())
+		}
+
+		resourceGroup := alertConfig.ResourceGroup
+		resGroupResponse, err := CallReflect(models.ResourceGroup{}, method, tx, resourceGroup)
+
+		if err != nil {
+			tx.Rollback()
+			glog.Errorln(err.Error())
+		}
+
+		alertConfig.AlertRuleGroupID = ruleGroupResponse.(*models.AlertRuleGroup).AlertRuleGroupID
+		alertConfig.ResourceGroupID = resGroupResponse.(*models.ResourceGroup).ResourceGroupID
+		alertConfig.ReceiverGroupID = recvGroupResponse.(*models.ReceiverGroup).ReceiverGroupID
+
+		alertConfigResponse, err := CallReflect(models.AlertConfig{}, method, tx, alertConfig)
+
+		if err != nil {
+			tx.Rollback()
+			glog.Errorln(err.Error())
+		}
+
+		res = []interface{}{alertConfigResponse, ruleGroupResponse, recvGroupResponse, resGroupResponse}
+
 	}
 
-	if tp == AlertConfig || tp == RuleGroup {
+	if tp == RuleGroup {
 		// create rule group
 		res, err = CallReflect(models.AlertRuleGroup{}, method, tx, v)
+
+		if err != nil {
+			tx.Rollback()
+			glog.Errorln(err.Error())
+		}
 	}
 
-	if tp == AlertConfig || tp == ReceiverGroup {
+	if tp == ReceiverGroup {
 		// receiver group
 		res, err = CallReflect(models.ReceiverGroup{}, method, tx, v)
+
+		if err != nil {
+			tx.Rollback()
+			glog.Errorln(err.Error())
+		}
 	}
 
-	if tp == AlertConfig || tp == ResourceGroup {
+	if tp == ResourceGroup {
 		// create resource group
 		res, err = CallReflect(models.ResourceGroup{}, method, tx, v)
+
+		if err != nil {
+			tx.Rollback()
+			glog.Errorln(err.Error())
+		}
 	}
 
 	// TODO need to validate closing db connection

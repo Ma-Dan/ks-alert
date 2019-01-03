@@ -3,25 +3,59 @@ package handler
 import (
 	"context"
 	"fmt"
-	"github.com/emicklei/go-restful"
-	"github.com/carmanzhang/ks-alert/pkg/dispatcher/client"
-	"github.com/carmanzhang/ks-alert/pkg/dispatcher/option"
 	"github.com/carmanzhang/ks-alert/pkg/dispatcher/pb"
-	executor "github.com/carmanzhang/ks-alert/pkg/executor/pb"
 	"github.com/carmanzhang/ks-alert/pkg/models"
+	"github.com/golang/glog"
+	"strconv"
+	"time"
 )
 
 // alert
-type AlertHandler struct {}
+type AlertHandler struct{}
 
-func (server AlertHandler) CreateAlertConfig(ctx context.Context, alertConfig *pb.AlertConfig) (*pb.AlertConfigResponse, error) {
-	fmt.Println("reveived from clinet")
+func (server AlertHandler) CreateAlertConfig(ctx context.Context, pbac *pb.AlertConfig) (*pb.AlertConfigResponse, error) {
+
+	ac := ConvertPB2AlertConfig(pbac)
+
+	res, err := DoTransactionAction(ac, AlertConfig, MethodCreate)
+
+	if err != nil {
+		return nil, err
+	}
+
+	v := res.([]interface{})
+
+	alertConfig := ConvertAlertConfig2PB(v)
+
 	return &pb.AlertConfigResponse{
-		AlertConfig: &pb.AlertConfig{AlertConfigId: "1234455678"},
+		AlertConfig: alertConfig,
 	}, nil
 }
 
-func (server AlertHandler) DeleteAlertConfig(ctx context.Context, alertConfig *pb.AlertConfig) (*pb.AlertConfigResponse, error) {
+func ConvertPB2AlertConfig(pbac *pb.AlertConfig) *models.AlertConfig {
+	if pbac == nil {
+		return nil
+	}
+	return &models.AlertConfig{
+		AlertConfigID:   pbac.AlertConfigId,
+		AlertConfigName: pbac.AlertConfigName,
+
+		ReceiverGroup:  ConvertPB2ReceiverGroup(pbac.ReceiverGroup),
+		ResourceGroup:  ConvertPB2ResourceGroup(pbac.ResourceGroup),
+		AlertRuleGroup: ConvertPB2AlertRuleGroup(pbac.AlertRuleGroup),
+
+		SeverityCh: pbac.SeverityCh,
+		SeverityID: pbac.SeverityId,
+
+		EnableStart: ConvertString2Time(pbac.EnableStart),
+		EnableEnd:   ConvertString2Time(pbac.EnableEnd),
+		Description: pbac.Desc,
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
+	}
+}
+
+func (server AlertHandler) DeleteAlertConfig(ctx context.Context, alertConfigSpec *pb.AlertConfigSpec) (*pb.AlertConfigResponse, error) {
 	return nil, nil
 }
 
@@ -29,77 +63,54 @@ func (server AlertHandler) UpdateAlertConfig(ctx context.Context, alertConfig *p
 	return nil, nil
 }
 
-func (server AlertHandler) GetAlertConfig(ctx context.Context, alertConfig *pb.AlertConfig) (*pb.AlertConfigResponse, error) {
+func (server AlertHandler) GetAlertConfig(ctx context.Context, alertConfig *pb.AlertConfigSpec) (*pb.AlertConfigResponse, error) {
 	return nil, nil
 }
 
+func ConvertAlertConfig2PB(v []interface{}) *pb.AlertConfig {
+	// alertConfig *models.AlertConfig, ruleGroup *models.AlertRuleGroup, reveiverGroup *models.ReceiverGroup, resourceGroup *models.ResourceGroup
 
-func CreateAlert(request *restful.Request, response *restful.Response) {
+	var pbac = pb.AlertConfig{}
 
-	//var alertConfig models.AlertConfig
-	//err := request.ReadEntity(&alertConfig)
-	//if err != nil {
-	//	glog.Errorln(err)
-	//}
-	//
-	//alertRuleGroup, err := models.CreateAlertRuleGroup(&alertConfig.AlertRuleGroup)
-	//
-	//// alertRules
-	//_, err = models.CreateAlertRules(&alertConfig.AlertRuleGroup.AlertRules, alertRuleGroup.AlertRuleGroupID)
-	//if err != nil {
-	//	glog.Errorln(err)
-	//}
-	//
-	//resourceGroup, err := models.CreateResourceGroup(alertConfig.ResourceGroup.ResourceGroupName, alertConfig.ResourceGroup.Description)
-	//if err != nil {
-	//	glog.Errorln(err)
-	//}
-	//
-	//err = models.CreateResources(&alertConfig.ResourceGroup.Resources, resourceGroup, &alertConfig.URIParams)
-	//if err != nil {
-	//	glog.Errorln(err)
-	//}
-	//
-	//receiverGroup, err := models.CreateReceiverGroup(&alertConfig.ReceiverGroup)
-	//if err != nil {
-	//	glog.Errorln(err)
-	//}
-	//
-	//receivers, err := models.CreateReceivers(&alertConfig.ReceiverGroup.Receivers)
-	//if err != nil {
-	//	glog.Errorln(err)
-	//}
-	//
-	//err = models.CreateReceiverBindingGroupItem(receivers, receiverGroup)
-	//if err != nil {
-	//	glog.Errorln(err)
-	//}
-
-	clientConn, err := client.GetExecutorGrpcLoadBalancerClient(*option.ExecutorServiceName, *option.EtcdAddr)
-
-	if err != nil {
-		panic(err)
+	if v[0] != nil {
+		alertConfig := v[0].(*models.AlertConfig)
+		pbac.AlertConfigId = alertConfig.AlertConfigID
+		pbac.AlertConfigName = alertConfig.AlertConfigName
+		pbac.SeverityId = alertConfig.SeverityID
+		pbac.SeverityCh = alertConfig.SeverityCh
+		pbac.EnableStart = ConvertTime2String(alertConfig.EnableStart)
+		pbac.EnableEnd = ConvertTime2String(alertConfig.EnableEnd)
+		pbac.Desc = alertConfig.Description
 	}
 
-	// get banding host by
-	client11 := executor.NewExecutorClient(clientConn)
-
-	resp, err := client11.ExecuteAlertConfig(context.Background(), &executor.AlertConfig{Signal: executor.AlertConfig_Signal(models.Create), AlertConfigId: "world"})
-	fmt.Println(resp)
-	if err != nil {
-		fmt.Println(err)
+	if v[1] != nil {
+		ruleGroup := v[1].(*models.AlertRuleGroup)
+		pbac.AlertRuleGroup = ConvertAlertRuleGroup2PB(ruleGroup)
 	}
 
+	if v[2] != nil {
+		reveiverGroup := v[2].(*models.ReceiverGroup)
+		pbac.ReceiverGroup = ConvertReceiverGroup2PB(reveiverGroup)
+	}
+
+	if v[3] != nil {
+		resourceGroup := v[3].(*models.ResourceGroup)
+		pbac.ResourceGroup = ConvertResourceGroup2PB(resourceGroup)
+	}
+
+	return &pbac
 }
 
-func RetrieveAlert(request *restful.Request, response *restful.Response) {
+func ConvertString2Time(ts string) time.Time {
+	timeInt, err := strconv.ParseInt(ts, 10, 64)
+	if err != nil {
+		glog.Errorf("convert second timestamp %s to minute timestamp failed", ts)
+		return time.Now()
+	}
 
+	return time.Unix(timeInt, 0)
 }
 
-func UpdateAlert(request *restful.Request, response *restful.Response) {
-
-}
-
-func DeleteAlert(request *restful.Request, response *restful.Response) {
-
+func ConvertTime2String(t time.Time) string {
+	return fmt.Sprintf("%d", t.Unix())
 }

@@ -143,7 +143,6 @@ func (r ResourceGroup) Create(tx *gorm.DB, v interface{}) (interface{}, error) {
 		"description, uri_params, created_at, updated_at) VALUES " + item
 
 	if err := tx.Exec(sql).Error; err != nil {
-		tx.Rollback()
 		return nil, err
 	}
 
@@ -156,11 +155,10 @@ func (r ResourceGroup) Create(tx *gorm.DB, v interface{}) (interface{}, error) {
 	}
 
 	if err := CreateOrUpdateResources(tx, resourceWithName); err != nil {
-		tx.Rollback()
 		return nil, err
 	}
 
-	return nil, nil
+	return resGroup, nil
 }
 
 func (r ResourceGroup) Update(tx *gorm.DB, v interface{}) (interface{}, error) {
@@ -191,7 +189,6 @@ func (r ResourceGroup) Update(tx *gorm.DB, v interface{}) (interface{}, error) {
 		resGroup.URIParams, time.Now(), resGroup.ResourceGroupID)
 
 	if err := tx.Exec(sql).Error; err != nil {
-		tx.Rollback()
 		return nil, err
 	}
 
@@ -201,14 +198,12 @@ func (r ResourceGroup) Update(tx *gorm.DB, v interface{}) (interface{}, error) {
 	err = DeleteResources(tx, resGroup.ResourceGroupID, needDeleted)
 
 	if err != nil {
-		tx.Rollback()
 		return nil, err
 	}
 
 	err = CreateOrUpdateResources(tx, needUpdated)
 
 	if err != nil {
-		tx.Rollback()
 		return nil, err
 	}
 
@@ -228,7 +223,6 @@ func (r ResourceGroup) Get(tx *gorm.DB, v interface{}) (interface{}, error) {
 	err := tx.Model(&ResourceGroup{}).Where("resource_group_id=?", rgSpec.ResourceGroupID).First(&rg).Error
 
 	if err != nil {
-		tx.Rollback()
 		return nil, err
 	}
 
@@ -242,7 +236,6 @@ func (r ResourceGroup) Get(tx *gorm.DB, v interface{}) (interface{}, error) {
 		resources, err := GetResources(tx, rg.ResourceGroupID)
 
 		if err != nil {
-			tx.Rollback()
 			return &rg, err
 		}
 
@@ -263,7 +256,6 @@ func (r ResourceGroup) Delete(tx *gorm.DB, v interface{}) (interface{}, error) {
 	sql := "DELETE rg, r FROM resource_groups as rg LEFT JOIN resources as r ON rg.resource_group_id=r.resource_group_id WHERE rg.resource_group_id=?"
 
 	if err := tx.Debug().Exec(sql, rg.ResourceGroupID).Error; err != nil {
-		tx.Rollback()
 		return nil, err
 	}
 

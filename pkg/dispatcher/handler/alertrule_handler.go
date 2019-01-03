@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/carmanzhang/ks-alert/pkg/dispatcher/pb"
 	"github.com/carmanzhang/ks-alert/pkg/models"
+	"github.com/pkg/errors"
 	"time"
 )
 
@@ -13,84 +14,53 @@ type AlertRuleHandler struct{}
 func (server AlertRuleHandler) CreateAlertRule(ctx context.Context, ruleGroup *pb.AlertRuleGroup) (*pb.AlertRuleGroupResponse, error) {
 
 	if len(ruleGroup.AlertRules) == 0 || ruleGroup.AlertRuleGroupName == "" {
-		return &pb.AlertRuleGroupResponse{
-			Error: &pb.Error{
-				Code: pb.Error_INVALID_PARAM,
-				Text: "invalid param",
-			},
-		}, nil
+		return nil, errors.New("invalid param")
 	}
 
 	if ruleGroup.ResourceTypeId != "" {
 		r, _ := models.GetResourceType(&models.ResourceType{ResourceTypeID: ruleGroup.ResourceTypeId})
 		if r == nil || r.ResourceTypeID == "" {
-			return &pb.AlertRuleGroupResponse{
-				Error: &pb.Error{
-					Code: pb.Error_INVALID_PARAM,
-					Text: "resource type does not exist",
-				},
-			}, nil
+			return nil, errors.New("resource type does not exist")
 		}
 
-		alertRuleGroup, err := models.CreateAlertRuleGroup(ConvertPB2AlertRuleGroup(ruleGroup))
-		var pErr *pb.Error
+		v, err := DoTransactionAction(ConvertPB2AlertRuleGroup(ruleGroup), RuleGroup, MethodCreate)
+
 		if err != nil {
-			pErr = &pb.Error{
-				Code: pb.Error_ACCESS_DENIED,
-				Text: err.Error(),
-			}
-		} else {
-			pErr = &pb.Error{
-				Code: pb.Error_SUCCESS,
-				Text: "success",
-			}
+			return nil, err
 		}
+
+		var rg *models.AlertRuleGroup
+		if v != nil {
+			rg = v.(*models.AlertRuleGroup)
+		}
+
 		return &pb.AlertRuleGroupResponse{
-			Error:          pErr,
-			AlertRuleGroup: ConvertAlertRuleGroup2PB(alertRuleGroup),
+			AlertRuleGroup: ConvertAlertRuleGroup2PB(rg),
 		}, nil
 	}
 
 	return nil, nil
 }
 
-func (server AlertRuleHandler) UpdateAlertRule(ctx context.Context, alertRule *pb.AlertRuleGroup) (*pb.AlertRuleGroupResponse, error) {
+func (server AlertRuleHandler) UpdateAlertRule(ctx context.Context, ruleGroup *pb.AlertRuleGroup) (*pb.AlertRuleGroupResponse, error) {
 	// check alert_rule_group_id is exist
-	if alertRule.AlertRuleGroupId == "" || alertRule.AlertRuleGroupName == "" {
-		return &pb.AlertRuleGroupResponse{
-			Error: &pb.Error{
-				Code: pb.Error_INVALID_PARAM,
-				Text: "invalid param",
-			},
-		}, nil
+	if ruleGroup.AlertRuleGroupId == "" || ruleGroup.AlertRuleGroupName == "" {
+		return nil, errors.New("invalid param")
 	}
 
-	_, err := models.GetAlertRuleGroup(&pb.AlertRuleGroupSpec{AlertRuleGroupId: alertRule.AlertRuleGroupId})
+	v, err := DoTransactionAction(ConvertPB2AlertRuleGroup(ruleGroup), RuleGroup, MethodUpdate)
+
 	if err != nil {
-		return &pb.AlertRuleGroupResponse{
-			Error: &pb.Error{
-				Code: pb.Error_INVALID_PARAM,
-				Text: err.Error(),
-			},
-		}, nil
+		return nil, err
 	}
 
-	err = models.UpdateAlertRuleGroup(ConvertPB2AlertRuleGroup(alertRule))
-
-	var pErr *pb.Error
-	if err != nil {
-		pErr = &pb.Error{
-			Code: pb.Error_ACCESS_DENIED,
-			Text: err.Error(),
-		}
-	} else {
-		pErr = &pb.Error{
-			Code: pb.Error_SUCCESS,
-			Text: "success",
-		}
+	var rg *models.AlertRuleGroup
+	if v != nil {
+		rg = v.(*models.AlertRuleGroup)
 	}
+
 	return &pb.AlertRuleGroupResponse{
-		Error: pErr,
+		AlertRuleGroup: ConvertAlertRuleGroup2PB(rg),
 	}, nil
 }
 
@@ -103,31 +73,22 @@ func (server AlertRuleHandler) GetAlertRule(ctx context.Context, alertRuleSpec *
 	//systemRule := alertRuleSpec.SystemRule
 
 	if groupID == "" && typeID == "" {
-		return &pb.AlertRuleGroupResponse{
-			Error: &pb.Error{
-				Code: pb.Error_INVALID_PARAM,
-				Text: "invalid param",
-			},
-		}, nil
+		return nil, errors.New("invalid param")
 	}
 
-	ruleGroup, err := models.GetAlertRuleGroup(alertRuleSpec)
+	v, err := DoTransactionAction(alertRuleSpec, RuleGroup, MethodGet)
 
-	var pErr *pb.Error
 	if err != nil {
-		pErr = &pb.Error{
-			Code: pb.Error_ACCESS_DENIED,
-			Text: err.Error(),
-		}
-	} else {
-		pErr = &pb.Error{
-			Code: pb.Error_SUCCESS,
-			Text: "success",
-		}
+		return nil, err
 	}
+
+	var rg *models.AlertRuleGroup
+	if v != nil {
+		rg = v.(*models.AlertRuleGroup)
+	}
+
 	return &pb.AlertRuleGroupResponse{
-		Error:          pErr,
-		AlertRuleGroup: ConvertAlertRuleGroup2PB(ruleGroup),
+		AlertRuleGroup: ConvertAlertRuleGroup2PB(rg),
 	}, nil
 }
 
@@ -140,43 +101,33 @@ func (server AlertRuleHandler) DeleteAlertRule(ctx context.Context, alertRuleSpe
 	//systemRule := alertRuleSpec.SystemRule
 
 	if groupID == "" && typeID == "" {
-		return &pb.AlertRuleGroupResponse{
-			Error: &pb.Error{
-				Code: pb.Error_INVALID_PARAM,
-				Text: "invalid param",
-			},
-		}, nil
+		return nil, errors.New("invalid param")
 	} else if groupID == "" && typeID != "" {
 		// system rule group
-		ruleGroup, err := models.GetAlertRuleGroup(alertRuleSpec)
+		v, err := DoTransactionAction(alertRuleSpec, RuleGroup, MethodGet)
+
 		if err != nil {
-			return &pb.AlertRuleGroupResponse{
-				Error: &pb.Error{
-					Code: pb.Error_ACCESS_DENIED,
-					Text: err.Error(),
-				},
-			}, nil
+			return nil, err
 		}
 
-		groupID = ruleGroup.AlertRuleGroupID
+		rg := v.(*models.AlertRuleGroup)
+
+		alertRuleSpec.AlertRuleGroupId = rg.AlertRuleGroupID
 	}
 
-	err := models.DeleteAlertRuleGroup(alertRuleSpec)
+	v, err := DoTransactionAction(alertRuleSpec, RuleGroup, MethodDelete)
 
-	var pErr *pb.Error
 	if err != nil {
-		pErr = &pb.Error{
-			Code: pb.Error_ACCESS_DENIED,
-			Text: err.Error(),
-		}
-	} else {
-		pErr = &pb.Error{
-			Code: pb.Error_SUCCESS,
-			Text: "success",
-		}
+		return nil, err
 	}
+
+	var rg *models.AlertRuleGroup
+	if v != nil {
+		rg = v.(*models.AlertRuleGroup)
+	}
+
 	return &pb.AlertRuleGroupResponse{
-		Error: pErr,
+		AlertRuleGroup: ConvertAlertRuleGroup2PB(rg),
 	}, nil
 }
 
