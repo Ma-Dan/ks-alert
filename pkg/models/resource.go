@@ -6,7 +6,6 @@ import (
 	"github.com/carmanzhang/ks-alert/pkg/utils/idutil"
 	"github.com/golang/glog"
 	"github.com/jinzhu/gorm"
-	"github.com/pkg/errors"
 	"strings"
 	"time"
 )
@@ -117,7 +116,15 @@ func (r ResourceGroup) Create(tx *gorm.DB, v interface{}) (interface{}, error) {
 	resGroup, ok := v.(*ResourceGroup)
 
 	if !ok {
-		return nil, errors.Errorf("type %v assert error", resGroup)
+		return nil, Error{Text: fmt.Sprintf("type %v assert error", resGroup), Code: AssertError}
+	}
+
+	if resGroup.ResourceGroupName == "" || resGroup.ResourceTypeID == "" {
+		return nil, Error{Text: "resource group name and resource type id must be specified", Code: InvalidParam}
+	}
+
+	if resGroup.Resources == nil || len(resGroup.Resources) == 0 {
+		return nil, Error{Text: "resources must be specified", Code: InvalidParam}
 	}
 
 	var resourceWithName []*Resource
@@ -130,7 +137,7 @@ func (r ResourceGroup) Create(tx *gorm.DB, v interface{}) (interface{}, error) {
 	}
 
 	if len(resourceWithName) == 0 {
-		return nil, errors.New("at least one resource name must be specified")
+		return nil, Error{Text: "at least one resource name must be specified", Code: InvalidParam}
 	}
 
 	resGroup.ResourceGroupID = idutil.GetUuid36("resource_group-")
@@ -143,7 +150,7 @@ func (r ResourceGroup) Create(tx *gorm.DB, v interface{}) (interface{}, error) {
 		"description, uri_params, created_at, updated_at) VALUES " + item
 
 	if err := tx.Exec(sql).Error; err != nil {
-		return nil, err
+		return nil, Error{Text: err.Error(), Code: DBError}
 	}
 
 	// create item
@@ -166,7 +173,11 @@ func (r ResourceGroup) Update(tx *gorm.DB, v interface{}) (interface{}, error) {
 	resGroup, ok := v.(*ResourceGroup)
 
 	if !ok {
-		return nil, errors.Errorf("type %v assert error", resGroup)
+		return nil, Error{Text: fmt.Sprintf("type %v assert error", resGroup), Code: AssertError}
+	}
+
+	if resGroup.ResourceGroupID == "" || resGroup.ResourceGroupName == "" {
+		return nil, Error{Text: "resource group id or name must be specified", Code: InvalidParam}
 	}
 
 	// 1. get resource group first
@@ -179,7 +190,7 @@ func (r ResourceGroup) Update(tx *gorm.DB, v interface{}) (interface{}, error) {
 	rg := vget.(*ResourceGroup)
 
 	if rg == nil || rg.ResourceGroupID == "" {
-		return nil, errors.Errorf("resource group id: %s not exist", resGroup.ResourceGroupID)
+		return nil, Error{Text: fmt.Sprintf("resource group id: %s not exist", resGroup.ResourceGroupID), Code: InvalidParam}
 	}
 
 	// 2. update resource group
@@ -189,7 +200,7 @@ func (r ResourceGroup) Update(tx *gorm.DB, v interface{}) (interface{}, error) {
 		resGroup.URIParams, time.Now(), resGroup.ResourceGroupID)
 
 	if err := tx.Exec(sql).Error; err != nil {
-		return nil, err
+		return nil, Error{Text: err.Error(), Code: DBError}
 	}
 
 	// 3. delete resources or update resource
@@ -215,7 +226,13 @@ func (r ResourceGroup) Get(tx *gorm.DB, v interface{}) (interface{}, error) {
 	rgSpec, ok := v.(*ResourceGroup)
 
 	if !ok {
-		return nil, errors.Errorf("type %v assert error", rgSpec)
+		return nil, Error{Text: fmt.Sprintf("type %v assert error", rgSpec), Code: AssertError}
+	}
+
+	rgID := rgSpec.ResourceGroupID
+
+	if rgID == "" {
+		return nil, Error{Text: "resource group id must be specified", Code: InvalidParam}
 	}
 
 	var rg ResourceGroup
@@ -223,13 +240,13 @@ func (r ResourceGroup) Get(tx *gorm.DB, v interface{}) (interface{}, error) {
 	err := tx.Model(&ResourceGroup{}).Where("resource_group_id=?", rgSpec.ResourceGroupID).First(&rg).Error
 
 	if err != nil {
-		return nil, err
+		return nil, Error{Text: err.Error(), Code: DBError}
 	}
 
 	exist := tx.RecordNotFound()
 
 	if exist {
-		return nil, errors.New("record not found")
+		return nil, Error{Text: "record not found", Code: DBError}
 	}
 
 	if rg.ResourceGroupID != "" {
@@ -240,23 +257,28 @@ func (r ResourceGroup) Get(tx *gorm.DB, v interface{}) (interface{}, error) {
 		}
 
 		rg.Resources = resources
-		return &rg, nil
 	}
 
-	return nil, nil
+	return &rg, nil
 }
 
 func (r ResourceGroup) Delete(tx *gorm.DB, v interface{}) (interface{}, error) {
 	rg, ok := v.(*ResourceGroup)
 
 	if !ok {
-		return nil, errors.Errorf("type %v assert error", rg)
+		return nil, Error{Text: fmt.Sprintf("type %v assert error", rg), Code: AssertError}
+	}
+
+	rgID := rg.ResourceGroupID
+
+	if rgID == "" {
+		return nil, Error{Text: "resource group id must be specified", Code: InvalidParam}
 	}
 
 	sql := "DELETE rg, r FROM resource_groups as rg LEFT JOIN resources as r ON rg.resource_group_id=r.resource_group_id WHERE rg.resource_group_id=?"
 
 	if err := tx.Debug().Exec(sql, rg.ResourceGroupID).Error; err != nil {
-		return nil, err
+		return nil, Error{Text: err.Error(), Code: DBError}
 	}
 
 	return nil, nil
@@ -264,9 +286,13 @@ func (r ResourceGroup) Delete(tx *gorm.DB, v interface{}) (interface{}, error) {
 
 // resources crud
 func CreateOrUpdateResources(tx *gorm.DB, resources []*Resource) error {
+	l := len(resources)
+	if l == 0 {
+		return nil
+	}
+
 	sql := "INSERT INTO resources (resource_id, resource_name, resource_group_id, created_at, updated_at) VALUES "
 
-	l := len(resources)
 	for i := 0; i < l; i++ {
 		r := (resources)[i]
 
@@ -286,7 +312,7 @@ func CreateOrUpdateResources(tx *gorm.DB, resources []*Resource) error {
 	sql = sql + "on duplicate key update resource_name=values(resource_name),updated_at=values(updated_at)"
 
 	if err := tx.Debug().Exec(sql).Error; err != nil {
-		return err
+		return Error{Text: err.Error(), Code: DBError}
 	}
 
 	return nil
@@ -297,7 +323,7 @@ func GetResources(tx *gorm.DB, rgID string) ([]*Resource, error) {
 	sql := "SELECT r.* FROM resources as r WHERE r.resource_group_id=?"
 
 	if err := tx.Debug().Raw(sql, rgID).Scan(&resources).Error; err != nil {
-		return nil, err
+		return nil, Error{Text: err.Error(), Code: DBError}
 	}
 
 	l := len(resources)
@@ -312,10 +338,10 @@ func GetResources(tx *gorm.DB, rgID string) ([]*Resource, error) {
 func CompareResources(p []*Resource, q []*Resource, rgID string) ([]*Resource, []*Resource) {
 	l := len(q)
 
-	var resID = make(map[string]bool)
+	var resID = make(map[string]int)
 
 	for i := 0; i < l; i++ {
-		resID[q[i].ResourceID] = true
+		resID[q[i].ResourceID] = i
 	}
 
 	l = len(p)
@@ -323,10 +349,10 @@ func CompareResources(p []*Resource, q []*Resource, rgID string) ([]*Resource, [
 	var needUpdated []*Resource
 	for i := 0; i < l; i++ {
 		r := p[i].ResourceID
-		_, ok := resID[r]
+		j, ok := resID[r]
 
 		if r != "" && !ok {
-			needDeleted = append(needDeleted, p[i])
+			needDeleted = append(needDeleted, q[j])
 		} else {
 			p[i].ResourceGroupID = rgID
 			needUpdated = append(needUpdated, p[i])
@@ -339,25 +365,26 @@ func CompareResources(p []*Resource, q []*Resource, rgID string) ([]*Resource, [
 func DeleteResources(tx *gorm.DB, rgID string, resources []*Resource) error {
 
 	if rgID == "" {
-		return errors.New("resource group id is null")
+		return Error{Text: "resource group id must be specified", Code: InvalidParam}
 	}
 
 	if len(resources) == 0 {
 		if err := tx.Debug().Exec("DELETE r FROM resources as r WHERE r.resource_group_id=?", rgID).Error; err != nil {
-			return err
+			return Error{Text: err.Error(), Code: DBError}
 		}
 
 	} else {
 		var ids []string
 		for i := 0; i < len(resources); i++ {
-			id := resources[i].ResourceID
+			r := resources[i]
+			id := r.ResourceID
 			if id != "" {
 				ids = append(ids, id)
 			}
 		}
 
 		if err := tx.Debug().Exec("DELETE r FROM resources as r WHERE r.resource_group_id=? AND r.resource_id IN (?)", rgID, ids).Error; err != nil {
-			return err
+			return Error{Text: err.Error(), Code: DBError}
 		}
 	}
 

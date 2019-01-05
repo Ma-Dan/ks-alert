@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/carmanzhang/ks-alert/pkg/dispatcher/pb"
+	"github.com/carmanzhang/ks-alert/pkg/executor/handler"
+	p "github.com/carmanzhang/ks-alert/pkg/executor/pb"
 	"github.com/carmanzhang/ks-alert/pkg/models"
 	"github.com/golang/glog"
 	"strconv"
@@ -17,19 +19,70 @@ func (server AlertHandler) CreateAlertConfig(ctx context.Context, pbac *pb.Alert
 
 	ac := ConvertPB2AlertConfig(pbac)
 
-	res, err := DoTransactionAction(ac, AlertConfig, MethodCreate)
+	v, err := DoTransactionAction(ac, AlertConfig, MethodCreate)
+	respon := getAlertConfigResponse(v, err)
+	executor := handler.Executor{}
+	// TODO need add error adaptor
+	executor.Execute(ctx, &p.Message{AlertConfigId: respon.AlertConfig.AlertConfigId, Signal: p.Message_CREATE})
 
-	if err != nil {
-		return nil, err
+	return respon, nil
+}
+
+func getAlertConfigResponse(v interface{}, err error) *pb.AlertConfigResponse {
+
+	var respon = &pb.AlertConfigResponse{}
+
+	if v != nil {
+		vv := v.([]interface{})
+		respon.AlertConfig = ConvertAlertConfig2PB(vv)
 	}
 
-	v := res.([]interface{})
+	if err != nil {
+		glog.Errorln(err.Error())
+		respon.Error = ErrorConverter(err)
+	} else {
+		respon.Error = ErrorConverter(*models.NewError(0, models.Success))
+	}
 
-	alertConfig := ConvertAlertConfig2PB(v)
+	return respon
+}
 
-	return &pb.AlertConfigResponse{
-		AlertConfig: alertConfig,
-	}, nil
+func (server AlertHandler) DeleteAlertConfig(ctx context.Context, alertConfigSpec *pb.AlertConfigSpec) (*pb.AlertConfigResponse, error) {
+	ac := models.AlertConfig{AlertConfigID: alertConfigSpec.AlertConfigId}
+
+	acIDs, _ := DoTransactionAction(&ac, AlertConfig, MethodDelete, false)
+	alertConfig := acIDs.([]interface{})[0].(*models.AlertConfig)
+
+	ac.AlertRuleGroupID = alertConfig.AlertRuleGroupID
+	ac.ResourceGroupID = alertConfig.ResourceGroupID
+	ac.ReceiverGroupID = alertConfig.ReceiverGroupID
+
+	v, err := DoTransactionAction(&ac, AlertConfig, MethodDelete)
+	respon := getAlertConfigResponse(v, err)
+	return respon, nil
+}
+
+func (server AlertHandler) UpdateAlertConfig(ctx context.Context, alertConfig *pb.AlertConfig) (*pb.AlertConfigResponse, error) {
+	ac := ConvertPB2AlertConfig(alertConfig)
+
+	v, err := DoTransactionAction(ac, AlertConfig, MethodUpdate)
+	respon := getAlertConfigResponse(v, err)
+	return respon, nil
+}
+
+func (server AlertHandler) GetAlertConfig(ctx context.Context, alertConfigSpec *pb.AlertConfigSpec) (*pb.AlertConfigResponse, error) {
+	ac := models.AlertConfig{AlertConfigID: alertConfigSpec.AlertConfigId}
+
+	acIDs, _ := DoTransactionAction(&ac, AlertConfig, MethodGet, false)
+	alertConfig := acIDs.([]interface{})[0].(*models.AlertConfig)
+
+	ac.AlertRuleGroup = &models.AlertRuleGroup{AlertRuleGroupID: alertConfig.AlertRuleGroupID}
+	ac.ResourceGroup = &models.ResourceGroup{ResourceGroupID: alertConfig.ResourceGroupID}
+	ac.ReceiverGroup = &models.ReceiverGroup{ReceiverGroupID: alertConfig.ReceiverGroupID}
+
+	v, err := DoTransactionAction(&ac, AlertConfig, MethodGet)
+	respon := getAlertConfigResponse(v, err)
+	return respon, nil
 }
 
 func ConvertPB2AlertConfig(pbac *pb.AlertConfig) *models.AlertConfig {
@@ -53,18 +106,6 @@ func ConvertPB2AlertConfig(pbac *pb.AlertConfig) *models.AlertConfig {
 		CreatedAt:   time.Now(),
 		UpdatedAt:   time.Now(),
 	}
-}
-
-func (server AlertHandler) DeleteAlertConfig(ctx context.Context, alertConfigSpec *pb.AlertConfigSpec) (*pb.AlertConfigResponse, error) {
-	return nil, nil
-}
-
-func (server AlertHandler) UpdateAlertConfig(ctx context.Context, alertConfig *pb.AlertConfig) (*pb.AlertConfigResponse, error) {
-	return nil, nil
-}
-
-func (server AlertHandler) GetAlertConfig(ctx context.Context, alertConfig *pb.AlertConfigSpec) (*pb.AlertConfigResponse, error) {
-	return nil, nil
 }
 
 func ConvertAlertConfig2PB(v []interface{}) *pb.AlertConfig {

@@ -5,7 +5,6 @@ import (
 	"github.com/carmanzhang/ks-alert/pkg/dispatcher/pb"
 	"github.com/carmanzhang/ks-alert/pkg/utils/idutil"
 	"github.com/jinzhu/gorm"
-	"github.com/pkg/errors"
 	"time"
 )
 
@@ -105,7 +104,26 @@ func createAlertGroupAndRules(tx *gorm.DB, ruleGroup *AlertRuleGroup) error {
 }
 
 func (r AlertRuleGroup) Create(tx *gorm.DB, v interface{}) (interface{}, error) {
-	alertRuleGroup := v.(*AlertRuleGroup)
+	alertRuleGroup, ok := v.(*AlertRuleGroup)
+
+	if !ok {
+		return nil, Error{Text: fmt.Sprintf("type %v assert error", alertRuleGroup), Code: AssertError}
+	}
+
+	if alertRuleGroup.ResourceTypeID == "" {
+		return nil, Error{Text: "resource type id must be specified", Code: InvalidParam}
+	}
+
+	if len(alertRuleGroup.AlertRules) == 0 || alertRuleGroup.AlertRuleGroupName == "" {
+		return nil, Error{Text: "at least one alert rule and it's name must be specified", Code: InvalidParam}
+	}
+
+	rt, _ := GetResourceType(&ResourceType{ResourceTypeID: alertRuleGroup.ResourceTypeID})
+
+	if rt == nil || rt.ResourceTypeID == "" {
+		return nil, Error{Text: "resource type does not exist", Code: InvalidParam}
+	}
+
 	// check if the build-in alert rule group exist?
 	if alertRuleGroup.SystemRule {
 		rule := pb.AlertRuleGroupSpec{ResourceTypeId: alertRuleGroup.ResourceTypeID, SystemRule: true}
@@ -113,7 +131,7 @@ func (r AlertRuleGroup) Create(tx *gorm.DB, v interface{}) (interface{}, error) 
 
 		if ruleGroup != nil && ruleGroup.(*AlertRuleGroup).AlertRuleGroupID != "" {
 			// build-in alert rule group exist
-			return nil, errors.New("build-in rules exists for the current resource type")
+			return nil, Error{Text: "build-in rules exists for the current resource type", Code: InvalidParam}
 		}
 	}
 
@@ -129,7 +147,17 @@ func (r AlertRuleGroup) Create(tx *gorm.DB, v interface{}) (interface{}, error) 
 }
 
 func (r AlertRuleGroup) Update(tx *gorm.DB, v interface{}) (interface{}, error) {
-	ruleGroup := v.(*AlertRuleGroup)
+	ruleGroup, ok := v.(*AlertRuleGroup)
+
+	if !ok {
+		return nil, Error{Text: fmt.Sprintf("type %v assert error", ruleGroup), Code: AssertError}
+	}
+
+	// check alert_rule_group_id is exist
+	if ruleGroup.AlertRuleGroupID == "" || ruleGroup.AlertRuleGroupName == "" {
+		return nil, Error{Text: "resource type id and rule group name must be specified", Code: InvalidParam}
+	}
+
 	alertRules := ruleGroup.AlertRules
 
 	// update alert rule group
@@ -142,7 +170,7 @@ func (r AlertRuleGroup) Update(tx *gorm.DB, v interface{}) (interface{}, error) 
 	fmt.Println(sql)
 
 	if err := tx.Exec(sql).Error; err != nil {
-		return nil, err
+		return nil, Error{Text: err.Error(), Code: DBError}
 	}
 
 	// update alert rules
@@ -166,7 +194,7 @@ func (r AlertRuleGroup) Update(tx *gorm.DB, v interface{}) (interface{}, error) 
 
 		fmt.Println(sql)
 		if err := tx.Exec(sql).Error; err != nil {
-			return nil, err
+			return nil, Error{Text: err.Error(), Code: DBError}
 		}
 	}
 
@@ -174,7 +202,20 @@ func (r AlertRuleGroup) Update(tx *gorm.DB, v interface{}) (interface{}, error) 
 }
 
 func (r AlertRuleGroup) Get(tx *gorm.DB, v interface{}) (interface{}, error) {
-	ruleGroupSpec := v.(*pb.AlertRuleGroupSpec)
+	ruleGroupSpec, ok := v.(*pb.AlertRuleGroupSpec)
+
+	if !ok {
+		return nil, Error{Text: fmt.Sprintf("type %v assert error", ruleGroupSpec), Code: AssertError}
+	}
+
+	groupID := ruleGroupSpec.AlertRuleGroupId
+	// means to get supported alert rule for the resource type
+	typeID := ruleGroupSpec.ResourceTypeId
+	//systemRule := alertRuleSpec.SystemRule
+
+	if groupID == "" && typeID == "" {
+		return nil, Error{Text: "rsource type id or rule group id must be specified", Code: InvalidParam}
+	}
 
 	var rg AlertRuleGroup
 
@@ -186,10 +227,8 @@ func (r AlertRuleGroup) Get(tx *gorm.DB, v interface{}) (interface{}, error) {
 		tx.Model(&AlertRuleGroup{}).Where("resource_type_id=? AND system_rule=?", ruleGroupSpec.ResourceTypeId, true).First(&rg)
 	}
 
-	exist := tx.RecordNotFound()
-
-	if exist {
-		return nil, errors.New("record not found")
+	if tx.RecordNotFound() {
+		return nil, Error{Text: "record not found", Code: DBError}
 	}
 
 	// get alert rules
@@ -200,34 +239,45 @@ func (r AlertRuleGroup) Get(tx *gorm.DB, v interface{}) (interface{}, error) {
 		//db.Exec("SELECT * FROM alert_rules WHERE alert_rule_group_id=?", ruleGroupSpec.AlertRuleGroupId).First(&alertRules)
 
 		if err != nil {
-			return &rg, err
+			return &rg, Error{Text: err.Error(), Code: DBError}
 		}
 
 		rg.AlertRules = alertRules
 
-		return &rg, tx.Error
+		return &rg, nil
 	}
 
 	return &rg, nil
 }
 
 func (r AlertRuleGroup) Delete(tx *gorm.DB, v interface{}) (interface{}, error) {
-	ruleGroupSpec := v.(*pb.AlertRuleGroupSpec)
+	ruleGroupSpec, ok := v.(*pb.AlertRuleGroupSpec)
 
-	err := tx.Delete(&AlertRuleGroup{AlertRuleGroupID: ruleGroupSpec.AlertRuleGroupId}).Error
-	//err = db.Delete(&AlertRuleGroup{ResourceTypeID: ruleGroupSpec.ResourceTypeId, SystemRule: true}).Error
-	//err = tx.Exec("DELETE from alert_rule_group WHERE alert_rule_group_id=?", ruleGroupSpec.AlertRuleGroupId).Error
-
-	if err != nil {
-		return nil, err
+	if !ok {
+		return nil, Error{Text: fmt.Sprintf("type %v assert error", ruleGroupSpec), Code: AssertError}
 	}
 
-	// delete all alert rule
-	err = tx.Delete(&AlertRule{AlertRuleGroupID: ruleGroupSpec.AlertRuleGroupId}).Error
-	//err = tx.Exec("DELETE from alert_rule WHERE alert_rule_group_id=?", ruleGroupSpec.AlertRuleGroupId).Error
+	groupID := ruleGroupSpec.AlertRuleGroupId
+	// means to get supported alert rule for the resource type
+	typeID := ruleGroupSpec.ResourceTypeId
+	//systemRule := alertRuleSpec.SystemRule
 
-	if err != nil {
-		return nil, err
+	if groupID == "" && typeID == "" {
+		return nil, Error{Text: "rsource type id or rule group id must be specified", Code: InvalidParam}
+	}
+
+	if groupID != "" {
+		sql := "DELETE arg, ar FROM alert_rule_groups as arg LEFT JOIN alert_rules as ar ON arg.alert_rule_group_id=ar.alert_rule_group_id WHERE arg.alert_rule_group_id=?"
+
+		if err := tx.Debug().Exec(sql, groupID).Error; err != nil {
+			return nil, Error{Text: err.Error(), Code: DBError}
+		}
+	} else if typeID != "" {
+		sql := "DELETE arg, ar FROM alert_rule_groups as arg LEFT JOIN alert_rules as ar ON arg.resource_type_id=ar.resource_type_id WHERE arg.resource_type_id=? AND arg.system_rule"
+
+		if err := tx.Debug().Exec(sql, typeID, true).Error; err != nil {
+			return nil, Error{Text: err.Error(), Code: DBError}
+		}
 	}
 
 	return nil, nil

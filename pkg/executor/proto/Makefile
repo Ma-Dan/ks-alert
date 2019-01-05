@@ -6,4 +6,5 @@ all: $(PROTO_FILES) Makefile
 
 executor:
 	# generate the gRPC code
-	protoc --go_out=plugins=grpc:../../pb/ ${PROTO_FILES}
+	protoc3.6.exe --go_out=plugins=grpc:../pb/ ${PROTO_FILES}
+	protoc3.6.exe --go_out=plugins=grpc:../pb/ executor.proto

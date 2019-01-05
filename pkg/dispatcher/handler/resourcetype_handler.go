@@ -4,8 +4,8 @@ import (
 	"context"
 	"github.com/carmanzhang/ks-alert/pkg/dispatcher/pb"
 	"github.com/carmanzhang/ks-alert/pkg/models"
-	"time"
 	"github.com/carmanzhang/ks-alert/pkg/utils/jsonutil"
+	"time"
 )
 
 type ResourceTypeHandler struct{}
@@ -16,7 +16,7 @@ func (server ResourceTypeHandler) CreateResourceType(ctx context.Context, resour
 	if resourceType.ProductId == "" {
 		return &pb.ResourceTypeResponse{
 			Error: &pb.Error{
-				Code: pb.Error_ACCESS_DENIED,
+
 				Text: "product_id must be specified",
 			},
 		}, nil
@@ -31,18 +31,17 @@ func (server ResourceTypeHandler) CreateResourceType(ctx context.Context, resour
 	return &pb.ResourceTypeResponse{
 		ResourceType: ConvertResourceType2PB(prod),
 		Error: &pb.Error{
-			Code: pb.Error_SUCCESS,
+
 			Text: "success",
 		},
 	}, nil
 }
 
-
 func (server ResourceTypeHandler) UpdateResourceType(ctx context.Context, resourceType *pb.ResourceType) (*pb.ResourceTypeResponse, error) {
 	if resourceType.ProductId == "" {
 		return &pb.ResourceTypeResponse{
 			Error: &pb.Error{
-				Code: pb.Error_ACCESS_DENIED,
+
 				Text: "product_id must be specified",
 			},
 		}, nil
@@ -56,7 +55,7 @@ func (server ResourceTypeHandler) UpdateResourceType(ctx context.Context, resour
 
 	return &pb.ResourceTypeResponse{
 		Error: &pb.Error{
-			Code: pb.Error_SUCCESS,
+
 			Text: "success",
 		},
 	}, nil
@@ -69,7 +68,7 @@ func (server ResourceTypeHandler) GetResourceType(ctx context.Context, resourceT
 	typeName := resourceTypeSpec.ResourceTypeName
 
 	var pErr = &pb.Error{
-		Code: pb.Error_SUCCESS,
+
 		Text: "success",
 	}
 
@@ -79,7 +78,7 @@ func (server ResourceTypeHandler) GetResourceType(ctx context.Context, resourceT
 		tp, err := models.GetResourceType(&models.ResourceType{ResourceTypeID: typeID})
 		if err != nil {
 			pErr = &pb.Error{
-				Code: pb.Error_ACCESS_DENIED,
+
 				Text: err.Error(),
 			}
 		}
@@ -88,14 +87,13 @@ func (server ResourceTypeHandler) GetResourceType(ctx context.Context, resourceT
 		tp, err := models.GetResourceType(&models.ResourceType{ProductID: prodID, ResourceTypeName: typeName})
 		if err != nil {
 			pErr = &pb.Error{
-				Code: pb.Error_ACCESS_DENIED,
+
 				Text: err.Error(),
 			}
 		}
 		resourceType = tp
 	} else {
 		pErr = &pb.Error{
-			Code: pb.Error_INVALID_PARAM,
 			Text: "invalid param",
 		}
 	}
@@ -106,7 +104,6 @@ func (server ResourceTypeHandler) GetResourceType(ctx context.Context, resourceT
 	}, nil
 }
 
-
 func (server ResourceTypeHandler) DeleteResourceType(ctx context.Context, resourceTypeSpec *pb.ResourceTypeSpec) (*pb.ResourceTypeResponse, error) {
 	typeID := resourceTypeSpec.ResourceTypeId
 
@@ -114,7 +111,7 @@ func (server ResourceTypeHandler) DeleteResourceType(ctx context.Context, resour
 	typeName := resourceTypeSpec.ResourceTypeName
 
 	var pErr = &pb.Error{
-		Code: pb.Error_SUCCESS,
+
 		Text: "success",
 	}
 
@@ -122,7 +119,7 @@ func (server ResourceTypeHandler) DeleteResourceType(ctx context.Context, resour
 		err := models.DeleteResourceType(&models.ResourceType{ResourceTypeID: typeID})
 		if err != nil {
 			pErr = &pb.Error{
-				Code: pb.Error_ACCESS_DENIED,
+
 				Text: err.Error(),
 			}
 		}
@@ -130,19 +127,18 @@ func (server ResourceTypeHandler) DeleteResourceType(ctx context.Context, resour
 		err := models.DeleteResourceType(&models.ResourceType{ProductID: prodID, ResourceTypeName: typeName})
 		if err != nil {
 			pErr = &pb.Error{
-				Code: pb.Error_ACCESS_DENIED,
+
 				Text: err.Error(),
 			}
 		}
 	} else {
 		pErr = &pb.Error{
-			Code: pb.Error_INVALID_PARAM,
 			Text: "invalid param",
 		}
 	}
 
 	return &pb.ResourceTypeResponse{
-		Error:        pErr,
+		Error: pErr,
 	}, nil
 }
 

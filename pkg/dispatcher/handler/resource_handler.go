@@ -5,7 +5,6 @@ import (
 	"github.com/carmanzhang/ks-alert/pkg/dispatcher/pb"
 	"github.com/carmanzhang/ks-alert/pkg/models"
 	"github.com/carmanzhang/ks-alert/pkg/utils/jsonutil"
-	"github.com/pkg/errors"
 	"k8s.io/klog/glog"
 	"time"
 )
@@ -13,91 +12,50 @@ import (
 type ResourceHandler struct{}
 
 func (server ResourceHandler) CreateResource(ctx context.Context, rg *pb.ResourceGroup) (*pb.ResourceGroupResponse, error) {
-
-	if rg.ResourceGroupName == "" || rg.ResourceTypeId == "" {
-		return nil, errors.New("resource group name and resource type id must be specified")
-	}
-
-	if rg.Resources == nil || len(rg.Resources) == 0 {
-		return nil, errors.New("resources must be specified")
-	}
-
-	_, err := DoTransactionAction(ConvertPB2ResourceGroup(rg), ResourceGroup, MethodCreate)
-
-	if err != nil {
-		glog.Errorln(err.Error())
-		return nil, err
-	}
-
-	return &pb.ResourceGroupResponse{}, nil
+	v, err := DoTransactionAction(ConvertPB2ResourceGroup(rg), ResourceGroup, MethodCreate)
+	respon := getResourceGroupResponse(v, err)
+	return respon, nil
 }
 
-func (server ResourceHandler) DeleteResource(ctx context.Context, rg *pb.ResourceGroupSpec) (*pb.ResourceGroupResponse, error) {
-	rgID := rg.ResourceGroupId
-
-	if rgID == "" {
-		return nil, errors.New("resource group id must be specified")
+func getResourceGroupResponse(v interface{}, err error) *pb.ResourceGroupResponse {
+	var resGroup *models.ResourceGroup
+	if v != nil {
+		resGroup = v.(*models.ResourceGroup)
 	}
 
-	_, err := DoTransactionAction(&models.ResourceGroup{ResourceGroupID: rgID}, ResourceGroup, MethodDelete)
+	rg := ConvertResourceGroup2PB(resGroup)
 
+	var respon = pb.ResourceGroupResponse{ResourceGroup: rg}
 	if err != nil {
 		glog.Errorln(err.Error())
-		return nil, err
+		respon.Error = ErrorConverter(err)
+	} else {
+		respon.Error = ErrorConverter(*models.NewError(0, models.Success))
 	}
+	return &respon
+}
 
-	return &pb.ResourceGroupResponse{}, nil
+func ErrorConverter(err error) *pb.Error {
+	e := models.ErrorWrapper(err)
+	return &pb.Error{Text: e.Text, Code: e.Code}
 }
 
 func (server ResourceHandler) UpdateResource(ctx context.Context, rgSpec *pb.ResourceGroup) (*pb.ResourceGroupResponse, error) {
-	if rgSpec.ResourceGroupId == "" {
-		return nil, errors.New("resource group id must be specified")
-	}
-
-	rg := ConvertPB2ResourceGroup(rgSpec)
-
-	v, err := DoTransactionAction(rg, ResourceGroup, MethodUpdate)
-
-	if err != nil {
-		glog.Errorln(err.Error())
-		return nil, err
-	}
-
-	var respon *models.ResourceGroup
-
-	if v != nil {
-		respon = v.(*models.ResourceGroup)
-	}
-
-	return &pb.ResourceGroupResponse{
-		ResourceGroup: ConvertResourceGroup2PB(respon),
-	}, nil
-
+	v, err := DoTransactionAction(ConvertPB2ResourceGroup(rgSpec), ResourceGroup, MethodUpdate)
+	respon := getResourceGroupResponse(v, err)
+	return respon, nil
 }
 
 func (server ResourceHandler) GetResource(ctx context.Context, rgSpec *pb.ResourceGroupSpec) (*pb.ResourceGroupResponse, error) {
-	rgID := rgSpec.ResourceGroupId
+	v, err := DoTransactionAction(&models.ResourceGroup{ResourceGroupID: rgSpec.ResourceGroupId}, ResourceGroup, MethodGet)
+	respon := getResourceGroupResponse(v, err)
+	return respon, nil
+}
 
-	if rgID == "" {
-		return nil, errors.New("resource group id must be specified")
-	}
-
-	rg, err := DoTransactionAction(&models.ResourceGroup{ResourceGroupID: rgID}, ResourceGroup, MethodGet)
-
-	if err != nil {
-		glog.Errorln(err.Error())
-		return nil, err
-	}
-
-	var respon *models.ResourceGroup
-
-	if rg != nil {
-		respon = rg.(*models.ResourceGroup)
-	}
-
-	return &pb.ResourceGroupResponse{
-		ResourceGroup: ConvertResourceGroup2PB(respon),
-	}, nil
+func (server ResourceHandler) DeleteResource(ctx context.Context, rg *pb.ResourceGroupSpec) (*pb.ResourceGroupResponse, error) {
+	v, err := DoTransactionAction(&models.ResourceGroup{ResourceGroupID: rg.ResourceGroupId}, ResourceGroup, MethodDelete)
+	respon := getResourceGroupResponse(v, err)
+	return respon, nil
 }
 
 func ConvertPB2ResourceGroup(rg *pb.ResourceGroup) *models.ResourceGroup {

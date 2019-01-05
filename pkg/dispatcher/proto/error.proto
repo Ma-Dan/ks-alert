@@ -7,13 +7,14 @@ option go_package = "pb";
 
 // Error
 message Error {
-    enum ErrorCode {
-        SUCCESS = 0;
-        INVALID_PARAM = 1;
-        ACCESS_DENIED = 2;
-        THRESHOLD_REACHED = 3;
-    }
-    ErrorCode code = 1;
+    //    enum ErrorCode {
+    //        SUCCESS = 0;
+    //        INVALID_PARAM = 1;
+    //        ACCESS_DENIED = 2;
+    //        THRESHOLD_REACHED = 3;
+    //    }
+    //    ErrorCode code = 1;
+    int32 code = 1;
     string text = 2; // optional
 }
 

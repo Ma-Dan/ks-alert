@@ -20,7 +20,6 @@ func (server EnterpriseHandler) CreateEnterprise(ctx context.Context, pbEnt *pb.
 	return &pb.EnterpriseResponse{
 		Enterprise: ConvertEnterprise2PB(enterprise),
 		Error: &pb.Error{
-			Code: pb.Error_SUCCESS,
 			Text: "success",
 		},
 	}, nil
@@ -34,7 +33,6 @@ func (server EnterpriseHandler) DeleteEnterprise(ctx context.Context, entSpec *p
 
 	if entID == "" && entName == "" {
 		pErr = &pb.Error{
-			Code: pb.Error_INVALID_PARAM,
 			Text: "invalid param",
 		}
 
@@ -47,12 +45,10 @@ func (server EnterpriseHandler) DeleteEnterprise(ctx context.Context, entSpec *p
 
 	if err != nil {
 		pErr = &pb.Error{
-			Code: pb.Error_ACCESS_DENIED,
 			Text: err.Error(),
 		}
 	} else {
 		pErr = &pb.Error{
-			Code: pb.Error_SUCCESS,
 			Text: "success",
 		}
 	}
@@ -69,7 +65,6 @@ func (server EnterpriseHandler) UpdateEnterprise(ctx context.Context, pbEnt *pb.
 	if err != nil {
 		return &pb.EnterpriseResponse{
 			Error: &pb.Error{
-				Code: pb.Error_ACCESS_DENIED,
 				Text: err.Error(),
 			},
 		}, err
@@ -77,7 +72,6 @@ func (server EnterpriseHandler) UpdateEnterprise(ctx context.Context, pbEnt *pb.
 
 	return &pb.EnterpriseResponse{
 		Error: &pb.Error{
-			Code: pb.Error_SUCCESS,
 			Text: "success",
 		},
 	}, nil
@@ -92,7 +86,6 @@ func (server EnterpriseHandler) GetEnterprise(ctx context.Context, entSpec *pb.E
 
 	if entID == "" && entName == "" {
 		pErr = &pb.Error{
-			Code: pb.Error_INVALID_PARAM,
 			Text: "invalid param",
 		}
 
@@ -105,12 +98,10 @@ func (server EnterpriseHandler) GetEnterprise(ctx context.Context, entSpec *pb.E
 
 	if err != nil {
 		pErr = &pb.Error{
-			Code: pb.Error_ACCESS_DENIED,
 			Text: err.Error(),
 		}
 	} else {
 		pErr = &pb.Error{
-			Code: pb.Error_SUCCESS,
 			Text: "success",
 		}
 	}

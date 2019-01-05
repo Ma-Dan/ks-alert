@@ -3,17 +3,16 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/carmanzhang/ks-alert/pkg/executor/handler"
+	"github.com/carmanzhang/ks-alert/pkg/executor/pb"
+	"github.com/carmanzhang/ks-alert/pkg/registry"
+	"google.golang.org/grpc"
 	"log"
 	"net"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
-	"golang.org/x/net/context"
-	"google.golang.org/grpc"
-	"github.com/carmanzhang/ks-alert/pkg/registry"
-	"github.com/carmanzhang/ks-alert/pkg/executor/pb"
-	"github.com/carmanzhang/ks-alert/pkg/executor"
 )
 
 const (
@@ -28,16 +27,6 @@ var (
 	servicePort = flag.Int("service_port", 50001, "listening port")
 	etcdAddress = flag.String("etcd_addr", "http://127.0.0.1:2379", "register etcd address")
 )
-
-type server struct{}
-
-// server is used to implement ExecuteAlertConfig.
-// ExecuteAlertConfig(context.Context, *AlertConfig) (*Error, error)
-func (s *server) ExecuteAlertConfig(ctx context.Context, alertConfig *pb.AlertConfig) (*pb.Error, error) {
-	//id := alertConfig.AlertConfigId
-	executor.Action(ctx, alertConfig)
-
-}
 
 func main() {
 	flag.Parse()
@@ -73,6 +62,6 @@ func main() {
 	}()
 	log.Printf("starting executor service at %s:%d", *serviceHost, *servicePort)
 	s := grpc.NewServer()
-	pb.RegisterExecutorServer(s, &server{})
+	pb.RegisterExecutorServer(s, &handler.Executor{})
 	s.Serve(lis)
 }

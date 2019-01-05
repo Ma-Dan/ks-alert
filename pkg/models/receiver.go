@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/carmanzhang/ks-alert/pkg/utils/idutil"
 	"github.com/jinzhu/gorm"
-	"github.com/pkg/errors"
 	"time"
 )
 
@@ -41,7 +40,15 @@ func (r ReceiverGroup) Create(tx *gorm.DB, v interface{}) (interface{}, error) {
 	recvGroup, ok := v.(*ReceiverGroup)
 
 	if !ok {
-		return nil, errors.Errorf("type %v assert error", recvGroup)
+		return nil, Error{Text: fmt.Sprintf("type %v assert error", recvGroup), Code: AssertError}
+	}
+
+	if recvGroup.ReceiverGroupName == "" {
+		return nil, Error{Text: "the receiver group name must be specified", Code: InvalidParam}
+	}
+
+	if recvGroup.Receivers == nil || len(*recvGroup.Receivers) == 0 {
+		return nil, Error{Text: "the receiver group must contain at least one receiver", Code: InvalidParam}
 	}
 
 	recvGroup.ReceiverGroupID = idutil.GetUuid36("receiver_group-")
@@ -54,7 +61,7 @@ func (r ReceiverGroup) Create(tx *gorm.DB, v interface{}) (interface{}, error) {
 		"webhook_enable, description, created_at, updated_at) VALUES " + item
 
 	if err := tx.Exec(sql).Error; err != nil {
-		return nil, err
+		return nil, Error{Text: err.Error(), Code: DBError}
 	}
 
 	// create item
@@ -93,7 +100,7 @@ func (r ReceiverGroup) Create(tx *gorm.DB, v interface{}) (interface{}, error) {
 		fmt.Println(sql)
 
 		if err := tx.Exec(sql).Error; err != nil {
-			return nil, err
+			return nil, Error{Text: err.Error(), Code: DBError}
 		}
 	}
 
@@ -113,7 +120,7 @@ func (r ReceiverGroup) Create(tx *gorm.DB, v interface{}) (interface{}, error) {
 	}
 
 	if err := tx.Exec(sql).Error; err != nil {
-		return nil, err
+		return nil, Error{Text: err.Error(), Code: DBError}
 	}
 
 	return recvGroup, nil
@@ -125,7 +132,11 @@ func (r ReceiverGroup) Update(tx *gorm.DB, v interface{}) (interface{}, error) {
 	recvGroup, ok := v.(*ReceiverGroup)
 
 	if !ok {
-		return nil, errors.Errorf("type %v assert error", recvGroup)
+		return nil, Error{Text: fmt.Sprintf("type %v assert error", recvGroup), Code: AssertError}
+	}
+
+	if recvGroup.ReceiverGroupID == "" {
+		return nil, Error{Text: "the receiver group id must be specified", Code: InvalidParam}
 	}
 
 	// 1. get group first
@@ -138,7 +149,7 @@ func (r ReceiverGroup) Update(tx *gorm.DB, v interface{}) (interface{}, error) {
 	rg := vget.(*ReceiverGroup)
 
 	if rg == nil || rg.ReceiverGroupID == "" {
-		return nil, errors.Errorf("resource group id: %s not exist", recvGroup.ReceiverGroupID)
+		return nil, Error{Text: fmt.Sprintf("resource group id: %s not exist", recvGroup.ReceiverGroupID), Code: InvalidParam}
 	}
 
 	// 2. delete group
@@ -160,7 +171,11 @@ func (r ReceiverGroup) Get(tx *gorm.DB, v interface{}) (interface{}, error) {
 	recvGroup, ok := v.(*ReceiverGroup)
 
 	if !ok {
-		return nil, errors.Errorf("type %v assert error", recvGroup)
+		return nil, Error{Text: fmt.Sprintf("type %v assert error", recvGroup), Code: AssertError}
+	}
+
+	if recvGroup.ReceiverGroupID == "" {
+		return nil, Error{Text: "receiver group id must be specified", Code: InvalidParam}
 	}
 
 	var rg ReceiverGroup
@@ -168,13 +183,13 @@ func (r ReceiverGroup) Get(tx *gorm.DB, v interface{}) (interface{}, error) {
 	err := tx.Model(&ReceiverGroup{}).Where("receiver_group_id=?", recvGroup.ReceiverGroupID).First(&rg).Error
 
 	if err != nil {
-		return nil, err
+		return nil, Error{Text: err.Error(), Code: DBError}
 	}
 
 	exist := tx.RecordNotFound()
 
 	if exist {
-		return nil, errors.New("record not found")
+		return nil, Error{Text: "record not found", Code: DBError}
 	}
 
 	if rg.ReceiverGroupID != "" {
@@ -183,7 +198,7 @@ func (r ReceiverGroup) Get(tx *gorm.DB, v interface{}) (interface{}, error) {
 		sql := "SELECT r.* FROM receiver_binding_groups as rb LEFT JOIN receivers as r ON rb.receiver_id=r.receiver_id WHERE rb.receiver_group_id=?"
 
 		if err := tx.Exec(sql, rg.ReceiverGroupID).Find(&receivers).Error; err != nil {
-			return nil, err
+			return nil, Error{Text: err.Error(), Code: DBError}
 		}
 
 		//err := tx.Find(&receivers, "receiver_group_id=?", rg.ReceiverGroupID).Error
@@ -204,20 +219,24 @@ func (r ReceiverGroup) Delete(tx *gorm.DB, v interface{}) (interface{}, error) {
 	recvGroup, ok := v.(*ReceiverGroup)
 
 	if !ok {
-		return nil, errors.Errorf("type %v assert error", recvGroup)
+		return nil, Error{Text: fmt.Sprintf("type %v assert error", recvGroup), Code: AssertError}
+	}
+
+	if recvGroup.ReceiverGroupID == "" {
+		return nil, Error{Text: "receiver group id must be specified", Code: InvalidParam}
 	}
 
 	sql := "DELETE rg, rb FROM receiver_groups as rg LEFT JOIN receiver_binding_groups as rb ON rg.receiver_group_id=rb.receiver_group_id WHERE rg.receiver_group_id=?"
 
 	if err := tx.Exec(sql, recvGroup.ReceiverGroupID).Error; err != nil {
-		return nil, err
+		return nil, Error{Text: err.Error(), Code: DBError}
 	}
 
 	// delete receiver which is not in any receiver group
 	sql = "DELETE r FROM receivers as r LEFT JOIN receiver_binding_groups as rb ON r.receiver_id=rb.receiver_id WHERE rb.receiver_group_id IS NULL;"
 
 	if err := tx.Exec(sql).Error; err != nil {
-		return nil, err
+		return nil, Error{Text: err.Error(), Code: DBError}
 	}
 
 	return nil, nil

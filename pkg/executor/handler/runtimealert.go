@@ -1,12 +1,12 @@
-package executor
+package handler
 
 import (
+	"context"
+	"fmt"
 	"github.com/carmanzhang/ks-alert/pkg/executor/pb"
 	"github.com/carmanzhang/ks-alert/pkg/models"
 	"k8s.io/klog/glog"
 	"time"
-	"fmt"
-	"context"
 )
 
 type RuntimeAlert struct {
@@ -34,18 +34,20 @@ type RuntimeAlertStatus struct {
 
 var CachedRuntimeAlert = make(map[string]*RuntimeAlert)
 
-func Action(ctx context.Context, alertConfig *pb.AlertConfig) {
+func Action(ctx context.Context, msg *pb.Message) error {
 
-	signalx := alertConfig.Signal
+	signalx := msg.Signal
+
 	switch signalx {
-	case pb.AlertConfig_RUN:
+	case pb.Message_CREATE:
 		// create alert by specifig alert config id within one goroutine
-	case pb.AlertConfig_STOP:
 		fmt.Println("create alert")
-	case pb.AlertConfig_Terminate:
-	case pb.AlertConfig_OTHER:
-	}
 
+	case pb.Message_STOP:
+	case pb.Message_RELOAD:
+	case pb.Message_OTHER:
+	}
+	return nil
 }
 
 func CreateRuntimeAlert(alertConfigID string) {
@@ -55,13 +57,11 @@ func CreateRuntimeAlert(alertConfigID string) {
 		glog.Errorln(err.Error())
 	}
 
-	go func(alert *models.AlertBinding){
+	go func(alert *models.AlertBinding) {
 		// get resource group, alert rule group, resource type
 		alertRuleGroupID := alert.AlertRuleGroupID
 		resourceGroupID := alert.ResourceGroupID
 		receiverGroupID := alert.ReceiverGroupID
-
-
 
 	}(alert)
 
@@ -101,7 +101,7 @@ func GetRuntimeAlertStatus(alertConfigID string) *RuntimeAlertStatus {
 		if alert != nil {
 			alert.StatusCh <- "ping"
 			for {
-				sig := <- alert.StatusCh
+				sig := <-alert.StatusCh
 				if sig == "pong" {
 					glog.Infof("alert goroutine is running, alert_config_id is: %s", alertConfigID)
 					return nil

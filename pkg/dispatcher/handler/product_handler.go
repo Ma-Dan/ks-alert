@@ -3,9 +3,9 @@ package handler
 import (
 	"context"
 	"github.com/carmanzhang/ks-alert/pkg/dispatcher/pb"
-	"time"
 	"github.com/carmanzhang/ks-alert/pkg/models"
 	"k8s.io/klog/glog"
+	"time"
 )
 
 type ProductHandler struct{}
@@ -30,7 +30,6 @@ func (server ProductHandler) CreateProduct(ctx context.Context, pbProd *pb.Produ
 	return &pb.ProductResponse{
 		Product: ConvertProduct2PB(prod),
 		Error: &pb.Error{
-			Code: pb.Error_SUCCESS,
 			Text: "success",
 		},
 	}, nil
@@ -44,7 +43,6 @@ func (server ProductHandler) DeleteProduct(ctx context.Context, prodSpec *pb.Pro
 
 	if prodID == "" && prodName == "" {
 		pErr = &pb.Error{
-			Code: pb.Error_INVALID_PARAM,
 			Text: "invalid param",
 		}
 
@@ -57,12 +55,10 @@ func (server ProductHandler) DeleteProduct(ctx context.Context, prodSpec *pb.Pro
 
 	if err != nil {
 		pErr = &pb.Error{
-			Code: pb.Error_ACCESS_DENIED,
 			Text: err.Error(),
 		}
 	} else {
 		pErr = &pb.Error{
-			Code: pb.Error_SUCCESS,
 			Text: "success",
 		}
 	}
@@ -80,7 +76,6 @@ func (server ProductHandler) UpdateProduct(ctx context.Context, pbProd *pb.Produ
 	if err != nil {
 		return &pb.ProductResponse{
 			Error: &pb.Error{
-				Code: pb.Error_ACCESS_DENIED,
 				Text: err.Error(),
 			},
 		}, err
@@ -88,7 +83,6 @@ func (server ProductHandler) UpdateProduct(ctx context.Context, pbProd *pb.Produ
 
 	return &pb.ProductResponse{
 		Error: &pb.Error{
-			Code: pb.Error_SUCCESS,
 			Text: "success",
 		},
 	}, nil
@@ -104,7 +98,6 @@ func (server ProductHandler) GetProduct(ctx context.Context, prodSpec *pb.Produc
 
 	if prodID == "" && prodName == "" {
 		pErr = &pb.Error{
-			Code: pb.Error_INVALID_PARAM,
 			Text: "invalid param",
 		}
 
@@ -117,12 +110,10 @@ func (server ProductHandler) GetProduct(ctx context.Context, prodSpec *pb.Produc
 
 	if err != nil {
 		pErr = &pb.Error{
-			Code: pb.Error_ACCESS_DENIED,
 			Text: err.Error(),
 		}
 	} else {
 		pErr = &pb.Error{
-			Code: pb.Error_SUCCESS,
 			Text: "success",
 		}
 	}

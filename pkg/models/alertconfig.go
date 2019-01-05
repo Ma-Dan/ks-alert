@@ -1,9 +1,9 @@
 package models
 
 import (
+	"fmt"
 	"github.com/carmanzhang/ks-alert/pkg/utils/idutil"
 	"github.com/jinzhu/gorm"
-	"github.com/pkg/errors"
 	"time"
 )
 
@@ -63,7 +63,7 @@ func (r AlertConfig) Create(tx *gorm.DB, v interface{}) (interface{}, error) {
 	ac, ok := v.(*AlertConfig)
 
 	if !ok {
-		return nil, errors.Errorf("type %v assert error", ac)
+		return nil, Error{Text: fmt.Sprintf("type %v assert error", ac), Code: AssertError}
 	}
 
 	ac.AlertConfigID = idutil.GetUuid36("alert-config-")
@@ -72,7 +72,7 @@ func (r AlertConfig) Create(tx *gorm.DB, v interface{}) (interface{}, error) {
 	//	"resource_group_id, receiver_group_id, severity_id, severity_ch, enable_start, enable_end, description, created_at, updated_at) VALUES " + item
 
 	if err := tx.Create(ac).Error; err != nil {
-		return nil, err
+		return nil, Error{Text: err.Error(), Code: DBError}
 	}
 
 	return nil, nil
@@ -82,14 +82,14 @@ func (r AlertConfig) Update(tx *gorm.DB, v interface{}) (interface{}, error) {
 	ac, ok := v.(*AlertConfig)
 
 	if !ok {
-		return nil, errors.Errorf("type %v assert error", ac)
+		return nil, Error{Text: fmt.Sprintf("type %v assert error", ac), Code: AssertError}
 	}
 
 	if err := tx.Where("alert_config_id=?", ac.AlertConfigID).Update(ac).Error; err != nil {
-		return nil, err
+		return nil, Error{Text: err.Error(), Code: DBError}
 	}
 
-	return nil, nil
+	return ac, nil
 }
 
 func (r AlertConfig) Get(tx *gorm.DB, v interface{}) (interface{}, error) {
@@ -97,31 +97,31 @@ func (r AlertConfig) Get(tx *gorm.DB, v interface{}) (interface{}, error) {
 	ac, ok := v.(*AlertConfig)
 
 	if !ok {
-		return nil, errors.Errorf("type %v assert error", ac)
+		return nil, Error{Text: fmt.Sprintf("type %v assert error", ac), Code: AssertError}
 	}
 
 	var alertConfig AlertConfig
 
-	if err := tx.Where("alert_config_id=?", alertConfig.AlertConfigID).First(&alertConfig).Error; err != nil {
-		return nil, err
+	if err := tx.Where("alert_config_id=?", ac.AlertConfigID).First(&alertConfig).Error; err != nil {
+		return nil, Error{Text: err.Error(), Code: DBError}
 	}
 
-	return nil, nil
+	return &alertConfig, nil
 }
 
 func (r AlertConfig) Delete(tx *gorm.DB, v interface{}) (interface{}, error) {
 	ac, ok := v.(*AlertConfig)
 
 	if !ok {
-		return nil, errors.Errorf("type %v assert error", ac)
+		return nil, Error{Text: fmt.Sprintf("type %v assert error", ac), Code: AssertError}
 	}
 
 	if ac.AlertConfigID == "" {
-		return nil, errors.New("alert config id must be specified")
+		return nil, Error{Text: "alert config id must be specified", Code: AssertError}
 	}
 
 	if err := tx.Delete(&AlertConfig{AlertConfigID: ac.AlertConfigID}).Error; err != nil {
-		return nil, err
+		return nil, Error{Text: err.Error(), Code: DBError}
 	}
 
 	return nil, nil

@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/carmanzhang/ks-alert/pkg/dispatcher/pb"
 	"github.com/carmanzhang/ks-alert/pkg/models"
-	"github.com/pkg/errors"
+	"github.com/golang/glog"
 	"time"
 )
 
@@ -12,123 +12,50 @@ type AlertRuleHandler struct{}
 
 // alert rule
 func (server AlertRuleHandler) CreateAlertRule(ctx context.Context, ruleGroup *pb.AlertRuleGroup) (*pb.AlertRuleGroupResponse, error) {
+	v, err := DoTransactionAction(ConvertPB2AlertRuleGroup(ruleGroup), RuleGroup, MethodCreate)
+	respon := getAlertRuleGroupResponse(v, err)
+	return respon, nil
+}
 
-	if len(ruleGroup.AlertRules) == 0 || ruleGroup.AlertRuleGroupName == "" {
-		return nil, errors.New("invalid param")
+func getAlertRuleGroupResponse(v interface{}, err error) *pb.AlertRuleGroupResponse {
+	var ruleGroup *models.AlertRuleGroup
+	if v != nil {
+		ruleGroup = v.(*models.AlertRuleGroup)
 	}
 
-	if ruleGroup.ResourceTypeId != "" {
-		r, _ := models.GetResourceType(&models.ResourceType{ResourceTypeID: ruleGroup.ResourceTypeId})
-		if r == nil || r.ResourceTypeID == "" {
-			return nil, errors.New("resource type does not exist")
-		}
+	arg := ConvertAlertRuleGroup2PB(ruleGroup)
 
-		v, err := DoTransactionAction(ConvertPB2AlertRuleGroup(ruleGroup), RuleGroup, MethodCreate)
+	var respon = pb.AlertRuleGroupResponse{AlertRuleGroup: arg}
 
-		if err != nil {
-			return nil, err
-		}
-
-		var rg *models.AlertRuleGroup
-		if v != nil {
-			rg = v.(*models.AlertRuleGroup)
-		}
-
-		return &pb.AlertRuleGroupResponse{
-			AlertRuleGroup: ConvertAlertRuleGroup2PB(rg),
-		}, nil
+	if err != nil {
+		glog.Errorln(err.Error())
+		respon.Error = ErrorConverter(err)
+	} else {
+		respon.Error = ErrorConverter(*models.NewError(0, models.Success))
 	}
 
-	return nil, nil
+	return &respon
 }
 
 func (server AlertRuleHandler) UpdateAlertRule(ctx context.Context, ruleGroup *pb.AlertRuleGroup) (*pb.AlertRuleGroupResponse, error) {
-	// check alert_rule_group_id is exist
-	if ruleGroup.AlertRuleGroupId == "" || ruleGroup.AlertRuleGroupName == "" {
-		return nil, errors.New("invalid param")
-	}
-
 	v, err := DoTransactionAction(ConvertPB2AlertRuleGroup(ruleGroup), RuleGroup, MethodUpdate)
 
-	if err != nil {
-		return nil, err
-	}
-
-	var rg *models.AlertRuleGroup
-	if v != nil {
-		rg = v.(*models.AlertRuleGroup)
-	}
-
-	return &pb.AlertRuleGroupResponse{
-		AlertRuleGroup: ConvertAlertRuleGroup2PB(rg),
-	}, nil
+	respon := getAlertRuleGroupResponse(v, err)
+	return respon, nil
 }
 
 func (server AlertRuleHandler) GetAlertRule(ctx context.Context, alertRuleSpec *pb.AlertRuleGroupSpec) (*pb.AlertRuleGroupResponse, error) {
 
-	groupID := alertRuleSpec.AlertRuleGroupId
-
-	// means to get supported alert rule for the resource type
-	typeID := alertRuleSpec.ResourceTypeId
-	//systemRule := alertRuleSpec.SystemRule
-
-	if groupID == "" && typeID == "" {
-		return nil, errors.New("invalid param")
-	}
-
 	v, err := DoTransactionAction(alertRuleSpec, RuleGroup, MethodGet)
 
-	if err != nil {
-		return nil, err
-	}
-
-	var rg *models.AlertRuleGroup
-	if v != nil {
-		rg = v.(*models.AlertRuleGroup)
-	}
-
-	return &pb.AlertRuleGroupResponse{
-		AlertRuleGroup: ConvertAlertRuleGroup2PB(rg),
-	}, nil
+	respon := getAlertRuleGroupResponse(v, err)
+	return respon, nil
 }
 
 func (server AlertRuleHandler) DeleteAlertRule(ctx context.Context, alertRuleSpec *pb.AlertRuleGroupSpec) (*pb.AlertRuleGroupResponse, error) {
-
-	groupID := alertRuleSpec.AlertRuleGroupId
-
-	// means to get supported alert rule for the resource type
-	typeID := alertRuleSpec.ResourceTypeId
-	//systemRule := alertRuleSpec.SystemRule
-
-	if groupID == "" && typeID == "" {
-		return nil, errors.New("invalid param")
-	} else if groupID == "" && typeID != "" {
-		// system rule group
-		v, err := DoTransactionAction(alertRuleSpec, RuleGroup, MethodGet)
-
-		if err != nil {
-			return nil, err
-		}
-
-		rg := v.(*models.AlertRuleGroup)
-
-		alertRuleSpec.AlertRuleGroupId = rg.AlertRuleGroupID
-	}
-
 	v, err := DoTransactionAction(alertRuleSpec, RuleGroup, MethodDelete)
-
-	if err != nil {
-		return nil, err
-	}
-
-	var rg *models.AlertRuleGroup
-	if v != nil {
-		rg = v.(*models.AlertRuleGroup)
-	}
-
-	return &pb.AlertRuleGroupResponse{
-		AlertRuleGroup: ConvertAlertRuleGroup2PB(rg),
-	}, nil
+	respon := getAlertRuleGroupResponse(v, err)
+	return respon, nil
 }
 
 func ConvertPB2AlertRuleGroup(pbRuleGroup *pb.AlertRuleGroup) *models.AlertRuleGroup {

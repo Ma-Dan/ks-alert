@@ -5,7 +5,6 @@ import (
 	"github.com/carmanzhang/ks-alert/pkg/dispatcher/pb"
 	"github.com/carmanzhang/ks-alert/pkg/models"
 	"github.com/golang/glog"
-	"github.com/pkg/errors"
 	"time"
 )
 
@@ -14,92 +13,58 @@ type ReceiverHandler struct{}
 // alert rule
 func (server ReceiverHandler) CreateReceiver(ctx context.Context, pbRecvGroup *pb.ReceiverGroup) (*pb.ReceiverGroupResponse, error) {
 
-	if pbRecvGroup.ReceiverGroupName == "" {
-		return nil, errors.New("the receiver group name must be specified")
-	}
-
-	if pbRecvGroup.Receivers == nil || len(pbRecvGroup.Receivers) == 0 {
-		return nil, errors.New("the receiver group must contain at least one receiver")
-	}
-
 	recvGroup := ConvertPB2ReceiverGroup(pbRecvGroup)
 
 	v, err := DoTransactionAction(recvGroup, ReceiverGroup, MethodCreate)
+	respon := getReceiverGroupResponse(v, err)
+	return respon, nil
+}
 
+func getReceiverGroupResponse(v interface{}, err error) *pb.ReceiverGroupResponse {
+	var resGroup *models.ReceiverGroup
+	if v != nil {
+		resGroup = v.(*models.ReceiverGroup)
+	}
+
+	rg := ConvertReceiverGroup2PB(resGroup)
+
+	var respon = pb.ReceiverGroupResponse{ReceiverGroup: rg}
 	if err != nil {
 		glog.Errorln(err.Error())
-		return nil, err
+		respon.Error = ErrorConverter(err)
+	} else {
+		respon.Error = ErrorConverter(*models.NewError(0, models.Success))
 	}
-
-	var respon *models.ReceiverGroup
-
-	if v != nil {
-		respon = v.(*models.ReceiverGroup)
-	}
-
-	return &pb.ReceiverGroupResponse{
-		ReceiverGroup: ConvertReceiverGroup2PB(respon),
-	}, nil
+	return &respon
 }
 
 func (server ReceiverHandler) DeleteReceiver(ctx context.Context, receiverSpec *pb.ReceiverGroupSpec) (*pb.ReceiverGroupResponse, error) {
-	recvGroupID := receiverSpec.ReceiverGroupId
-
-	if recvGroupID == "" {
-		return nil, errors.New("receiver group id must be specified")
-	}
-
 	// TODO only delete one receiver in a receiver group
 	//recvID := receiverSpec.ReceiverId
 	recvGroup := &models.ReceiverGroup{
-		ReceiverGroupID: recvGroupID,
+		ReceiverGroupID: receiverSpec.ReceiverGroupId,
 		//Receivers:       &[]models.Receiver{{ReceiverID: recvID}},
 	}
 
-	_, err := DoTransactionAction(recvGroup, ReceiverGroup, MethodDelete)
+	v, err := DoTransactionAction(recvGroup, ReceiverGroup, MethodDelete)
 
-	if err != nil {
-		glog.Errorln(err.Error())
-		return nil, err
-	}
-
-	return &pb.ReceiverGroupResponse{}, nil
+	respon := getReceiverGroupResponse(v, err)
+	return respon, nil
 }
 
 func (server ReceiverHandler) UpdateReceiver(ctx context.Context, pbRecvGroup *pb.ReceiverGroup) (*pb.ReceiverGroupResponse, error) {
-
-	if pbRecvGroup.ReceiverGroupId == "" {
-		return nil, errors.New("the receiver group id must be specified")
-	}
 
 	recvGroup := ConvertPB2ReceiverGroup(pbRecvGroup)
 
 	v, err := DoTransactionAction(recvGroup, ReceiverGroup, MethodUpdate)
 
-	if err != nil {
-		glog.Errorln(err.Error())
-		return nil, err
-	}
-
-	var respon *models.ReceiverGroup
-
-	if v != nil {
-		respon = v.(*models.ReceiverGroup)
-	}
-
-	return &pb.ReceiverGroupResponse{
-		ReceiverGroup: ConvertReceiverGroup2PB(respon),
-	}, nil
+	respon := getReceiverGroupResponse(v, err)
+	return respon, nil
 }
 
 func (server ReceiverHandler) GetReceiver(ctx context.Context, receiverSpec *pb.ReceiverGroupSpec) (*pb.ReceiverGroupResponse, error) {
 
 	recvGroupID := receiverSpec.ReceiverGroupId
-
-	if recvGroupID == "" {
-		return nil, errors.New("receiver group id must be specified")
-	}
-
 	//recvID := receiverSpec.ReceiverId
 	recvGroup := &models.ReceiverGroup{
 		ReceiverGroupID: recvGroupID,
@@ -107,21 +72,8 @@ func (server ReceiverHandler) GetReceiver(ctx context.Context, receiverSpec *pb.
 	}
 
 	v, err := DoTransactionAction(recvGroup, ReceiverGroup, MethodGet)
-
-	if err != nil {
-		glog.Errorln(err.Error())
-		return nil, err
-	}
-
-	var respon *models.ReceiverGroup
-
-	if v != nil {
-		respon = v.(*models.ReceiverGroup)
-	}
-
-	return &pb.ReceiverGroupResponse{
-		ReceiverGroup: ConvertReceiverGroup2PB(respon),
-	}, nil
+	respon := getReceiverGroupResponse(v, err)
+	return respon, nil
 
 }
 
