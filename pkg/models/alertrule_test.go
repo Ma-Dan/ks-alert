@@ -3,7 +3,6 @@ package models
 import (
 	"fmt"
 	"github.com/carmanzhang/ks-alert/pkg/dispatcher/pb"
-	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 	"time"
 )
@@ -18,8 +17,8 @@ func TestCreateAlertRuleGroup(t *testing.T) {
 				CreatedAt:          time.Now(),
 				Description:        "desc",
 				ResourceTypeID:     "xxxxxxxxxxxxxxx",
-				AlertRules: []AlertRule{
-					AlertRule{
+				AlertRules: []*AlertRule{
+					&AlertRule{
 						AlertRuleName:          "namespace",
 						MetricName:             "namespace_cpu",
 						ConditionType:          ">",
@@ -37,7 +36,7 @@ func TestCreateAlertRuleGroup(t *testing.T) {
 						CreatedAt:              time.Now(),
 						UpdatedAt:              time.Now(),
 					},
-					AlertRule{
+					&AlertRule{
 						AlertRuleName:          "namespace",
 						MetricName:             "namespace_memory",
 						ConditionType:          ">",
@@ -76,8 +75,8 @@ func TestUpdateAlertRuleGroup(t *testing.T) {
 				Description:        "descdescdesc",
 				ResourceTypeID:     "yyyyyyyyy",
 				AlertRuleGroupID:   "rule_group-w7p5wm31j92330",
-				AlertRules: []AlertRule{
-					AlertRule{
+				AlertRules: []*AlertRule{
+					&AlertRule{
 						AlertRuleName:          "workspace",
 						MetricName:             "workspace_cpu",
 						ConditionType:          ">",
@@ -94,7 +93,7 @@ func TestUpdateAlertRuleGroup(t *testing.T) {
 						MaxRepeatSendCount:     4,
 						AlertRuleID:            "rule_id-n6mklr01j92330",
 					},
-					AlertRule{
+					&AlertRule{
 						AlertRuleName:          "workspace",
 						MetricName:             "workspace_memory",
 						ConditionType:          ">",

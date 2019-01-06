@@ -45,14 +45,14 @@ type AlertRule struct {
 
 type AlertRuleGroup struct {
 	Action
-	AlertRuleGroupID   string      `gorm:"primary_key" json:"-"`
-	AlertRuleGroupName string      `gorm:"type:varchar(50);not null;" json:"alert_rule_group_name"`
-	AlertRules         []AlertRule `gorm:"-" json:"alert_rules"`
-	Description        string      `gorm:"type:text;" json:"desc"`
-	SystemRule         bool        `gorm:"type:boolean;not null;"`
-	ResourceTypeID     string      `gorm:"type:varchar(50);not null;"`
-	CreatedAt          time.Time   `gorm:"not null;" json:"-"`
-	UpdatedAt          time.Time   `gorm:"not null;" json:"-"`
+	AlertRuleGroupID   string       `gorm:"primary_key" json:"-"`
+	AlertRuleGroupName string       `gorm:"type:varchar(50);not null;" json:"alert_rule_group_name"`
+	AlertRules         []*AlertRule `gorm:"-" json:"alert_rules"`
+	Description        string       `gorm:"type:text;" json:"desc"`
+	SystemRule         bool         `gorm:"type:boolean;not null;"`
+	ResourceTypeID     string       `gorm:"type:varchar(50);not null;"`
+	CreatedAt          time.Time    `gorm:"not null;" json:"-"`
+	UpdatedAt          time.Time    `gorm:"not null;" json:"-"`
 }
 
 func createAlertGroupAndRules(tx *gorm.DB, ruleGroup *AlertRuleGroup) error {
@@ -68,7 +68,7 @@ func createAlertGroupAndRules(tx *gorm.DB, ruleGroup *AlertRuleGroup) error {
 		"description, system_rule, resource_type_id, created_at, updated_at) VALUES " + item
 
 	if err := tx.Exec(sql).Error; err != nil {
-		return err
+		return Error{Text: err.Error(), Code: DBError}
 	}
 
 	// create alert rules
@@ -98,7 +98,7 @@ func createAlertGroupAndRules(tx *gorm.DB, ruleGroup *AlertRuleGroup) error {
 	fmt.Println(sql)
 
 	if err := tx.Exec(sql).Error; err != nil {
-		return err
+		return Error{Text: err.Error(), Code: DBError}
 	}
 	return nil
 }
@@ -198,19 +198,19 @@ func (r AlertRuleGroup) Update(tx *gorm.DB, v interface{}) (interface{}, error) 
 		}
 	}
 
-	return nil, nil
+	return ruleGroup, nil
 }
 
 func (r AlertRuleGroup) Get(tx *gorm.DB, v interface{}) (interface{}, error) {
-	ruleGroupSpec, ok := v.(*pb.AlertRuleGroupSpec)
+	ruleGroupSpec, ok := v.(AlertRuleGroup)
 
 	if !ok {
 		return nil, Error{Text: fmt.Sprintf("type %v assert error", ruleGroupSpec), Code: AssertError}
 	}
 
-	groupID := ruleGroupSpec.AlertRuleGroupId
+	groupID := ruleGroupSpec.AlertRuleGroupID
 	// means to get supported alert rule for the resource type
-	typeID := ruleGroupSpec.ResourceTypeId
+	typeID := ruleGroupSpec.ResourceTypeID
 	//systemRule := alertRuleSpec.SystemRule
 
 	if groupID == "" && typeID == "" {
@@ -220,11 +220,11 @@ func (r AlertRuleGroup) Get(tx *gorm.DB, v interface{}) (interface{}, error) {
 	var rg AlertRuleGroup
 
 	// get alert rule group
-	if ruleGroupSpec.AlertRuleGroupId != "" {
-		tx.Model(&AlertRuleGroup{}).Where(&AlertRuleGroup{AlertRuleGroupID: ruleGroupSpec.AlertRuleGroupId}).First(&rg)
-	} else if ruleGroupSpec.ResourceTypeId != "" {
+	if ruleGroupSpec.AlertRuleGroupID != "" {
+		tx.Model(&AlertRuleGroup{}).Where(&AlertRuleGroup{AlertRuleGroupID: ruleGroupSpec.AlertRuleGroupID}).First(&rg)
+	} else if ruleGroupSpec.ResourceTypeID != "" {
 		//x := &AlertRuleGroup{ResourceTypeID: ruleGroupSpec.ResourceTypeId, SystemRule: true}
-		tx.Model(&AlertRuleGroup{}).Where("resource_type_id=? AND system_rule=?", ruleGroupSpec.ResourceTypeId, true).First(&rg)
+		tx.Model(&AlertRuleGroup{}).Where("resource_type_id=? AND system_rule=?", ruleGroupSpec.ResourceTypeID, true).First(&rg)
 	}
 
 	if tx.RecordNotFound() {
@@ -242,7 +242,11 @@ func (r AlertRuleGroup) Get(tx *gorm.DB, v interface{}) (interface{}, error) {
 			return &rg, Error{Text: err.Error(), Code: DBError}
 		}
 
-		rg.AlertRules = alertRules
+		var rules []*AlertRule
+		for i := 0; i < len(alertRules); i++ {
+			rules = append(rules, &alertRules[i])
+		}
+		rg.AlertRules = rules
 
 		return &rg, nil
 	}

@@ -1,14 +1,13 @@
 package client
 
 import (
-	"time"
+	"github.com/carmanzhang/ks-alert/pkg/registry"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
-	"github.com/carmanzhang/ks-alert/pkg/registry"
+	"time"
 )
 
 var clientLBConn *grpc.ClientConn
-
 
 //type ClientGrpcClient struct {
 //	clientLBConn *grpc.ClientConn

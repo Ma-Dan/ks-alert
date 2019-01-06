@@ -68,7 +68,7 @@ func ConvertPB2ResourceGroup(rg *pb.ResourceGroup) *models.ResourceGroup {
 		ResourceGroupName: rg.ResourceGroupName,
 		ResourceTypeID:    rg.ResourceTypeId,
 		Resources:         *ConvertPB2Resource(rg.Resources),
-		URIParams:         jsonutil.Marshal(rg.ResourceUriTmpls),
+		URIParams:         jsonutil.Marshal(rg.ResourceUriTmpl),
 		Description:       rg.Desc,
 		CreatedAt:         time.Now(),
 		UpdatedAt:         time.Now(),
@@ -80,7 +80,7 @@ func ConvertResourceGroup2PB(rg *models.ResourceGroup) *pb.ResourceGroup {
 		return nil
 	}
 
-	var v pb.ResourceUriTmpls
+	var v pb.ResourceUriTmpl
 	jsonutil.Unmarshal(rg.URIParams, &v)
 
 	return &pb.ResourceGroup{
@@ -88,7 +88,7 @@ func ConvertResourceGroup2PB(rg *models.ResourceGroup) *pb.ResourceGroup {
 		ResourceGroupName: rg.ResourceGroupName,
 		ResourceTypeId:    rg.ResourceTypeID,
 		Resources:         *ConvertResource2PB(rg.Resources),
-		ResourceUriTmpls:  &v,
+		ResourceUriTmpl:   &v,
 		Desc:              rg.Description,
 	}
 }

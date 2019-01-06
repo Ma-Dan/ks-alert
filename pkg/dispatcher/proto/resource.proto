@@ -11,7 +11,7 @@ import "resourceuritmpl.proto";
 message ResourceGroup {
     string resource_group_id = 1;
     string resource_group_name = 2;
-    ResourceUriTmpls resource_uri_tmpls = 3;
+    ResourceUriTmpl resource_uri_tmpl = 3;
     string desc = 4;
     string resource_type_id = 5;
     repeated Resource resources = 6;

@@ -47,6 +47,12 @@ type ResourceType struct {
 	UpdatedAt time.Time `gorm:"not null;"`
 }
 
+type ResourceUriTmpl struct {
+	UriTmpl      string            `json:"uri_tmpl,omitempty"`
+	ResourceName []string          `json:"resource_name,omitempty"`
+	Params       map[string]string `json:"params,omitempty"`
+}
+
 func GetResourceType(resourceType *ResourceType) (*ResourceType, error) {
 	db, err := dbutil.DBClient()
 	if err != nil {
@@ -218,7 +224,7 @@ func (r ResourceGroup) Update(tx *gorm.DB, v interface{}) (interface{}, error) {
 		return nil, err
 	}
 
-	return nil, nil
+	return resGroup, nil
 }
 
 func (r ResourceGroup) Get(tx *gorm.DB, v interface{}) (interface{}, error) {

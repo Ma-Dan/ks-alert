@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/carmanzhang/ks-alert/pkg/dispatcher/pb"
-	"github.com/carmanzhang/ks-alert/pkg/executor/handler"
-	p "github.com/carmanzhang/ks-alert/pkg/executor/pb"
 	"github.com/carmanzhang/ks-alert/pkg/models"
 	"github.com/golang/glog"
 	"strconv"
@@ -21,9 +19,9 @@ func (server AlertHandler) CreateAlertConfig(ctx context.Context, pbac *pb.Alert
 
 	v, err := DoTransactionAction(ac, AlertConfig, MethodCreate)
 	respon := getAlertConfigResponse(v, err)
-	executor := handler.Executor{}
-	// TODO need add error adaptor
-	executor.Execute(ctx, &p.Message{AlertConfigId: respon.AlertConfig.AlertConfigId, Signal: p.Message_CREATE})
+	//executor := handler.Executor{}
+	//// TODO need add error adaptor
+	//executor.Execute(ctx, &p.Message{AlertConfigId: respon.AlertConfig.AlertConfigId, Signal: p.Message_CREATE})
 
 	return respon, nil
 }
@@ -33,8 +31,8 @@ func getAlertConfigResponse(v interface{}, err error) *pb.AlertConfigResponse {
 	var respon = &pb.AlertConfigResponse{}
 
 	if v != nil {
-		vv := v.([]interface{})
-		respon.AlertConfig = ConvertAlertConfig2PB(vv)
+		ac := v.(*models.AlertConfig)
+		respon.AlertConfig = ConvertAlertConfig2PB(ac)
 	}
 
 	if err != nil {
@@ -49,14 +47,6 @@ func getAlertConfigResponse(v interface{}, err error) *pb.AlertConfigResponse {
 
 func (server AlertHandler) DeleteAlertConfig(ctx context.Context, alertConfigSpec *pb.AlertConfigSpec) (*pb.AlertConfigResponse, error) {
 	ac := models.AlertConfig{AlertConfigID: alertConfigSpec.AlertConfigId}
-
-	acIDs, _ := DoTransactionAction(&ac, AlertConfig, MethodDelete, false)
-	alertConfig := acIDs.([]interface{})[0].(*models.AlertConfig)
-
-	ac.AlertRuleGroupID = alertConfig.AlertRuleGroupID
-	ac.ResourceGroupID = alertConfig.ResourceGroupID
-	ac.ReceiverGroupID = alertConfig.ReceiverGroupID
-
 	v, err := DoTransactionAction(&ac, AlertConfig, MethodDelete)
 	respon := getAlertConfigResponse(v, err)
 	return respon, nil
@@ -72,14 +62,6 @@ func (server AlertHandler) UpdateAlertConfig(ctx context.Context, alertConfig *p
 
 func (server AlertHandler) GetAlertConfig(ctx context.Context, alertConfigSpec *pb.AlertConfigSpec) (*pb.AlertConfigResponse, error) {
 	ac := models.AlertConfig{AlertConfigID: alertConfigSpec.AlertConfigId}
-
-	acIDs, _ := DoTransactionAction(&ac, AlertConfig, MethodGet, false)
-	alertConfig := acIDs.([]interface{})[0].(*models.AlertConfig)
-
-	ac.AlertRuleGroup = &models.AlertRuleGroup{AlertRuleGroupID: alertConfig.AlertRuleGroupID}
-	ac.ResourceGroup = &models.ResourceGroup{ResourceGroupID: alertConfig.ResourceGroupID}
-	ac.ReceiverGroup = &models.ReceiverGroup{ReceiverGroupID: alertConfig.ReceiverGroupID}
-
 	v, err := DoTransactionAction(&ac, AlertConfig, MethodGet)
 	respon := getAlertConfigResponse(v, err)
 	return respon, nil
@@ -108,35 +90,20 @@ func ConvertPB2AlertConfig(pbac *pb.AlertConfig) *models.AlertConfig {
 	}
 }
 
-func ConvertAlertConfig2PB(v []interface{}) *pb.AlertConfig {
-	// alertConfig *models.AlertConfig, ruleGroup *models.AlertRuleGroup, reveiverGroup *models.ReceiverGroup, resourceGroup *models.ResourceGroup
-
+func ConvertAlertConfig2PB(ac *models.AlertConfig) *pb.AlertConfig {
 	var pbac = pb.AlertConfig{}
 
-	if v[0] != nil {
-		alertConfig := v[0].(*models.AlertConfig)
-		pbac.AlertConfigId = alertConfig.AlertConfigID
-		pbac.AlertConfigName = alertConfig.AlertConfigName
-		pbac.SeverityId = alertConfig.SeverityID
-		pbac.SeverityCh = alertConfig.SeverityCh
-		pbac.EnableStart = ConvertTime2String(alertConfig.EnableStart)
-		pbac.EnableEnd = ConvertTime2String(alertConfig.EnableEnd)
-		pbac.Desc = alertConfig.Description
-	}
-
-	if v[1] != nil {
-		ruleGroup := v[1].(*models.AlertRuleGroup)
-		pbac.AlertRuleGroup = ConvertAlertRuleGroup2PB(ruleGroup)
-	}
-
-	if v[2] != nil {
-		reveiverGroup := v[2].(*models.ReceiverGroup)
-		pbac.ReceiverGroup = ConvertReceiverGroup2PB(reveiverGroup)
-	}
-
-	if v[3] != nil {
-		resourceGroup := v[3].(*models.ResourceGroup)
-		pbac.ResourceGroup = ConvertResourceGroup2PB(resourceGroup)
+	if ac != nil {
+		pbac.AlertConfigId = ac.AlertConfigID
+		pbac.AlertConfigName = ac.AlertConfigName
+		pbac.SeverityId = ac.SeverityID
+		pbac.SeverityCh = ac.SeverityCh
+		pbac.EnableStart = ConvertTime2String(ac.EnableStart)
+		pbac.EnableEnd = ConvertTime2String(ac.EnableEnd)
+		pbac.Desc = ac.Description
+		pbac.AlertRuleGroup = ConvertAlertRuleGroup2PB(ac.AlertRuleGroup)
+		pbac.ReceiverGroup = ConvertReceiverGroup2PB(ac.ReceiverGroup)
+		pbac.ResourceGroup = ConvertResourceGroup2PB(ac.ResourceGroup)
 	}
 
 	return &pbac

@@ -1,12 +1,10 @@
 package handler
 
 import (
-	"github.com/carmanzhang/ks-alert/pkg/dispatcher/pb"
 	"github.com/carmanzhang/ks-alert/pkg/models"
 	"github.com/carmanzhang/ks-alert/pkg/utils/dbutil"
 	"github.com/pkg/errors"
 	"k8s.io/klog/glog"
-	"net/http"
 	"reflect"
 )
 
@@ -26,7 +24,7 @@ const (
 	MethodDelete = "Delete"
 )
 
-func DoTransactionAction(v interface{}, tp TP, method string, bol ...bool) (interface{}, error) {
+func DoTransactionAction(v interface{}, tp TP, method string) (interface{}, error) {
 
 	// transaction begin
 	db, e := dbutil.DBClient()
@@ -39,101 +37,21 @@ func DoTransactionAction(v interface{}, tp TP, method string, bol ...bool) (inte
 	var res interface{}
 	var err error
 
-	if tp == AlertConfig {
-		var ruleGroupResponse, recvGroupResponse, resGroupResponse interface{}
-
-		alertConfig := v.(*models.AlertConfig)
-		if len(bol) == 0 {
-
-			var ruleGroup interface{}
-			if method == http.MethodPut || method == http.MethodPost {
-				ruleGroup = alertConfig.AlertRuleGroup
-			} else {
-				ruleGroup = &pb.AlertRuleGroupSpec{AlertRuleGroupId: alertConfig.AlertRuleGroup.AlertRuleGroupID}
-			}
-			ruleGroupResponse, err = CallReflect(models.AlertRuleGroup{}, method, tx, ruleGroup)
-
-			if err != nil {
-				tx.Rollback()
-				glog.Errorln(err.Error())
-				return nil, err
-			}
-
-			var receiverGroup interface{}
-			receiverGroup = alertConfig.ReceiverGroup
-			//if method == http.MethodPut || method == http.MethodPost {
-			//} else {
-			//	receiverGroup = &pb.ReceiverGroupSpec{ReceiverGroupId: alertConfig.ReceiverGroup.ReceiverGroupID}
-			//}
-			recvGroupResponse, err = CallReflect(models.ReceiverGroup{}, method, tx, receiverGroup)
-
-			if err != nil {
-				tx.Rollback()
-				glog.Errorln(err.Error())
-				return nil, err
-			}
-
-			var resourceGroup interface{}
-			resourceGroup = alertConfig.ResourceGroup
-			//if method == http.MethodPut || method == http.MethodPost {
-			//} else {
-			//	resourceGroup = &pb.ResourceGroupSpec{ResourceGroupId: alertConfig.ResourceGroup.ResourceGroupID}
-			//}
-			resGroupResponse, err = CallReflect(models.ResourceGroup{}, method, tx, resourceGroup)
-
-			if err != nil {
-				tx.Rollback()
-				glog.Errorln(err.Error())
-				return nil, err
-			}
-		}
-
-		if method == http.MethodPut || method == http.MethodPost {
-			alertConfig.AlertRuleGroupID = ruleGroupResponse.(*models.AlertRuleGroup).AlertRuleGroupID
-			alertConfig.ResourceGroupID = resGroupResponse.(*models.ResourceGroup).ResourceGroupID
-			alertConfig.ReceiverGroupID = recvGroupResponse.(*models.ReceiverGroup).ReceiverGroupID
-		}
-
-		alertConfigResponse, err := CallReflect(models.AlertConfig{}, method, tx, alertConfig)
-
-		if err != nil {
-			tx.Rollback()
-			glog.Errorln(err.Error())
-			return nil, err
-		}
-
-		res = []interface{}{alertConfigResponse, ruleGroupResponse, recvGroupResponse, resGroupResponse}
-
-	}
-
-	if tp == RuleGroup {
-		// create rule group
+	switch tp {
+	case AlertConfig:
+		res, err = CallReflect(models.AlertConfig{}, method, tx, v)
+	case RuleGroup:
 		res, err = CallReflect(models.AlertRuleGroup{}, method, tx, v)
-
-		if err != nil {
-			tx.Rollback()
-			glog.Errorln(err.Error())
-		}
-	}
-
-	if tp == ReceiverGroup {
-		// receiver group
+	case ReceiverGroup:
 		res, err = CallReflect(models.ReceiverGroup{}, method, tx, v)
-
-		if err != nil {
-			tx.Rollback()
-			glog.Errorln(err.Error())
-		}
+	case ResourceGroup:
+		res, err = CallReflect(models.ResourceGroup{}, method, tx, v)
 	}
 
-	if tp == ResourceGroup {
-		// create resource group
-		res, err = CallReflect(models.ResourceGroup{}, method, tx, v)
-
-		if err != nil {
-			tx.Rollback()
-			glog.Errorln(err.Error())
-		}
+	if err != nil {
+		tx.Rollback()
+		glog.Errorln(err.Error())
+		return nil, err
 	}
 
 	// TODO need to validate closing db connection
