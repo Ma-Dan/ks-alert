@@ -47,6 +47,10 @@ type ResourceType struct {
 	UpdatedAt time.Time `gorm:"not null;"`
 }
 
+type ResourceUriTmpls struct {
+	ResourceUriTmpl []*ResourceUriTmpl `json:"resource_uri_tmpl,omitempty"`
+}
+
 type ResourceUriTmpl struct {
 	UriTmpl      string            `json:"uri_tmpl,omitempty"`
 	ResourceName []string          `json:"resource_name,omitempty"`

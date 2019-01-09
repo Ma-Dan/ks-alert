@@ -3,7 +3,9 @@ package handler
 import (
 	"context"
 	"fmt"
+	"github.com/carmanzhang/ks-alert/pkg/dispatcher/client"
 	"github.com/carmanzhang/ks-alert/pkg/dispatcher/pb"
+	p "github.com/carmanzhang/ks-alert/pkg/executor/pb"
 	"github.com/carmanzhang/ks-alert/pkg/models"
 	"github.com/golang/glog"
 	"strconv"
@@ -19,10 +21,14 @@ func (server AlertHandler) CreateAlertConfig(ctx context.Context, pbac *pb.Alert
 
 	v, err := DoTransactionAction(ac, AlertConfig, MethodCreate)
 	respon := getAlertConfigResponse(v, err)
-	//executor := handler.Executor{}
-	//// TODO need add error adaptor
-	//executor.Execute(ctx, &p.Message{AlertConfigId: respon.AlertConfig.AlertConfigId, Signal: p.Message_CREATE})
 
+	conn, err := client.GetExecutorGrpcLoadBalancerClient()
+	cli := p.NewExecutorClient(conn)
+	// TODO need add error adaptor
+	pbErr, _ := cli.Execute(ctx, &p.Message{AlertConfigId: respon.AlertConfig.AlertConfigId, Signal: p.Message_CREATE})
+	if pbErr != nil {
+		fmt.Println(pbErr.Code, pbErr.Text)
+	}
 	return respon, nil
 }
 
@@ -71,7 +77,8 @@ func ConvertPB2AlertConfig(pbac *pb.AlertConfig) *models.AlertConfig {
 	if pbac == nil {
 		return nil
 	}
-	return &models.AlertConfig{
+
+	ac := &models.AlertConfig{
 		AlertConfigID:   pbac.AlertConfigId,
 		AlertConfigName: pbac.AlertConfigName,
 
@@ -83,11 +90,18 @@ func ConvertPB2AlertConfig(pbac *pb.AlertConfig) *models.AlertConfig {
 		SeverityID: pbac.SeverityId,
 
 		EnableStart: ConvertString2Time(pbac.EnableStart),
-		EnableEnd:   ConvertString2Time(pbac.EnableEnd),
 		Description: pbac.Desc,
 		CreatedAt:   time.Now(),
 		UpdatedAt:   time.Now(),
 	}
+
+	if pbac.EnableEnd != "" {
+		ac.EnableEnd = ConvertString2Time(pbac.EnableEnd)
+	} else {
+		// future 2100 year's timestamp
+		ac.EnableEnd = time.Unix(4102416000, 0)
+	}
+	return ac
 }
 
 func ConvertAlertConfig2PB(ac *models.AlertConfig) *pb.AlertConfig {

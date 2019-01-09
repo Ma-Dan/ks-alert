@@ -1,8 +1,8 @@
 package jsonutil
 
 import (
-	"k8s.io/klog/glog"
 	"github.com/json-iterator/go"
+	"k8s.io/klog/glog"
 )
 
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
@@ -20,6 +20,14 @@ func Marshal(v interface{}) string {
 
 func Unmarshal(res string, v interface{}) {
 	err := json.Unmarshal([]byte(res), v)
+
+	if err != nil {
+		glog.Errorf("Unmarshal json %+v object failed, err: %s", v, err.Error())
+	}
+}
+
+func UnmarshalBinary(bys []byte, v interface{}) {
+	err := json.Unmarshal(bys, v)
 
 	if err != nil {
 		glog.Errorf("Unmarshal json %+v object failed, err: %s", v, err.Error())

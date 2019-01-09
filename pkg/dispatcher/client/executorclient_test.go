@@ -1,13 +1,12 @@
 package client
 
 import (
-	"testing"
-	. "github.com/smartystreets/goconvey/convey"
-	"time"
-	"fmt"
 	"context"
+	"fmt"
 	"github.com/carmanzhang/ks-alert/pkg/executor/pb"
-	"github.com/carmanzhang/ks-alert/pkg/models"
+	. "github.com/smartystreets/goconvey/convey"
+	"testing"
+	"time"
 )
 
 func TestGetExecutorGrpcClient(t *testing.T) {
@@ -16,14 +15,11 @@ func TestGetExecutorGrpcClient(t *testing.T) {
 		if err != nil {
 			panic(err)
 		}
-		ticker := time.NewTicker(1 * time.Second)
-		for t := range ticker.C {
-			clientX := pb.NewExecutorClient(conn)
-			resp, err := clientX.ExecuteAlertConfig(context.Background(), &pb.AlertConfig{Signal: pb.AlertConfig_Signal(models.Create), AlertConfigId: "world"})
+		// sleep a few millsecond for grpc dial etcd
+		time.Sleep(time.Millisecond * 500)
+		clientX := pb.NewExecutorClient(conn)
 
-			if err == nil {
-				fmt.Printf("%v: Reply is %s\n", t, resp.Text)
-			}
-		}
+		resp, err := clientX.Execute(context.Background(), &pb.Message{Signal: pb.Message_RELOAD, AlertConfigId: "alert-config-v2y8w603r0j9kk"})
+		fmt.Println(resp, err)
 	})
 }

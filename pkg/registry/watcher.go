@@ -1,11 +1,13 @@
 package registry
 
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/golang/glog"
 	etcd3 "go.etcd.io/etcd/clientv3"
+	"go.etcd.io/etcd/mvcc/mvccpb"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/naming"
-	"go.etcd.io/etcd/mvcc/mvccpb"
 )
 
 // watcher is the implementaion of grpc.naming.Watcher
@@ -60,10 +62,29 @@ func extractAddrs(resp *etcd3.GetResponse) []string {
 	if resp == nil || resp.Kvs == nil {
 		return addrs
 	}
+
+	var sis []*ServiceInfo
 	for i := range resp.Kvs {
 		if v := resp.Kvs[i].Value; v != nil {
-			addrs = append(addrs, string(v))
+			si := ServiceInfo{}
+			err := json.Unmarshal(v, &si)
+			if err != nil {
+				glog.Errorln(err.Error())
+			}
+
+			if si.ServiceAddress != "" {
+				sis = append(sis, &si)
+			}
 		}
 	}
+
+	var serviceInfo = ServiceInfoArray(sis)
+	serviceInfo.Sort(false)
+	selected := serviceInfo.TopK(3)
+
+	for i, _ := range selected {
+		addrs = append(addrs, selected[i].ServiceAddress)
+	}
+
 	return addrs
 }

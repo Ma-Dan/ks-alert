@@ -2,7 +2,8 @@ package runtime
 
 import (
 	"fmt"
-	. "github.com/smartystreets/goconvey/convey"
+	"github.com/carmanzhang/ks-alert/pkg/models"
+	"github.com/carmanzhang/ks-alert/pkg/utils/jsonutil"
 	"testing"
 )
 
@@ -71,6 +72,34 @@ func TestIsMatch(t *testing.T) {
 
 			b := IsMatch(params01, params02)
 			So(b, ShouldBeFalse)
+		})
+	})
+}
+
+func TestGetResourcesSpec(t *testing.T) {
+	Convey("get spec resource", t, func() {
+		Convey("test get resource", func() {
+			fmt.Println(GetResourcesSpec(&models.ResourceGroup{
+				ResourceGroupID: "resource_group-73xqmrxmwq59kk",
+				ResourceTypeID:  "resource_type-4o3kmjz32k0zj4",
+				Resources: []*models.Resource{
+					{ResourceName: "i-k89a62il"},
+					{ResourceName: "i-obveybo3"},
+					{ResourceName: "i-zteam1zt"},
+				},
+				URIParams: `{}`,
+			}))
+		})
+	})
+}
+
+func TestUnmarshalJson(t *testing.T) {
+	Convey("test json", t, func() {
+		Convey("test json01", func() {
+			s := `{"resource_uri_tmpl":[{"uri_tmpl":"/api/v1alpha1/monitoring/nodes"}]}`
+			var uriTmpls models.ResourceUriTmpls
+			jsonutil.Unmarshal(s, &uriTmpls)
+			fmt.Println(uriTmpls)
 		})
 	})
 }

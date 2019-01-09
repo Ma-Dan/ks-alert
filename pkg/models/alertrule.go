@@ -202,7 +202,7 @@ func (r AlertRuleGroup) Update(tx *gorm.DB, v interface{}) (interface{}, error) 
 }
 
 func (r AlertRuleGroup) Get(tx *gorm.DB, v interface{}) (interface{}, error) {
-	ruleGroupSpec, ok := v.(AlertRuleGroup)
+	ruleGroupSpec, ok := v.(*AlertRuleGroup)
 
 	if !ok {
 		return nil, Error{Text: fmt.Sprintf("type %v assert error", ruleGroupSpec), Code: AssertError}

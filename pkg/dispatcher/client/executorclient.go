@@ -1,6 +1,7 @@
 package client
 
 import (
+	"github.com/carmanzhang/ks-alert/pkg/option"
 	"github.com/carmanzhang/ks-alert/pkg/registry"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -20,8 +21,19 @@ var clientLBConn *grpc.ClientConn
 // cached grpc client map, key is hostname, value is corresponding grpc connection
 var cachedGrpcClient = make(map[string]*grpc.ClientConn)
 
-//
-func GetExecutorGrpcLoadBalancerClient(svc string, etcdAddress string) (*grpc.ClientConn, error) {
+func GetExecutorGrpcLoadBalancerClient(address ...string) (*grpc.ClientConn, error) {
+	var svc string
+	var etcd string
+	if address != nil && len(address) > 0 {
+		svc = address[0]
+		if len(address) > 1 {
+			etcd = address[1]
+		}
+	} else {
+		svc = *option.ExecutorServiceName
+		etcd = *option.EtcdAddress
+	}
+
 	if clientLBConn != nil {
 		return clientLBConn, nil
 	}
@@ -30,7 +42,7 @@ func GetExecutorGrpcLoadBalancerClient(svc string, etcdAddress string) (*grpc.Cl
 	b := grpc.RoundRobin(r)
 	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
 	var err error
-	clientLBConn, err = grpc.DialContext(ctx, etcdAddress, grpc.WithInsecure(), grpc.WithBalancer(b))
+	clientLBConn, err = grpc.DialContext(ctx, etcd, grpc.WithInsecure(), grpc.WithBalancer(b))
 	return clientLBConn, err
 }
 

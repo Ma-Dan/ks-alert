@@ -4,13 +4,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/carmanzhang/ks-alert/pkg/executor/client"
+	"github.com/carmanzhang/ks-alert/pkg/executor/metric"
 	"github.com/carmanzhang/ks-alert/pkg/executor/pb"
-	. "github.com/carmanzhang/ks-alert/pkg/executor/pb"
 	"github.com/carmanzhang/ks-alert/pkg/models"
 	"github.com/carmanzhang/ks-alert/pkg/utils/jsonutil"
 	"k8s.io/klog/glog"
 	"regexp"
+	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -77,8 +80,21 @@ func Action(ctx context.Context, msg *Message) error {
 		go runAlert(alertInfo, alert)
 
 	case Message_STOP:
+		runtimeAlert, ok := CachedRuntimeAlert[msg.AlertConfigId]
+		if !ok {
+			return errors.New("alert config was not executor by executor")
+		}
+
+		runtimeAlert.SigCh <- pb.Message_STOP
+		delete(CachedRuntimeAlert, msg.AlertConfigId)
 
 	case Message_RELOAD:
+		runtimeAlert, ok := CachedRuntimeAlert[msg.AlertConfigId]
+		if !ok {
+			return errors.New("alert config was not executor by executor")
+		}
+
+		runtimeAlert.SigCh <- pb.Message_RELOAD
 
 	case Message_OTHER:
 	}
@@ -87,8 +103,8 @@ func Action(ctx context.Context, msg *Message) error {
 
 func runAlert(alertInfo *AlertInfo, alert *RuntimeAlert) {
 
-	var period = 1
-	d := time.Duration(time.Minute * time.Duration(period))
+	var period = 8
+	d := time.Duration(time.Second * time.Duration(period))
 	timer := time.NewTicker(d)
 	defer timer.Stop()
 
@@ -97,27 +113,33 @@ func runAlert(alertInfo *AlertInfo, alert *RuntimeAlert) {
 		select {
 		case sig := <-sigCh:
 			if sig == pb.Message_RELOAD {
+				fmt.Println("runtime alert was reload, alert_config_id is: ", alert.AlertConfigID)
 				var err error
-				alertInfo, err = reload(alert.AlertConfigID)
+				fmt.Printf("%p,%v", alertInfo, alertInfo)
+				reloadAlertInfo, err := reload(alert.AlertConfigID)
+				fmt.Printf("%p,%v", reloadAlertInfo, reloadAlertInfo)
 
 				if err != nil {
 					glog.Errorln(err.Error())
 					alert.err = err
+				} else {
+					// reload success
+					alertInfo = reloadAlertInfo
 				}
 
 			} else if sig == pb.Message_STOP {
-				glog.Infoln("runtime alert was terminated, alert_config_id is: ", alert.AlertConfigID)
-				sigCh <- pb.Message_STOP
+				fmt.Println("runtime alert was terminated, alert_config_id is: ", alert.AlertConfigID)
 				return
 			}
 
 		case <-timer.C:
-			// retrieve metrics from moniting center
+			// retrieve metrics from monitoring center
+			fmt.Println("new second")
 			alertConfig := alertInfo.alertConfig
-			enable := isAlertEnable(alertConfig.EnableStart, alertConfig.EnableEnd)
-			if !enable {
-				continue
-			}
+			//enable := isAlertEnable(alertConfig.EnableStart, alertConfig.EnableEnd)
+			//if !enable {
+			//	continue
+			//}
 
 			freq := alertInfo.freq
 			currentFreq := alertInfo.currentFreq
@@ -136,26 +158,105 @@ func runAlert(alertInfo *AlertInfo, alert *RuntimeAlert) {
 					evaluatedRuleIndx = append(evaluatedRuleIndx, i)
 				}
 			}
-
+			fmt.Println("currentFreq: ", currentFreq)
+			fmt.Println("Freq: ", freq)
 			if len(evaluatedRuleIndx) == 0 {
 				continue
 			}
 
+			rules := alertConfig.AlertRuleGroup.AlertRules
 			// get metrics name from evaluated rule
-			metricNames := getMetricsName(evaluatedRuleIndx, alertConfig.AlertRuleGroup.AlertRules)
+			var ch = make(chan *metric.ResourceMetrics, 15)
+			getResourceMetrics(rules, evaluatedRuleIndx, alertInfo, ch)
+			close(ch)
+			for metricByRule := range ch {
+				fmt.Println(metricByRule)
+				if metricByRule != nil {
+					indx := metricByRule.RuleIndx
+					rule := rules[indx]
+					consCount := int(rule.ConsecutiveCount)
+					condition := rule.ConditionType
+					threshold := rule.Threshold
+					//matricName := metricByRule.RuleName
+					resourceMetric := metricByRule.ResourceMetric
+					for resName := range resourceMetric {
+						// timestamp and value
+						tvs := resourceMetric[resName]
+						ll := len(tvs)
+						if ll < consCount {
+							continue
+						}
+
+						f := true
+						for i := ll - consCount; i < ll; i++ {
+							v, err := strconv.ParseFloat(tvs[i].V, 32)
+							if err != nil {
+							}
+							switch condition {
+							case ">=":
+								f = f && (v >= float64(threshold))
+							case ">":
+								f = f && (v > float64(threshold))
+							case "<=":
+								f = f && (v <= float64(threshold))
+							case "<":
+								f = f && (v < float64(threshold))
+							}
+
+							if !f {
+								break
+							}
+						}
+
+						if f {
+							// fired alert on alert_rule rules[indx] and resource resourceMetric[resName]
+							fmt.Println("fired alert", rules[indx].MetricName, resName)
+						} else {
+							// need to change alert status according last alert status
+						}
+
+					}
+				}
+
+			}
 
 		}
 
 	}
 }
 
-func getMetricsName(index []int, rules []*models.AlertRule) []string {
-	var metricNames []string
-	for i := 0; i < len(index); i++ {
-		metricNames = append(metricNames, rules[i].MetricName)
-	}
+func getResourceMetrics(rules []*models.AlertRule, evaluatedRuleIndx []int, alertInfo *AlertInfo, ch chan *metric.ResourceMetrics) {
+	wg := sync.WaitGroup{}
+	for i := 0; i < len(evaluatedRuleIndx); i++ {
+		j := evaluatedRuleIndx[i]
+		metricName := rules[j].MetricName
+		// period unit is Minute
+		stepInMinute := rules[j].Period
+		consCount := rules[j].ConsecutiveCount
+		if consCount <= 0 || consCount > metric.MaxConsecutiveCount {
+			consCount = metric.ConsecutiveCount
+		}
 
-	return metricNames
+		if stepInMinute <= 0 || stepInMinute > metric.MaxStep {
+			stepInMinute = metric.Step
+		}
+
+		endTime := time.Now().Truncate(time.Minute).Unix()
+		startTime := endTime - int64((consCount+3)*stepInMinute*60)
+
+		wg.Add(1)
+		go func() {
+			metricStr := client.SendMonitoringRequest(alertInfo.uri, alertInfo.resourceNames, metricName, startTime, endTime, stepInMinute)
+			resourceMetrics := metric.GetResourceTimeSeriesMetric(metricStr, metricName, startTime, endTime)
+			resourceMetrics.RuleIndx = j
+			fmt.Println(">>>:", resourceMetrics)
+			fmt.Println(">>>:", rules)
+			ch <- resourceMetrics
+			wg.Done()
+		}()
+	}
+	wg.Wait()
+	//close(ch)
 }
 
 func isAlertEnable(start time.Time, end time.Time) bool {
@@ -192,7 +293,7 @@ func reload(acID string) (*AlertInfo, error) {
 		return nil, errors.New("at least one resource must be specified")
 	}
 
-	uri, resName, err := getResourcesSpec(alertConfig.ResourceGroup)
+	uri, resName, err := GetResourcesSpec(alertConfig.ResourceGroup)
 
 	if err != nil {
 		return nil, err
@@ -221,14 +322,10 @@ func reload(acID string) (*AlertInfo, error) {
 }
 
 // get resources uri and resource names
-func getResourcesSpec(resourceGroup *models.ResourceGroup) (string, []string, error) {
+func GetResourcesSpec(resourceGroup *models.ResourceGroup) (string, []string, error) {
 
 	var uriTmpl models.ResourceUriTmpl
 	jsonutil.Unmarshal(resourceGroup.URIParams, &uriTmpl)
-
-	if uriTmpl.UriTmpl == "" {
-		return "", nil, errors.New("resource uri tmpl must be specified")
-	}
 
 	uriParams := uriTmpl.Params
 	// find uriTmpls by resource type id
@@ -254,24 +351,23 @@ func getResourcesSpec(resourceGroup *models.ResourceGroup) (string, []string, er
 		return "", nil, errors.New("monitoring center must be specified")
 	}
 
-	var uriTmpls []*models.ResourceUriTmpl
+	var uriTmpls models.ResourceUriTmpls
+	fmt.Println(resourceType.ResourceURITmpls)
 	jsonutil.Unmarshal(resourceType.ResourceURITmpls, &uriTmpls)
 
-	l := len(uriTmpls)
+	l := len(uriTmpls.ResourceUriTmpl)
 
 	b := false
 
 	var urlTmpl string
 	for i := 0; i < l; i++ {
-		u := uriTmpls[i]
-		if u != nil {
-			// does uriParams match
-			storedUriParams := u.Params
-			if IsMatch(uriParams, storedUriParams) {
-				urlTmpl = u.UriTmpl
-				b = true
-				break
-			}
+		u := uriTmpls.ResourceUriTmpl[i]
+		// does uriParams match
+		storedUriParams := u.Params
+		if IsMatch(uriParams, storedUriParams) {
+			urlTmpl = u.UriTmpl
+			b = true
+			break
 		}
 	}
 
