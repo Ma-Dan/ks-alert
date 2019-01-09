@@ -19,7 +19,8 @@ func TestGetExecutorGrpcClient(t *testing.T) {
 		time.Sleep(time.Millisecond * 500)
 		clientX := pb.NewExecutorClient(conn)
 
-		resp, err := clientX.Execute(context.Background(), &pb.Message{Signal: pb.Message_RELOAD, AlertConfigId: "alert-config-v2y8w603r0j9kk"})
+		//resp, err := clientX.Execute(context.Background(), &pb.Message{Signal: pb.Message_RELOAD, AlertConfigId: "alert-config-jy009y494kqzn8"})
+		resp, err := clientX.Execute(context.Background(), &pb.Message{Signal: pb.Message_STOP, AlertConfigId: "alert-config-jy009y494kqzn8"})
 		fmt.Println(resp, err)
 	})
 }

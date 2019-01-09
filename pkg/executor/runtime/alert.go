@@ -21,14 +21,9 @@ import (
 type RuntimeAlert struct {
 	SigCh         chan pb.Message_Signal
 	StatusCh      chan string
-	AlertConfigID string
 	UpdatedAt     time.Time
 	CreatedAt     time.Time
 	err           error
-}
-
-type AlertInfo struct {
-	acID          string
 	alertConfig   *models.AlertConfig
 	uri           string
 	resourceNames []string
@@ -53,179 +48,194 @@ type AlertStatus struct {
 
 // key is alert config id
 // value is alert runtime parameters included channels
-var CachedRuntimeAlert = make(map[string]*RuntimeAlert)
+type RuntimeAlertStatus struct {
+	sync.RWMutex
+	Map map[string]*RuntimeAlert
+}
 
-func Action(ctx context.Context, msg *Message) error {
+var CachedRuntimeAlert = &RuntimeAlertStatus{
+	Map: make(map[string]*RuntimeAlert),
+}
 
-	signalx := msg.Signal
+func Action(ctx context.Context, msg *pb.Message) error {
 
-	switch signalx {
-	case Message_CREATE:
+	switch msg.Signal {
+	case pb.Message_CREATE:
 		// create alert by specifig alert config id within one goroutine
-		fmt.Println("create alert")
+		var rtAlert = &RuntimeAlert{
+			SigCh:     make(chan pb.Message_Signal),
+			CreatedAt: time.Now(),
+		}
+		// write executor's name to table `alert_config`
 
-		alertInfo, err := reload(msg.AlertConfigId)
+		err := reload(msg.AlertConfigId, rtAlert)
 
 		if err != nil {
 			return err
 		}
 
-		alert := &RuntimeAlert{
-			SigCh:     make(chan pb.Message_Signal),
-			CreatedAt: time.Now(),
-		}
+		CachedRuntimeAlert.Lock()
+		CachedRuntimeAlert.Map[msg.AlertConfigId] = rtAlert
+		CachedRuntimeAlert.Unlock()
 
-		CachedRuntimeAlert[msg.AlertConfigId] = alert
+		go runAlert(rtAlert)
 
-		go runAlert(alertInfo, alert)
-
-	case Message_STOP:
-		runtimeAlert, ok := CachedRuntimeAlert[msg.AlertConfigId]
+	case pb.Message_STOP:
+		runtimeAlert, ok := CachedRuntimeAlert.Map[msg.AlertConfigId]
 		if !ok {
 			return errors.New("alert config was not executor by executor")
 		}
 
 		runtimeAlert.SigCh <- pb.Message_STOP
-		delete(CachedRuntimeAlert, msg.AlertConfigId)
 
-	case Message_RELOAD:
-		runtimeAlert, ok := CachedRuntimeAlert[msg.AlertConfigId]
+		CachedRuntimeAlert.Lock()
+		delete(CachedRuntimeAlert.Map, msg.AlertConfigId)
+		CachedRuntimeAlert.Unlock()
+
+	case pb.Message_RELOAD:
+		runtimeAlert, ok := CachedRuntimeAlert.Map[msg.AlertConfigId]
 		if !ok {
 			return errors.New("alert config was not executor by executor")
 		}
 
 		runtimeAlert.SigCh <- pb.Message_RELOAD
 
-	case Message_OTHER:
+	default:
 	}
 	return nil
 }
 
-func runAlert(alertInfo *AlertInfo, alert *RuntimeAlert) {
-
+func runAlert(rtAlert *RuntimeAlert) {
 	var period = 8
 	d := time.Duration(time.Second * time.Duration(period))
 	timer := time.NewTicker(d)
 	defer timer.Stop()
 
-	sigCh := alert.SigCh
+	sigCh := rtAlert.SigCh
 	for {
 		select {
 		case sig := <-sigCh:
 			if sig == pb.Message_RELOAD {
-				fmt.Println("runtime alert was reload, alert_config_id is: ", alert.AlertConfigID)
+				acID := rtAlert.alertConfig.AlertConfigID
+				fmt.Println("runtime rtAlert was reload, alert_config_id is: ")
 				var err error
-				fmt.Printf("%p,%v", alertInfo, alertInfo)
-				reloadAlertInfo, err := reload(alert.AlertConfigID)
-				fmt.Printf("%p,%v", reloadAlertInfo, reloadAlertInfo)
+				fmt.Printf("%p,%v", rtAlert, rtAlert)
+				err = reload(acID, rtAlert)
+				fmt.Printf("%p,%v", rtAlert, rtAlert)
 
 				if err != nil {
 					glog.Errorln(err.Error())
-					alert.err = err
-				} else {
-					// reload success
-					alertInfo = reloadAlertInfo
+					rtAlert.err = err
 				}
 
 			} else if sig == pb.Message_STOP {
-				fmt.Println("runtime alert was terminated, alert_config_id is: ", alert.AlertConfigID)
+				fmt.Println("runtime rtAlert was terminated, alert_config_id is: ", rtAlert.alertConfig.AlertConfigID)
 				return
 			}
 
 		case <-timer.C:
-			// retrieve metrics from monitoring center
-			fmt.Println("new second")
-			alertConfig := alertInfo.alertConfig
+
+			fmt.Println("new evalted period")
+			alertConfig := rtAlert.alertConfig
+			// 1. rtAlert config is enable?
 			//enable := isAlertEnable(alertConfig.EnableStart, alertConfig.EnableEnd)
 			//if !enable {
 			//	continue
 			//}
 
-			freq := alertInfo.freq
-			currentFreq := alertInfo.currentFreq
-			ruleEnable := alertInfo.ruleEnable
-
-			l := len(freq)
-			var evaluatedRuleIndx []int
-			for i := 0; i < l; i++ {
-				if !ruleEnable[i] {
-					continue
-				}
-
-				currentFreq[i] = (currentFreq[i] + 1) % freq[i]
-				if currentFreq[i] == 0 {
-					// means this rule whill be evaluated in turn
-					evaluatedRuleIndx = append(evaluatedRuleIndx, i)
-				}
-			}
-			fmt.Println("currentFreq: ", currentFreq)
-			fmt.Println("Freq: ", freq)
+			// 2. is there any rules need to execute?
+			evaluatedRuleIndx := getExecutingRuleIndx(rtAlert.freq, rtAlert.currentFreq, rtAlert.ruleEnable)
 			if len(evaluatedRuleIndx) == 0 {
 				continue
 			}
 
+			// 3. retrieve metrics from monitoring center using evaluating rules
 			rules := alertConfig.AlertRuleGroup.AlertRules
-			// get metrics name from evaluated rule
 			var ch = make(chan *metric.ResourceMetrics, 15)
-			getResourceMetrics(rules, evaluatedRuleIndx, alertInfo, ch)
+			getResourceMetrics(rules, evaluatedRuleIndx, rtAlert.uri, rtAlert.resourceNames, ch)
 			close(ch)
-			for metricByRule := range ch {
-				fmt.Println(metricByRule)
-				if metricByRule != nil {
-					indx := metricByRule.RuleIndx
-					rule := rules[indx]
-					consCount := int(rule.ConsecutiveCount)
-					condition := rule.ConditionType
-					threshold := rule.Threshold
-					//matricName := metricByRule.RuleName
-					resourceMetric := metricByRule.ResourceMetric
-					for resName := range resourceMetric {
-						// timestamp and value
-						tvs := resourceMetric[resName]
-						ll := len(tvs)
-						if ll < consCount {
-							continue
-						}
 
-						f := true
-						for i := ll - consCount; i < ll; i++ {
-							v, err := strconv.ParseFloat(tvs[i].V, 32)
-							if err != nil {
-							}
-							switch condition {
-							case ">=":
-								f = f && (v >= float64(threshold))
-							case ">":
-								f = f && (v > float64(threshold))
-							case "<=":
-								f = f && (v <= float64(threshold))
-							case "<":
-								f = f && (v < float64(threshold))
-							}
-
-							if !f {
-								break
-							}
-						}
-
-						if f {
-							// fired alert on alert_rule rules[indx] and resource resourceMetric[resName]
-							fmt.Println("fired alert", rules[indx].MetricName, resName)
-						} else {
-							// need to change alert status according last alert status
-						}
-
-					}
-				}
-
-			}
+			// 4. decide whether a resource trigger a rule
+			trigger(ch, rules)
 
 		}
 
 	}
 }
 
-func getResourceMetrics(rules []*models.AlertRule, evaluatedRuleIndx []int, alertInfo *AlertInfo, ch chan *metric.ResourceMetrics) {
+func trigger(ch chan *metric.ResourceMetrics, rules []*models.AlertRule) {
+	for metricByRule := range ch {
+		fmt.Println(metricByRule)
+		if metricByRule != nil {
+			indx := metricByRule.RuleIndx
+			rule := rules[indx]
+			consCount := int(rule.ConsecutiveCount)
+			condition := rule.ConditionType
+			threshold := rule.Threshold
+			//matricName := metricByRule.RuleName
+			resourceMetric := metricByRule.ResourceMetric
+			for resName := range resourceMetric {
+				// timestamp and value
+				tvs := resourceMetric[resName]
+				ll := len(tvs)
+				if ll < consCount {
+					continue
+				}
+
+				f := true
+				for i := ll - consCount; i < ll; i++ {
+					v, err := strconv.ParseFloat(tvs[i].V, 32)
+					if err != nil {
+					}
+					switch condition {
+					case ">=":
+						f = f && (v >= float64(threshold))
+					case ">":
+						f = f && (v > float64(threshold))
+					case "<=":
+						f = f && (v <= float64(threshold))
+					case "<":
+						f = f && (v < float64(threshold))
+					}
+
+					if !f {
+						break
+					}
+				}
+
+				if f {
+					// fired alert on alert_rule rules[indx] and resource resourceMetric[resName]
+					fmt.Println("fired alert", rules[indx].MetricName, resName)
+				} else {
+					// need to change alert status according last alert status
+				}
+
+			}
+		}
+
+	}
+}
+
+// alert rules which are need to execute
+func getExecutingRuleIndx(freq, currentFreq []int32, ruleEnable []bool) []int {
+	l := len(freq)
+	var evaluatedRuleIndx []int
+	for i := 0; i < l; i++ {
+		if !ruleEnable[i] {
+			continue
+		}
+		currentFreq[i] = (currentFreq[i] + 1) % freq[i]
+		if currentFreq[i] == 0 {
+			// means this rule whill be evaluated in turn
+			evaluatedRuleIndx = append(evaluatedRuleIndx, i)
+		}
+	}
+	fmt.Println("currentFreq: ", currentFreq)
+	fmt.Println("Freq: ", freq)
+	return evaluatedRuleIndx
+}
+
+func getResourceMetrics(rules []*models.AlertRule, evaluatedRuleIndx []int, uri string, resourceNames []string, ch chan *metric.ResourceMetrics) {
 	wg := sync.WaitGroup{}
 	for i := 0; i < len(evaluatedRuleIndx); i++ {
 		j := evaluatedRuleIndx[i]
@@ -246,7 +256,7 @@ func getResourceMetrics(rules []*models.AlertRule, evaluatedRuleIndx []int, aler
 
 		wg.Add(1)
 		go func() {
-			metricStr := client.SendMonitoringRequest(alertInfo.uri, alertInfo.resourceNames, metricName, startTime, endTime, stepInMinute)
+			metricStr := client.SendMonitoringRequest(uri, resourceNames, metricName, startTime, endTime, stepInMinute)
 			resourceMetrics := metric.GetResourceTimeSeriesMetric(metricStr, metricName, startTime, endTime)
 			resourceMetrics.RuleIndx = j
 			fmt.Println(">>>:", resourceMetrics)
@@ -270,33 +280,33 @@ func isAlertEnable(start time.Time, end time.Time) bool {
 }
 
 // reload alert config
-func reload(acID string) (*AlertInfo, error) {
+func reload(acID string, rtAlert *RuntimeAlert) error {
 	// get alert config by id from DB
 	alertConfig, err := models.GetAlertConfig(&models.AlertConfig{AlertConfigID: acID})
 
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	alertRules := alertConfig.AlertRuleGroup
 	if alertRules == nil || len(alertRules.AlertRules) == 0 {
-		return nil, errors.New("at least one alert rule must be specified")
+		return errors.New("at least one alert rule must be specified")
 	}
 
 	receivers := alertConfig.ReceiverGroup
 	if receivers == nil || len(*receivers.Receivers) == 0 {
-		return nil, errors.New("at least one receiver must be specified")
+		return errors.New("at least one receiver must be specified")
 	}
 
 	resources := alertConfig.ResourceGroup
 	if resources == nil || len(resources.Resources) == 0 {
-		return nil, errors.New("at least one resource must be specified")
+		return errors.New("at least one resource must be specified")
 	}
 
 	uri, resName, err := GetResourcesSpec(alertConfig.ResourceGroup)
 
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	l := len(alertRules.AlertRules)
@@ -310,15 +320,13 @@ func reload(acID string) (*AlertInfo, error) {
 		ruleEnable[i] = rule.Enable
 	}
 
-	return &AlertInfo{
-		acID:          acID,
-		alertConfig:   alertConfig,
-		resourceNames: resName,
-		uri:           uri,
-		ruleEnable:    ruleEnable,
-		freq:          freq,
-		currentFreq:   currentFreq,
-	}, nil
+	rtAlert.alertConfig = alertConfig
+	rtAlert.resourceNames = resName
+	rtAlert.uri = uri
+	rtAlert.ruleEnable = ruleEnable
+	rtAlert.freq = freq
+	rtAlert.currentFreq = currentFreq
+	return nil
 }
 
 // get resources uri and resource names

@@ -9,7 +9,7 @@ import (
 func TestGetHardwareData(t *testing.T) {
 	Convey("test get hardware data", t, func() {
 		status := GetHardwareData()
-		fmt.Println(status)
+		fmt.Println(jsonutil.Marshal(status))
 	})
 }
 func TestStatusArray_Sort(t *testing.T) {
