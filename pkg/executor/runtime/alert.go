@@ -138,6 +138,7 @@ func (rtAlert *RuntimeAlertConfig) runAlert() {
 		case <-timer.C:
 			// TODO need to add exception catcher function
 			fmt.Println("new evalted period", len(CachedRuntimeAlert.Map), runtime.NumGoroutine())
+			fmt.Println(jsonutil.Marshal(rtAlert.firedAlerts))
 			alertConfig := rtAlert.alertConfig
 
 			// 0. check this alert_config's hostid, whether is consistency with this node or not
@@ -149,7 +150,7 @@ func (rtAlert *RuntimeAlertConfig) runAlert() {
 				glog.Errorln(err.Error())
 			}
 
-			if hostID != option.HostID {
+			if hostID != fmt.Sprintf("%s:%d", *option.ServiceHost, *option.ExecutorServicePort) {
 				return
 			}
 
@@ -237,6 +238,7 @@ func (rtAlert *RuntimeAlertConfig) trigger(ch chan *metric.ResourceMetrics) {
 					} else {
 						firedRules = make(map[string]time.Time)
 						firedRules[ruleID] = time.Now()
+						firedAlerts[resName] = firedRules
 					}
 
 					// insert alert fired item into `alert_history`
@@ -255,24 +257,25 @@ func (rtAlert *RuntimeAlertConfig) trigger(ch chan *metric.ResourceMetrics) {
 					if firedRules, ok := firedAlerts[resName]; ok && firedRules != nil {
 						if _, ok := firedRules[ruleID]; ok {
 							delete(firedRules, ruleID)
+
+							// insert alert recovery item into `alert_histories`
+							ah := rtAlert.makeAlertHistoryItem(indx, resName, tvs, f)
+							_, err := models.CreateAlertHistory(ah)
+							if err != nil {
+								fmt.Println(err.Error())
+							}
+							fmt.Println("recovery alert", rules[indx].MetricName, resName)
 						}
 
 						if len(firedRules) == 0 {
 							delete(firedAlerts, resName)
 						}
 					}
-					// insert alert recovery item into `alert_histories`
-					ah := rtAlert.makeAlertHistoryItem(indx, resName, tvs, f)
-					_, err := models.CreateAlertHistory(ah)
-					if err != nil {
-						fmt.Println(err.Error())
-					}
-
-					fmt.Println("recovery alert", rules[indx].MetricName, resName)
 				}
 
 				// repeat send
 				// check it's the time for the fired alert is going to send
+
 			}
 		}
 
@@ -408,12 +411,19 @@ func (rtAlert *RuntimeAlertConfig) reload(acID string) error {
 // 0. remove old resources
 func removeOldRulesAndResources(resources *models.ResourceGroup, firedAlerts map[string]map[string]time.Time, alertRules *models.AlertRuleGroup) {
 	l := len(resources.Resources)
+	var resMap = make(map[string]string)
+
 	for i := 0; i < l; i++ {
 		rs := resources.Resources[i]
-		if _, ok := firedAlerts[rs.ResourceName]; !ok {
-			delete(firedAlerts, rs.ResourceName)
+		resMap[rs.ResourceName] = ""
+	}
+
+	for k := range firedAlerts {
+		if _, ok := resMap[k]; !ok {
+			delete(firedAlerts, k)
 		}
 	}
+
 	// 1. remove old rules
 	l = len(alertRules.AlertRules)
 	for k := range firedAlerts {

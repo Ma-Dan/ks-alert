@@ -114,7 +114,7 @@ func GetIdleExecutorAddress(endpoints ...string) (string, error) {
 
 	var value string
 	for k := range addr {
-		value = addr[k]
+		value = k
 	}
 	return value, nil
 }

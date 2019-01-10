@@ -22,6 +22,10 @@ type Product struct {
 	CreatedAt         time.Time      `gorm:"not null;"`
 	UpdatedAt         time.Time      `gorm:"not null;"`
 	ResourceTypes     []ResourceType `gorm:"ForeignKey:ProductID;AssociationForeignKey:ResourceTypeID"`
+
+	// TODO each product may has it's own webhook address, this webhook mainly used to dispaly fired alert on UI
+	Webhook       string `gorm:"type:varchar(50);"`
+	WebhookEnable bool   `gorm:"type:bool;"`
 }
 
 func CreateProduct(product *Product) (*Product, error) {

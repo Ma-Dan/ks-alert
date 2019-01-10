@@ -34,7 +34,7 @@ func (w *watcher) Next() ([]*naming.Update, error) {
 			if l := len(addrs); l != 0 {
 				updates := make([]*naming.Update, l)
 				i := 0
-				for _, add := range addrs {
+				for add := range addrs {
 					updates[i] = &naming.Update{Op: naming.Add, Addr: add}
 					i = i + 1
 				}
