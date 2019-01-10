@@ -1,0 +1,30 @@
+syntax = "proto3";
+package pb;
+option go_package = "pb";
+
+import "error.proto";
+
+message Informer {
+    string alert_config_id = 1;
+    enum Signal {
+        CREATE = 0;
+        TERMINATE = 1;
+        STOP = 2;
+        RELOAD = 3;
+        OTHER = 4;
+    }
+    Signal signal = 2;
+}
+
+service Executor {
+    rpc Execute (Informer) returns (Error) {
+        //        option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+        //            summary: "Put single event to eventhub"
+        //            tags: "Event"
+        //        };
+        //        option (google.api.http) = {
+        //            post: "/v1/event"
+        //            body: "*"
+        //        };
+    }
+}

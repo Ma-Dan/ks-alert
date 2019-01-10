@@ -1,0 +1,14 @@
+syntax = "proto3";
+package pb;
+option go_package = "pb";
+
+message RepeatSend {
+    uint32 init_repeat_send_interval = 1;
+    uint32 max_repeat_send_count = 2;
+    RepeatSendType repeat_send_type = 3;
+}
+
+enum RepeatSendType {
+    Fixed = 0;
+    exponential = 1;
+}

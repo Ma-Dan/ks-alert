@@ -1,8 +1,0 @@
-syntax = "proto3";
-package pb;
-option go_package = "pb";
-
-enum RepeatSendType {
-    Fixed = 0;
-    exponential = 1;
-}

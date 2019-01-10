@@ -1,6 +1,6 @@
 package etcdutil
 
-import "github.com/coreos/etcd/contrib/recipes"
+import "go.etcd.io/etcd/contrib/recipes"
 
 type Queue struct {
 	*recipe.Queue

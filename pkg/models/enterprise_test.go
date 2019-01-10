@@ -8,21 +8,20 @@ import (
 
 func TestCreateEnterprise(t *testing.T) {
 	Convey("test database", t, func() {
-		Convey("test database insert0", func() {
+		Convey("test enterprise update", func() {
 			var enterprise = Enterprise{
-				EnterpriseName: "北京优帆科技有限公司武汉分公司",
+				EnterpriseName: "qingcloud",
 				HomePage:       "https://www.qingcloud.com/",
 				Address:        "北京优帆科技有限公司",
 				Email:          "yunify@yunify.com",
-				Contacts:       "Richard",
+				Contacts:       "xxxxxxxx",
 				Description:    "云计算公司",
 				Phone:          "400-8576-886",
 				CreatedAt:      time.Now(),
 				UpdatedAt:      time.Now(),
 			}
 
-			err := CreateEnterprise(&enterprise)
-
+			err := UpdateEnterprise(&enterprise)
 			So(err, ShouldBeNil)
 		})
 	})

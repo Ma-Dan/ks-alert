@@ -1,37 +1,38 @@
 package models
 
 import (
-	"errors"
+	"fmt"
 	"github.com/carmanzhang/ks-alert/pkg/utils/dbutil"
 	"github.com/carmanzhang/ks-alert/pkg/utils/idutil"
-	"github.com/carmanzhang/ks-alert/pkg/utils/jsonutil"
+	"github.com/golang/glog"
+	"github.com/jinzhu/gorm"
+	"strings"
 	"time"
 )
 
 type Resource struct {
+	Action
 	ResourceID      string    `gorm:"primary_key" json:"-"`
 	ResourceName    string    `gorm:"type:varchar(50);" json:"resource_name"`
-	ResourceTypeID  string    `gorm:"type:varchar(50);" json:"resource_type_id"`
 	ResourceGroupID string    `gorm:"not null;" json:"-"`
 	CreatedAt       time.Time `gorm:"not null;" json:"-"`
 	UpdatedAt       time.Time `gorm:"not null;" json:"-"`
 }
 
 type ResourceGroup struct {
-	ResourceGroupID   string     `gorm:"primary_key" json:"-"`
-	ResourceGroupName string     `gorm:"type:varchar(50);not null;" json:"resource_group_name"`
-	Resources         []Resource `gorm:"-" json:"resources"`
-
-	URIParams       Params `gorm:"-" json:"resource_uri_params, omitempty"`
-	URIParamsString string `gorm:"type:text;not null;" json:"-"`
-
-	Description string    `gorm:"type:text;" json:"desc"`
-	CreatedAt   time.Time `gorm:"not null;" json:"-"`
-	UpdatedAt   time.Time `gorm:"not null;" json:"-"`
+	Action
+	ResourceGroupID   string      `gorm:"primary_key" json:"-"`
+	ResourceGroupName string      `gorm:"type:varchar(50);not null;" json:"resource_group_name"`
+	ResourceTypeID    string      `gorm:"type:varchar(50);" json:"resource_type_id"`
+	Resources         []*Resource `gorm:"-" json:"resources"`
+	URIParams         string      `gorm:"type:text;not null;" json:"-"`
+	Description       string      `gorm:"type:text;" json:"desc"`
+	CreatedAt         time.Time   `gorm:"not null;" json:"-"`
+	UpdatedAt         time.Time   `gorm:"not null;" json:"-"`
 }
 
 type ResourceType struct {
-	ResourceTypeID   string `gorm:"primary_key"`
+	ResourceTypeID   string `gorm:"primary_key;not null;"`
 	ProductID        string `gorm:"not null;"`
 	ResourceTypeName string `gorm:"type:varchar(50);not null;"`
 	Description      string `gorm:"type:text;"`
@@ -39,186 +40,363 @@ type ResourceType struct {
 
 	// MonitorCenterHost and MonitorCenterPort will override the corresponding filed in struct `product`
 	MonitorCenterHost string `gorm:"type:varchar(128);"`
-	MonitorCenterPort int    `gorm:"type:int;"` //default:-1;
-	// ResourceURITmpls struct -> json
-	ResourceURITmpls string `gorm:"type:text;not null;"`
+	MonitorCenterPort int32  `gorm:"type:int;"` //default:-1;
+	ResourceURITmpls  string `gorm:"type:text;not null;"`
 
-	CreatedAt      time.Time       `gorm:"not null;"`
-	UpdatedAt      time.Time       `gorm:"not null;"`
-	Metrics        []Metric        `gorm:"ForeignKey:ResourceTypeID;AssociationForeignKey:MetricID"`
-	ResourceGroups []ResourceGroup `gorm:"ForeignKey:ResourceTypeID;AssociationForeignKey:ResourceGroupID"`
+	CreatedAt time.Time `gorm:"not null;"`
+	UpdatedAt time.Time `gorm:"not null;"`
 }
 
-// the specific resource type has its own endpoint, can be expressed by URI
-/**
-{
-	"uri_tmpls": [{
-			"uri_tmpl": "namespces/{ns_name}/pods",
-			"params": ["ns_name"]
-		},
-		{
-			"uri_tmpl": "namespces/{ns_name}/pods/{pod_name}",
-			"params": ["ns_name", "pod_name"]
-		},
-		{
-			"uri_tmpl": "nodes/{node_id}/pods",
-			"params": ["node_id"]
-		},
-		{
-			"uri_tmpl": "nodes/{node_id}/pods/{pod_name}",
-			"params": {"node_id":"", "pod_name":""},
-			"resources":[]
-		},
-	]
-}
-*/
-
-type URI string
-type Params map[string]string
-type Resources []string
-
-type ResourceURITmpl struct {
-	URI       URI       `json:"uri_tmpl,omitempty"`
-	Params    Params    `json:"params,omitempty"`
-	Resources Resources `json:"resources,omitempty"`
+type ResourceUriTmpls struct {
+	ResourceUriTmpl []*ResourceUriTmpl `json:"resource_uri_tmpl,omitempty"`
 }
 
-type ResourceURITmpls struct {
-	ResourceURITmpl []ResourceURITmpl `json:"uri_tmpls"`
+type ResourceUriTmpl struct {
+	UriTmpl      string            `json:"uri_tmpl,omitempty"`
+	ResourceName []string          `json:"resource_name,omitempty"`
+	Params       map[string]string `json:"params,omitempty"`
 }
 
-//func GetResourceGroups(resourceType *ResourceType) *[]ResourceGroup {
-//	db, err := dbutil.DBClient()
-//	if err != nil {
-//		panic(err)
-//	}
-//
-//	var resourceGroup []ResourceGroup
-//	db.Model(&Re{}).Where(resourceType).Find(&resourceGroup)
-//
-//	return &resourceGroup
-//}
-
-//func GetResourceGroupsByResourceTypeID(resourceTypeID string) *[]ResourceGroup {
-//	db, err := dbutil.DBClient()
-//	if err != nil {
-//		panic(err)
-//	}
-//
-//	var resourceGroups []ResourceGroup
-//	db.Model(&ResourceGroup{}).Where(&ResourceGroup{ResourceTypeID: resourceTypeID}).Find(&resourceGroups)
-//
-//	return &resourceGroups
-//}
-
-func CreateResources(resources *[]Resource, resourceGroup *ResourceGroup, uriParams *Params) error {
-
-	if resourceGroup == nil || resourceGroup.ResourceGroupID == "" {
-		return errors.New("resource group create field")
-	}
-
+func GetResourceType(resourceType *ResourceType) (*ResourceType, error) {
 	db, err := dbutil.DBClient()
 	if err != nil {
-		panic(err)
+		glog.Errorln(err.Error())
+		return nil, err
 	}
 
-	resourceGroupID := resourceGroup.ResourceGroupID
+	var tp ResourceType
+	db = db.Model(&ResourceType{}).Where(resourceType).First(&tp)
 
-	for _, res := range *resources {
+	if db.RecordNotFound() {
+		return nil, nil
+	}
 
-		if res.ResourceTypeID == "" {
-			return errors.New("create resource field, resource type is not given")
+	if db.Error != nil {
+		return nil, err
+	}
+
+	return &tp, nil
+}
+
+func CreateResourceType(resourceType *ResourceType) (*ResourceType, error) {
+	db, err := dbutil.DBClient()
+
+	if err != nil {
+		glog.Errorln(err.Error())
+		return nil, err
+	}
+
+	resourceType.ResourceTypeID = idutil.GetUuid36("resource_type-")
+
+	err = db.Model(&ResourceType{}).Create(resourceType).Error
+	return resourceType, err
+
+}
+
+func UpdateResourceType(resourceType *ResourceType) error {
+	db, err := dbutil.DBClient()
+
+	if err != nil {
+		glog.Errorln(err.Error())
+		return err
+	}
+
+	if resourceType.ResourceTypeID != "" {
+		err = db.Model(resourceType).Where("resource_type_id = ?", resourceType.ResourceTypeID).Update(resourceType).Error
+	} else if resourceType.ProductID != "" && resourceType.ResourceTypeName != "" {
+		err = db.Model(resourceType).Where("product_id = ? and resource_type_name = ? ", resourceType.ProductID, resourceType.ResourceTypeName).Update(resourceType).Error
+	}
+
+	return err
+}
+
+func DeleteResourceType(resourceType *ResourceType) error {
+	db, err := dbutil.DBClient()
+
+	if err != nil {
+		glog.Errorln(err.Error())
+		return err
+	}
+
+	err = db.Delete(resourceType).Error
+	return err
+}
+
+func (r ResourceGroup) Create(tx *gorm.DB, v interface{}) (interface{}, error) {
+	resGroup, ok := v.(*ResourceGroup)
+
+	if !ok {
+		return nil, Error{Text: fmt.Sprintf("type %v assert error", resGroup), Code: AssertError}
+	}
+
+	if resGroup.ResourceGroupName == "" || resGroup.ResourceTypeID == "" {
+		return nil, Error{Text: "resource group name and resource type id must be specified", Code: InvalidParam}
+	}
+
+	if resGroup.Resources == nil || len(resGroup.Resources) == 0 {
+		return nil, Error{Text: "resources must be specified", Code: InvalidParam}
+	}
+
+	var resourceWithName []*Resource
+	resources := resGroup.Resources
+	for i := 0; i < len(resources); i++ {
+		r := resources[i]
+		if r.ResourceName != "" {
+			resourceWithName = append(resourceWithName, r)
 		}
+	}
 
-		res.ResourceID = idutil.GetUuid36("resource-")
-		res.ResourceGroupID = resourceGroupID
-		res.UpdatedAt = time.Now()
+	if len(resourceWithName) == 0 {
+		return nil, Error{Text: "at least one resource name must be specified", Code: InvalidParam}
+	}
 
-		err = db.Model(&Resource{}).Create(&res).Error
+	resGroup.ResourceGroupID = idutil.GetUuid36("resource_group-")
+
+	// create group
+	item := fmt.Sprintf("('%s','%s','%s','%s','%s','%v','%v')", resGroup.ResourceGroupID, resGroup.ResourceGroupName,
+		resGroup.ResourceTypeID, resGroup.Description, resGroup.URIParams, resGroup.CreatedAt, resGroup.UpdatedAt)
+
+	sql := "INSERT INTO resource_groups (resource_group_id, resource_group_name, resource_type_id, " +
+		"description, uri_params, created_at, updated_at) VALUES " + item
+
+	if err := tx.Exec(sql).Error; err != nil {
+		return nil, Error{Text: err.Error(), Code: DBError}
+	}
+
+	// create item
+	l := len(resourceWithName)
+	for i := 0; i < l; i++ {
+		r := resourceWithName[i]
+		r.ResourceID = idutil.GetUuid36("resource-")
+		r.ResourceGroupID = resGroup.ResourceGroupID
+	}
+
+	if err := CreateOrUpdateResources(tx, resourceWithName); err != nil {
+		return nil, err
+	}
+
+	return resGroup, nil
+}
+
+func (r ResourceGroup) Update(tx *gorm.DB, v interface{}) (interface{}, error) {
+
+	resGroup, ok := v.(*ResourceGroup)
+
+	if !ok {
+		return nil, Error{Text: fmt.Sprintf("type %v assert error", resGroup), Code: AssertError}
+	}
+
+	if resGroup.ResourceGroupID == "" || resGroup.ResourceGroupName == "" {
+		return nil, Error{Text: "resource group id or name must be specified", Code: InvalidParam}
+	}
+
+	// 1. get resource group first
+	vget, err := r.Get(tx, v)
+
+	if err != nil {
+		return nil, err
+	}
+
+	rg := vget.(*ResourceGroup)
+
+	if rg == nil || rg.ResourceGroupID == "" {
+		return nil, Error{Text: fmt.Sprintf("resource group id: %s not exist", resGroup.ResourceGroupID), Code: InvalidParam}
+	}
+
+	// 2. update resource group
+	sql := fmt.Sprintf("UPDATE resource_groups SET resource_group_name='%s',description='%s',"+
+		"uri_params='%v', updated_at='%v' WHERE resource_group_id='%s'",
+		resGroup.ResourceGroupName, resGroup.Description,
+		resGroup.URIParams, time.Now(), resGroup.ResourceGroupID)
+
+	if err := tx.Exec(sql).Error; err != nil {
+		return nil, Error{Text: err.Error(), Code: DBError}
+	}
+
+	// 3. delete resources or update resource
+	var needDeleted, needUpdated = CompareResources(resGroup.Resources, rg.Resources, resGroup.ResourceGroupID)
+
+	err = DeleteResources(tx, resGroup.ResourceGroupID, needDeleted)
+
+	if err != nil {
+		return nil, err
+	}
+
+	err = CreateOrUpdateResources(tx, needUpdated)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return resGroup, nil
+}
+
+func (r ResourceGroup) Get(tx *gorm.DB, v interface{}) (interface{}, error) {
+
+	rgSpec, ok := v.(*ResourceGroup)
+
+	if !ok {
+		return nil, Error{Text: fmt.Sprintf("type %v assert error", rgSpec), Code: AssertError}
+	}
+
+	rgID := rgSpec.ResourceGroupID
+
+	if rgID == "" {
+		return nil, Error{Text: "resource group id must be specified", Code: InvalidParam}
+	}
+
+	var rg ResourceGroup
+
+	err := tx.Model(&ResourceGroup{}).Where("resource_group_id=?", rgSpec.ResourceGroupID).First(&rg).Error
+
+	if err != nil {
+		return nil, Error{Text: err.Error(), Code: DBError}
+	}
+
+	exist := tx.RecordNotFound()
+
+	if exist {
+		return nil, Error{Text: "record not found", Code: DBError}
+	}
+
+	if rg.ResourceGroupID != "" {
+		resources, err := GetResources(tx, rg.ResourceGroupID)
+
 		if err != nil {
-			return err
+			return &rg, err
 		}
+
+		rg.Resources = resources
+	}
+
+	return &rg, nil
+}
+
+func (r ResourceGroup) Delete(tx *gorm.DB, v interface{}) (interface{}, error) {
+	rg, ok := v.(*ResourceGroup)
+
+	if !ok {
+		return nil, Error{Text: fmt.Sprintf("type %v assert error", rg), Code: AssertError}
+	}
+
+	rgID := rg.ResourceGroupID
+
+	if rgID == "" {
+		return nil, Error{Text: "resource group id must be specified", Code: InvalidParam}
+	}
+
+	sql := "DELETE rg, r FROM resource_groups as rg LEFT JOIN resources as r ON rg.resource_group_id=r.resource_group_id WHERE rg.resource_group_id=?"
+
+	if err := tx.Debug().Exec(sql, rg.ResourceGroupID).Error; err != nil {
+		return nil, Error{Text: err.Error(), Code: DBError}
+	}
+
+	return nil, nil
+}
+
+// resources crud
+func CreateOrUpdateResources(tx *gorm.DB, resources []*Resource) error {
+	l := len(resources)
+	if l == 0 {
+		return nil
+	}
+
+	sql := "INSERT INTO resources (resource_id, resource_name, resource_group_id, created_at, updated_at) VALUES "
+
+	for i := 0; i < l; i++ {
+		r := (resources)[i]
+
+		if strings.Trim(r.ResourceID, " ") == "" {
+			r.ResourceID = idutil.GetUuid36("resource-")
+		}
+
+		item := fmt.Sprintf("('%s','%s','%s','%v','%v') ",
+			r.ResourceID, r.ResourceName, r.ResourceGroupID, time.Now(), time.Now())
+
+		sql = sql + item
+		if i != l-1 {
+			sql = sql + ","
+		}
+	}
+	// on duplicate key update
+	sql = sql + "on duplicate key update resource_name=values(resource_name),updated_at=values(updated_at)"
+
+	if err := tx.Debug().Exec(sql).Error; err != nil {
+		return Error{Text: err.Error(), Code: DBError}
 	}
 
 	return nil
 }
 
-func CreateResourceGroup(resourceGroupName, description string) (*ResourceGroup, error) {
+func GetResources(tx *gorm.DB, rgID string) ([]*Resource, error) {
+	var resources []Resource
+	sql := "SELECT r.* FROM resources as r WHERE r.resource_group_id=?"
 
-	if resourceGroupName == "" {
-		return nil, errors.New("resource Group Name is not given")
+	if err := tx.Debug().Raw(sql, rgID).Scan(&resources).Error; err != nil {
+		return nil, Error{Text: err.Error(), Code: DBError}
 	}
 
-	db, err := dbutil.DBClient()
-	if err != nil {
-		panic(err)
-	}
+	l := len(resources)
+	var ptrs = make([]*Resource, l)
 
-	var resourceGroup = &ResourceGroup{
-		ResourceGroupID:   idutil.GetUuid36("resource_group-"),
-		ResourceGroupName: resourceGroupName,
-		Description:       description,
-		CreatedAt:         time.Now(),
-		UpdatedAt:         time.Now(),
+	for i := 0; i < l; i++ {
+		ptrs[i] = &resources[i]
 	}
-
-	err = db.Model(&ResourceGroup{}).Create(resourceGroup).Error
-	return resourceGroup, err
+	return ptrs, nil
 }
 
-//func GetResourceTypes(product *Product) *[]ResourceType {
-//	db, err := dbutil.DBClient()
-//	if err != nil {
-//		panic(err)
-//	}
-//
-//	var resourceTypes []ResourceType
-//	db.Model(&Product{}).Where(product).Find(&resourceTypes)
-//
-//	return &resourceTypes
-//}
+func CompareResources(p []*Resource, q []*Resource, rgID string) ([]*Resource, []*Resource) {
+	l := len(q)
 
-func GetResourceTypeByProductID(productID string) *[]ResourceType {
-	db, err := dbutil.DBClient()
-	if err != nil {
-		panic(err)
+	var resID = make(map[string]int)
+
+	for i := 0; i < l; i++ {
+		resID[q[i].ResourceID] = i
 	}
 
-	var resourceTypes []ResourceType
-	db.Model(&ResourceType{}).Where(&ResourceType{ProductID: productID}).Find(&resourceTypes)
+	l = len(p)
+	var needDeleted []*Resource
+	var needUpdated []*Resource
+	for i := 0; i < l; i++ {
+		r := p[i].ResourceID
+		j, ok := resID[r]
 
-	return &resourceTypes
+		if r != "" && !ok {
+			needDeleted = append(needDeleted, q[j])
+		} else {
+			p[i].ResourceGroupID = rgID
+			needUpdated = append(needUpdated, p[i])
+		}
+	}
+
+	return needDeleted, needUpdated
 }
 
-func GetAllResourceTypeCount(productID string) int {
-	db, err := dbutil.DBClient()
-	if err != nil {
-		panic(err)
+func DeleteResources(tx *gorm.DB, rgID string, resources []*Resource) error {
+
+	if rgID == "" {
+		return Error{Text: "resource group id must be specified", Code: InvalidParam}
 	}
 
-	var count int
-	db.Model(&Product{}).Where(&Product{ProductID: productID}).Count(&count)
+	if len(resources) == 0 {
+		if err := tx.Debug().Exec("DELETE r FROM resources as r WHERE r.resource_group_id=?", rgID).Error; err != nil {
+			return Error{Text: err.Error(), Code: DBError}
+		}
 
-	return count
-}
+	} else {
+		var ids []string
+		for i := 0; i < len(resources); i++ {
+			r := resources[i]
+			id := r.ResourceID
+			if id != "" {
+				ids = append(ids, id)
+			}
+		}
 
-func CreateSourceType(productID, resourceTypeName, description string, enable bool, resourceUri *ResourceURITmpls) error {
-	db, err := dbutil.DBClient()
-	if err != nil {
-		panic(err)
+		if err := tx.Debug().Exec("DELETE r FROM resources as r WHERE r.resource_group_id=? AND r.resource_id IN (?)", rgID, ids).Error; err != nil {
+			return Error{Text: err.Error(), Code: DBError}
+		}
 	}
 
-	var resourceType = &ResourceType{
-		ResourceTypeID:   idutil.GetUuid36("resource_type-"),
-		ResourceTypeName: resourceTypeName,
-		ProductID:        productID,
-		Enable:           enable,
-		Description:      description,
-		ResourceURITmpls: jsonutil.Marshal(resourceUri),
-		CreatedAt:        time.Now(),
-		UpdatedAt:        time.Now(),
-	}
-
-	err = db.Model(&Product{}).Create(resourceType).Error
-	return err
+	return nil
 }

@@ -1,49 +1,36 @@
 package models
 
 import (
-	. "github.com/smartystreets/goconvey/convey"
+	"fmt"
+	"github.com/carmanzhang/ks-alert/pkg/pb"
 	"testing"
-	"time"
 )
 
 func TestCreateSeverities(t *testing.T) {
 	Convey("create severities", t, func() {
 
-		productID := "product-4llxr47k7q82wz"
+	})
+}
 
-		err := CreateSeverities(&[]Severity{
-			Severity{
-				ProductID:      productID,
-				CreatedBy:      "carmanzhang",
-				SeverityEn:     "critical",
-				SeverityCh:     "严重",
-				SeverityDegree: 3,
-				CreatedAt:      time.Now(),
-				UpdatedAt:      time.Now(),
-			},
+func TestDeleteSeverity(t *testing.T) {
+	Convey("delete severity", t, func() {
+		x, err := DeleteSeverity(&pb.SeveritySpec{
+			SeverityId: "severity-004wnqz602qnnn",
+		})
+		fmt.Println(x)
+		fmt.Println(err)
+	})
+}
 
-			Severity{
-				ProductID:      productID,
-				CreatedBy:      "carmanzhang",
-				SeverityEn:     "severity",
-				SeverityCh:     "较严重",
-				SeverityDegree: 2,
-				CreatedAt:      time.Now(),
-				UpdatedAt:      time.Now(),
-			},
-
-			Severity{
-				ProductID:      productID,
-				CreatedBy:      "carmanzhang",
-				SeverityEn:     "warning",
-				SeverityCh:     "警告",
-				SeverityDegree: 1,
-				CreatedAt:      time.Now(),
-				UpdatedAt:      time.Now(),
-			},
+func TestGetSeverity(t *testing.T) {
+	Convey("delete severity", t, func() {
+		severity, err := GetSeverity(&pb.SeveritySpec{
+			SeverityId: "severity-10npz0p3no5wwy",
+			//ProductId:"string",
 		})
 
-		So(err, ShouldBeNil)
-
+		fmt.Println(err)
+		fmt.Println(severity)
+		//fmt.Println(len(*severity))
 	})
 }

@@ -1,0 +1,47 @@
+syntax = "proto3";
+package pb;
+option go_package = "pb";
+
+//import "google/api/annotations.proto";
+//import "protoc-gen-swagger/options/annotations.proto";
+import "error.proto";
+import "resourceuritmpl.proto";
+
+message ResourceType {
+    string resource_type_id = 1;
+    string resource_type_name = 2;
+    string product_id = 3;
+    string monitor_center_host = 4;
+    int32 monitor_center_port = 5;
+    ResourceUriTmpls resource_uri_tmpl = 6;
+    bool enable = 7;
+    string desc = 8;
+}
+
+message ResourceTypeSpec {
+    string resource_type_id = 1;
+    // resource_type_name + product_name + enterprise_name
+    string resource_type_name = 2;
+    string product_id = 3;
+
+}
+
+message ResourceTypeResponse {
+    ResourceType resource_type = 1;
+    Error error = 2; //optional
+}
+
+service ResourceTypeHandler {
+    // resource type
+    rpc CreateResourceType (ResourceType) returns (ResourceTypeResponse) {
+    }
+
+    rpc DeleteResourceType (ResourceTypeSpec) returns (ResourceTypeResponse) {
+    }
+
+    rpc UpdateResourceType (ResourceType) returns (ResourceTypeResponse) {
+    }
+
+    rpc GetResourceType (ResourceTypeSpec) returns (ResourceTypeResponse) {
+    }
+}

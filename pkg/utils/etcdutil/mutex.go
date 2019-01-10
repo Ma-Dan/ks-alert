@@ -7,7 +7,7 @@ package etcdutil
 import (
 	"context"
 
-	"github.com/coreos/etcd/clientv3/concurrency"
+	"go.etcd.io/etcd/clientv3/concurrency"
 )
 
 type Mutex struct {

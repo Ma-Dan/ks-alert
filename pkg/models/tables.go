@@ -2,8 +2,8 @@ package models
 
 import (
 	"fmt"
-	"github.com/jinzhu/gorm"
 	"github.com/carmanzhang/ks-alert/pkg/utils/dbutil"
+	"github.com/jinzhu/gorm"
 )
 
 func init() {
@@ -33,12 +33,6 @@ func createTables(db *gorm.DB) {
 		}
 	}
 
-	if !db.HasTable(&Metric{}) {
-		if err := db.Set("gorm:table_options", "ENGINE=InnoDB DEFAULT CHARSET=utf8").CreateTable(&Metric{}).Error; err != nil {
-			panic(err)
-		}
-	}
-
 	if !db.HasTable(&Resource{}) {
 		if err := db.Set("gorm:table_options", "ENGINE=InnoDB DEFAULT CHARSET=utf8").CreateTable(&Resource{}).Error; err != nil {
 			panic(err)
@@ -53,6 +47,12 @@ func createTables(db *gorm.DB) {
 
 	if !db.HasTable(&Receiver{}) {
 		if err := db.Set("gorm:table_options", "ENGINE=InnoDB DEFAULT CHARSET=utf8").CreateTable(&Receiver{}).Error; err != nil {
+			panic(err)
+		}
+	}
+
+	if !db.HasTable(&ReceiverBindingGroup{}) {
+		if err := db.Set("gorm:table_options", "ENGINE=InnoDB DEFAULT CHARSET=utf8").CreateTable(&ReceiverBindingGroup{}).Error; err != nil {
 			panic(err)
 		}
 	}
@@ -81,8 +81,8 @@ func createTables(db *gorm.DB) {
 		}
 	}
 
-	if !db.HasTable(&AlertBinding{}) {
-		if err := db.Set("gorm:table_options", "ENGINE=InnoDB DEFAULT CHARSET=utf8").CreateTable(&AlertBinding{}).Error; err != nil {
+	if !db.HasTable(&AlertConfig{}) {
+		if err := db.Set("gorm:table_options", "ENGINE=InnoDB DEFAULT CHARSET=utf8").CreateTable(&AlertConfig{}).Error; err != nil {
 			fmt.Print(err)
 			panic(err)
 		}
@@ -90,6 +90,18 @@ func createTables(db *gorm.DB) {
 
 	if !db.HasTable(&AlertHistory{}) {
 		if err := db.Set("gorm:table_options", "ENGINE=InnoDB DEFAULT CHARSET=utf8").CreateTable(&AlertHistory{}).Error; err != nil {
+			panic(err)
+		}
+	}
+
+	if !db.HasTable(&Suggestion{}) {
+		if err := db.Set("gorm:table_options", "ENGINE=InnoDB DEFAULT CHARSET=utf8").CreateTable(&Suggestion{}).Error; err != nil {
+			panic(err)
+		}
+	}
+
+	if !db.HasTable(&Silence{}) {
+		if err := db.Set("gorm:table_options", "ENGINE=InnoDB DEFAULT CHARSET=utf8").CreateTable(&Silence{}).Error; err != nil {
 			panic(err)
 		}
 	}

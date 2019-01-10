@@ -1,0 +1,49 @@
+syntax = "proto3";
+package pb;
+option go_package = "pb";
+
+//import "google/api/annotations.proto";
+//import "protoc-gen-swagger/options/annotations.proto";
+import "error.proto";
+
+message Product {
+    string product_id = 1;
+    string product_name = 2;
+    string enterprise_id = 3;
+    string enterprise_name = 4;
+    string home_page = 5;
+    string address = 6;
+    string phone = 7;
+    string email = 8;
+    string monitor_center_host = 9;
+    int32 monitor_center_port = 10;
+    string contacts = 11;
+    string desc = 12;
+}
+
+message ProductSpec {
+    string product_id = 1;
+    string product_name = 2;
+    string enterprise_id = 3;
+    string enterprise_name = 4;
+}
+
+message ProductResponse {
+    Product product = 1;
+    Error error = 2; //optional
+}
+
+service ProductHandler {
+    // product
+    rpc CreateProduct (Product) returns (ProductResponse) {
+    }
+
+    rpc DeleteProduct (ProductSpec) returns (ProductResponse) {
+    }
+
+    rpc UpdateProduct (Product) returns (ProductResponse) {
+    }
+
+    rpc GetProduct (ProductSpec) returns (ProductResponse) {
+    }
+}

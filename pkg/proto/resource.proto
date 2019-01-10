@@ -1,0 +1,48 @@
+syntax = "proto3";
+package pb;
+option go_package = "pb";
+
+//import "google/api/annotations.proto";
+//import "protoc-gen-swagger/options/annotations.proto";
+import "error.proto";
+import "resourceuritmpl.proto";
+
+// resource group
+message ResourceGroup {
+    string resource_group_id = 1;
+    string resource_group_name = 2;
+    ResourceUriTmpl resource_uri_tmpl = 3;
+    string desc = 4;
+    string resource_type_id = 5;
+    repeated Resource resources = 6;
+}
+
+message ResourceGroupSpec {
+    string resource_group_id = 1;
+}
+
+message Resource {
+    string resource_id = 1;
+    string resource_name = 2;
+    string resource_group_id = 3;
+}
+
+message ResourceGroupResponse {
+    ResourceGroup resource_group = 1;
+    Error error = 2;
+}
+
+service ResourceHandler {
+    // resource
+    rpc CreateResource (ResourceGroup) returns (ResourceGroupResponse) {
+    }
+
+    rpc GetResource (ResourceGroupSpec) returns (ResourceGroupResponse) {
+    }
+
+    rpc UpdateResource (ResourceGroup) returns (ResourceGroupResponse) {
+    }
+
+    rpc DeleteResource (ResourceGroupSpec) returns (ResourceGroupResponse) {
+    }
+}
