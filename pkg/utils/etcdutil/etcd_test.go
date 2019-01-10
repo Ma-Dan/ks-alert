@@ -1,19 +1,30 @@
 package etcdutil
 
 import (
+	"context"
 	"fmt"
+	etcd3 "go.etcd.io/etcd/clientv3"
 	"log"
-	"openpitrix.io/openpitrix/pkg/etcd"
 	"testing"
+
+	"github.com/carmanzhang/ks-alert/pkg/option"
 )
 
 func TestConnect(t *testing.T) {
 	//e := new(Etcd)
-	endpoints := []string{"192.168.0.7:2379"}
-	//endpoints:=[]string{"192.168.0.3:2379"}
-	prefix := "test"
-	e, err := etcd.Connect(endpoints, prefix)
-	log.Println(e)
+	endpoints := []string{"127.0.0.1:2379"}
+	prefix := "/" + *option.ExecutorServiceName + "/"
+	//prefix := "/alert_executor_service"
+	e, err := Connect(endpoints, "")
+	resp, err := e.Get(context.Background(), prefix, etcd3.WithPrefix())
+
+	for i := range resp.Kvs {
+		kv := resp.Kvs[i]
+		fmt.Println(string(kv.Key))
+		fmt.Println(string(kv.Value))
+	}
+
+	log.Println(err)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -24,7 +35,7 @@ func TestNewQueue(t *testing.T) {
 	//endpoints:=[]string{"192.168.0.7:2379,192.168.0.8:2379,192.168.0.6:2379"}
 	endpoints := []string{"192.168.0.7:2379"}
 	prefix := "test"
-	e, err := etcd.Connect(endpoints, prefix)
+	e, err := Connect(endpoints, prefix)
 	log.Println(e)
 	if err != nil {
 		t.Fatal(err)
@@ -37,7 +48,7 @@ func TestNewQueue(t *testing.T) {
 func TestEnqueue(t *testing.T) {
 	endpoints := []string{"192.168.0.7:2379"}
 	prefix := "test"
-	e, err := etcd.Connect(endpoints, prefix)
+	e, err := Connect(endpoints, prefix)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -61,11 +72,10 @@ func TestEnqueue(t *testing.T) {
 	}
 }
 
-
 func TestEnqueue2(t *testing.T) {
 	endpoints := []string{"192.168.0.7:2379"}
 	prefix := "nf_"
-	e, err := etcd.Connect(endpoints, prefix)
+	e, err := Connect(endpoints, prefix)
 	if err != nil {
 		t.Fatal(err)
 	}

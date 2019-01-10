@@ -1,14 +1,18 @@
 package service
 
 import (
+	"context"
 	"fmt"
 	"github.com/carmanzhang/ks-alert/pkg/executor/handler"
-	"github.com/carmanzhang/ks-alert/pkg/executor/pb"
 	"github.com/carmanzhang/ks-alert/pkg/option"
+	"github.com/carmanzhang/ks-alert/pkg/pb"
 	"github.com/carmanzhang/ks-alert/pkg/registry"
+	"github.com/carmanzhang/ks-alert/pkg/utils/etcdutil"
+	"go.etcd.io/etcd/clientv3"
 	"google.golang.org/grpc"
 	"log"
 	"net"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -20,13 +24,13 @@ const (
 )
 
 func Run() {
-	lis, err := net.Listen("tcp", fmt.Sprintf(*option.ExecutorServiceHost+":%d", *option.ExecutorServicePort))
+	lis, err := net.Listen("tcp", fmt.Sprintf(*option.ServiceHost+":%d", *option.ExecutorServicePort))
 	if err != nil {
 		panic(err)
 	}
 
 	// register executor service information in etcd
-	err = registry.Register(*option.ExecutorServiceName, *option.ExecutorServiceHost, *option.ExecutorServicePort, *option.EtcdAddress, time.Second*ServiceRegistrationInterval, 60)
+	err = registry.Register(*option.ExecutorServiceName, *option.ServiceHost, *option.ExecutorServicePort, *option.EtcdAddress, time.Second*ServiceRegistrationInterval, 60)
 	if err != nil {
 		panic(err)
 	}
@@ -40,8 +44,59 @@ func Run() {
 		registry.UnRegister()
 		os.Exit(1)
 	}()
-	log.Printf("starting executor service at %s:%d", *option.ExecutorServiceHost, *option.ExecutorServicePort)
+
+	// check
+	go func() {
+		prefix := "/" + *option.ExecutorServiceName + "/"
+		//prefix := "/alert_executor_service"
+		e, _ := etcdutil.Connect([]string{*option.EtcdAddress}, "")
+		timer := time.NewTicker(time.Minute * 1)
+		var counter = 0
+		for {
+			select {
+			case <-timer.C:
+				resp, _ := e.Get(context.Background(), prefix, clientv3.WithPrefix())
+				ss := registry.GetAllExecutorServiceInfo(resp)
+				addrMap := ss.ExtractServiceAddrs()
+				svcAddr := fmt.Sprintf("%s:%d", *option.ServiceHost, *option.ExecutorServicePort)
+				if _, ok := addrMap[svcAddr]; !ok {
+					counter = counter + 1
+				} else {
+					counter = 0
+				}
+
+				if counter > 3 {
+					// means this host does not register successfully, main thread will be terminated
+					panic("this host does not register successfully in 3 consecutive checks, terminated main thread")
+				}
+			}
+		}
+	}()
+
+	go ListenHttpApi()
+
+	// TODO need launch a daemon, for indeed checking or ensuring alert_configs are executing in this node
+	log.Printf("starting executor service at %s:%d", *option.ServiceHost, *option.ExecutorServicePort)
 	s := grpc.NewServer()
 	pb.RegisterExecutorServer(s, &handler.Executor{})
 	s.Serve(lis)
+}
+
+func ListenHttpApi() {
+	// http api for probe
+	mux := http.NewServeMux()
+
+	// livenessProbe
+	mux.HandleFunc("/-/healthy", func(writer http.ResponseWriter, request *http.Request) {
+		writer.Write([]byte("healthy"))
+	})
+
+	// readinessProbe
+	mux.HandleFunc("/-/ready", func(writer http.ResponseWriter, request *http.Request) {
+		writer.Write([]byte("ready"))
+	})
+
+	port := 8081
+	log.Printf("executor probe service at localhost:%d", port)
+	http.ListenAndServe(fmt.Sprintf(":%d", port), mux)
 }

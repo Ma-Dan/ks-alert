@@ -17,4 +17,3 @@ message Error {
     int32 code = 1;
     string text = 2; // optional
 }
-

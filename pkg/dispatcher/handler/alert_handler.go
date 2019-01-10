@@ -4,11 +4,13 @@ import (
 	"context"
 	"fmt"
 	"github.com/carmanzhang/ks-alert/pkg/dispatcher/client"
-	"github.com/carmanzhang/ks-alert/pkg/dispatcher/pb"
-	p "github.com/carmanzhang/ks-alert/pkg/executor/pb"
 	"github.com/carmanzhang/ks-alert/pkg/models"
+	"github.com/carmanzhang/ks-alert/pkg/option"
+	"github.com/carmanzhang/ks-alert/pkg/pb"
+	"github.com/carmanzhang/ks-alert/pkg/registry"
 	"github.com/golang/glog"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -18,21 +20,42 @@ type AlertHandler struct{}
 func (server AlertHandler) CreateAlertConfig(ctx context.Context, pbac *pb.AlertConfig) (*pb.AlertConfigResponse, error) {
 
 	ac := ConvertPB2AlertConfig(pbac)
+	// the host(node) which this alert congfig whill be executed
+	svcAddr, err := registry.GetIdleExecutorAddress()
+	ac.HostID = svcAddr
 
 	v, err := DoTransactionAction(ac, AlertConfig, MethodCreate)
-	respon := getAlertConfigResponse(v, err)
-
-	conn, err := client.GetExecutorGrpcLoadBalancerClient()
-	cli := p.NewExecutorClient(conn)
-	// TODO need add error adaptor
-	pbErr, _ := cli.Execute(ctx, &p.Message{AlertConfigId: respon.AlertConfig.AlertConfigId, Signal: p.Message_CREATE})
-	if pbErr != nil {
-		fmt.Println(pbErr.Code, pbErr.Text)
+	respon := getAlertConfigResponse(v)
+	if err != nil {
+		respon.Error = ErrorWrapper(err)
+		return respon, nil
 	}
+
+	//option.HostID
+	conn, err := client.GetExecutorGrpcConn(svcAddr)
+	if err != nil {
+		respon.Error = ErrorWrapper(err)
+		return respon, nil
+	}
+	cli := pb.NewExecutorClient(conn)
+
+	pbErr, err := cli.Execute(ctx, &pb.Informer{AlertConfigId: respon.AlertConfig.AlertConfigId, Signal: pb.Informer_CREATE})
+
+	// err adaptor
+	if pbErr != nil {
+		respon.Error = ErrorWrapper(err)
+		return respon, nil
+	}
+
+	if err != nil {
+		respon.Error = ErrorWrapper(err)
+		return respon, nil
+	}
+
 	return respon, nil
 }
 
-func getAlertConfigResponse(v interface{}, err error) *pb.AlertConfigResponse {
+func getAlertConfigResponse(v interface{}) *pb.AlertConfigResponse {
 
 	var respon = &pb.AlertConfigResponse{}
 
@@ -40,21 +63,44 @@ func getAlertConfigResponse(v interface{}, err error) *pb.AlertConfigResponse {
 		ac := v.(*models.AlertConfig)
 		respon.AlertConfig = ConvertAlertConfig2PB(ac)
 	}
-
-	if err != nil {
-		glog.Errorln(err.Error())
-		respon.Error = ErrorConverter(err)
-	} else {
-		respon.Error = ErrorConverter(*models.NewError(0, models.Success))
-	}
-
 	return respon
 }
 
+func ErrorWrapper(err error) *pb.Error {
+	if err != nil {
+		glog.Errorln(err.Error())
+		e := models.ErrorWrapper(err)
+		return &pb.Error{Text: e.Text, Code: e.Code}
+	} else {
+		return &pb.Error{Text: "Success", Code: 0}
+	}
+}
+
 func (server AlertHandler) DeleteAlertConfig(ctx context.Context, alertConfigSpec *pb.AlertConfigSpec) (*pb.AlertConfigResponse, error) {
-	ac := models.AlertConfig{AlertConfigID: alertConfigSpec.AlertConfigId}
+	acID := alertConfigSpec.AlertConfigId
+	hostID, err := models.GetAlertConfigBindingHost(acID)
+	if err != nil {
+		respon := getAlertConfigResponse(nil)
+		respon.Error = ErrorWrapper(err)
+		return respon, nil
+	}
+	hostInfo := strings.Split(hostID, "-")
+	svcAddress := fmt.Sprintf("%s:%d", hostInfo[1], *option.ExecutorServicePort)
+
+	conn, err := client.GetExecutorGrpcConn(svcAddress)
+	if err != nil {
+		respon := getAlertConfigResponse(nil)
+		respon.Error = ErrorWrapper(err)
+		return respon, nil
+	}
+
+	cli := pb.NewExecutorClient(conn)
+	msg := pb.Informer{AlertConfigId: acID, Signal: pb.Informer_TERMINATE}
+	_, err = cli.Execute(context.Background(), &msg)
+	ac := models.AlertConfig{AlertConfigID: acID}
 	v, err := DoTransactionAction(&ac, AlertConfig, MethodDelete)
-	respon := getAlertConfigResponse(v, err)
+	respon := getAlertConfigResponse(v)
+	respon.Error = ErrorWrapper(err)
 	return respon, nil
 }
 
@@ -62,14 +108,16 @@ func (server AlertHandler) UpdateAlertConfig(ctx context.Context, alertConfig *p
 	ac := ConvertPB2AlertConfig(alertConfig)
 
 	v, err := DoTransactionAction(ac, AlertConfig, MethodUpdate)
-	respon := getAlertConfigResponse(v, err)
+	respon := getAlertConfigResponse(v)
+	respon.Error = ErrorWrapper(err)
 	return respon, nil
 }
 
 func (server AlertHandler) GetAlertConfig(ctx context.Context, alertConfigSpec *pb.AlertConfigSpec) (*pb.AlertConfigResponse, error) {
 	ac := models.AlertConfig{AlertConfigID: alertConfigSpec.AlertConfigId}
 	v, err := DoTransactionAction(&ac, AlertConfig, MethodGet)
-	respon := getAlertConfigResponse(v, err)
+	respon := getAlertConfigResponse(v)
+	respon.Error = ErrorWrapper(err)
 	return respon, nil
 }
 

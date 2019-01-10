@@ -102,6 +102,42 @@ func (r AlertConfig) Create(tx *gorm.DB, v interface{}) (interface{}, error) {
 	return ac, nil
 }
 
+func UpdateAlertConfigBindingHost(hostID, acID string) error {
+	db, err := dbutil.DBClient()
+
+	if err != nil {
+		return Error{Text: err.Error(), Code: DBError}
+	}
+
+	sql := fmt.Sprintf("UPDATE alert_configs SET host_id='%s', updated_at='%v' WHERE alert_config_id='%s'", hostID, time.Now(), acID)
+
+	if err := db.Exec(sql).Error; err != nil {
+		return Error{Text: err.Error(), Code: DBError}
+	}
+
+	return nil
+}
+
+func GetAlertConfigBindingHost(acID string) (string, error) {
+	db, err := dbutil.DBClient()
+
+	if err != nil {
+		return "", Error{Text: err.Error(), Code: DBError}
+	}
+
+	var alertConfig AlertConfig
+
+	if err := db.Where("alert_config_id=?", acID).First(&alertConfig).Error; err != nil {
+		return "", Error{Text: err.Error(), Code: DBError}
+	}
+
+	if alertConfig.AlertConfigID == "" {
+		return "", Error{Text: "alert config id does not exist", Code: InvalidParam}
+	}
+
+	return alertConfig.HostID, nil
+}
+
 func (r AlertConfig) Update(tx *gorm.DB, v interface{}) (interface{}, error) {
 	ac, ok := v.(*AlertConfig)
 

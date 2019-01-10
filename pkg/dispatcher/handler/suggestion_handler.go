@@ -3,8 +3,8 @@ package handler
 import (
 	"context"
 	"errors"
-	"github.com/carmanzhang/ks-alert/pkg/dispatcher/pb"
 	"github.com/carmanzhang/ks-alert/pkg/models"
+	"github.com/carmanzhang/ks-alert/pkg/pb"
 	"github.com/carmanzhang/ks-alert/pkg/utils/jsonutil"
 	"k8s.io/klog/glog"
 	"time"

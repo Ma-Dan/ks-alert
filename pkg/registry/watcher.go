@@ -1,9 +1,7 @@
 package registry
 
 import (
-	"encoding/json"
 	"fmt"
-	"github.com/golang/glog"
 	etcd3 "go.etcd.io/etcd/clientv3"
 	"go.etcd.io/etcd/mvcc/mvccpb"
 	"golang.org/x/net/context"
@@ -31,12 +29,14 @@ func (w *watcher) Next() ([]*naming.Update, error) {
 		resp, err := w.client.Get(context.Background(), prefix, etcd3.WithPrefix())
 		w.isInitialized = true
 		if err == nil {
-			addrs := extractAddrs(resp)
+			addrs := GetAllExecutorServiceInfo(resp).ExtractServiceAddrs()
 			//if not empty, return the updates or watcher new dir
 			if l := len(addrs); l != 0 {
 				updates := make([]*naming.Update, l)
-				for i := range addrs {
-					updates[i] = &naming.Update{Op: naming.Add, Addr: addrs[i]}
+				i := 0
+				for _, add := range addrs {
+					updates[i] = &naming.Update{Op: naming.Add, Addr: add}
+					i = i + 1
 				}
 				return updates, nil
 			}
@@ -55,36 +55,4 @@ func (w *watcher) Next() ([]*naming.Update, error) {
 		}
 	}
 	return nil, nil
-}
-
-func extractAddrs(resp *etcd3.GetResponse) []string {
-	addrs := []string{}
-	if resp == nil || resp.Kvs == nil {
-		return addrs
-	}
-
-	var sis []*ServiceInfo
-	for i := range resp.Kvs {
-		if v := resp.Kvs[i].Value; v != nil {
-			si := ServiceInfo{}
-			err := json.Unmarshal(v, &si)
-			if err != nil {
-				glog.Errorln(err.Error())
-			}
-
-			if si.ServiceAddress != "" {
-				sis = append(sis, &si)
-			}
-		}
-	}
-
-	var serviceInfo = ServiceInfoArray(sis)
-	serviceInfo.Sort(false)
-	selected := serviceInfo.TopK(3)
-
-	for i, _ := range selected {
-		addrs = append(addrs, selected[i].ServiceAddress)
-	}
-
-	return addrs
 }

@@ -2,8 +2,7 @@ package models
 
 import (
 	"fmt"
-	"github.com/carmanzhang/ks-alert/pkg/dispatcher/pb"
-	. "github.com/smartystreets/goconvey/convey"
+	"github.com/carmanzhang/ks-alert/pkg/pb"
 	"testing"
 )
 

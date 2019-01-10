@@ -6,11 +6,13 @@ import (
 	"fmt"
 	"github.com/carmanzhang/ks-alert/pkg/executor/client"
 	"github.com/carmanzhang/ks-alert/pkg/executor/metric"
-	"github.com/carmanzhang/ks-alert/pkg/executor/pb"
 	"github.com/carmanzhang/ks-alert/pkg/models"
+	"github.com/carmanzhang/ks-alert/pkg/option"
+	"github.com/carmanzhang/ks-alert/pkg/pb"
 	"github.com/carmanzhang/ks-alert/pkg/utils/jsonutil"
 	"k8s.io/klog/glog"
 	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -18,8 +20,8 @@ import (
 )
 
 // this chan is used to control corresponding goroutine
-type RuntimeAlert struct {
-	SigCh         chan pb.Message_Signal
+type RuntimeAlertConfig struct {
+	SigCh         chan pb.Informer_Signal
 	StatusCh      chan string
 	UpdatedAt     time.Time
 	CreatedAt     time.Time
@@ -30,6 +32,7 @@ type RuntimeAlert struct {
 	freq          []int32
 	currentFreq   []int32
 	ruleEnable    []bool
+	firedAlerts   map[string]map[string]time.Time
 }
 
 // goroutine status
@@ -50,25 +53,24 @@ type AlertStatus struct {
 // value is alert runtime parameters included channels
 type RuntimeAlertStatus struct {
 	sync.RWMutex
-	Map map[string]*RuntimeAlert
+	Map map[string]*RuntimeAlertConfig
 }
 
 var CachedRuntimeAlert = &RuntimeAlertStatus{
-	Map: make(map[string]*RuntimeAlert),
+	Map: make(map[string]*RuntimeAlertConfig),
 }
 
-func Action(ctx context.Context, msg *pb.Message) error {
+func Action(ctx context.Context, msg *pb.Informer) error {
 
 	switch msg.Signal {
-	case pb.Message_CREATE:
+	case pb.Informer_CREATE:
 		// create alert by specifig alert config id within one goroutine
-		var rtAlert = &RuntimeAlert{
-			SigCh:     make(chan pb.Message_Signal),
+		var rtAlert = &RuntimeAlertConfig{
+			SigCh:     make(chan pb.Informer_Signal),
 			CreatedAt: time.Now(),
 		}
-		// write executor's name to table `alert_config`
 
-		err := reload(msg.AlertConfigId, rtAlert)
+		err := rtAlert.reload(msg.AlertConfigId)
 
 		if err != nil {
 			return err
@@ -78,34 +80,34 @@ func Action(ctx context.Context, msg *pb.Message) error {
 		CachedRuntimeAlert.Map[msg.AlertConfigId] = rtAlert
 		CachedRuntimeAlert.Unlock()
 
-		go runAlert(rtAlert)
+		go rtAlert.runAlert()
 
-	case pb.Message_STOP:
+	case pb.Informer_TERMINATE:
 		runtimeAlert, ok := CachedRuntimeAlert.Map[msg.AlertConfigId]
 		if !ok {
 			return errors.New("alert config was not executor by executor")
 		}
 
-		runtimeAlert.SigCh <- pb.Message_STOP
+		runtimeAlert.SigCh <- pb.Informer_TERMINATE
 
 		CachedRuntimeAlert.Lock()
 		delete(CachedRuntimeAlert.Map, msg.AlertConfigId)
 		CachedRuntimeAlert.Unlock()
 
-	case pb.Message_RELOAD:
+	case pb.Informer_RELOAD:
 		runtimeAlert, ok := CachedRuntimeAlert.Map[msg.AlertConfigId]
 		if !ok {
 			return errors.New("alert config was not executor by executor")
 		}
 
-		runtimeAlert.SigCh <- pb.Message_RELOAD
+		runtimeAlert.SigCh <- pb.Informer_RELOAD
 
 	default:
 	}
 	return nil
 }
 
-func runAlert(rtAlert *RuntimeAlert) {
+func (rtAlert *RuntimeAlertConfig) runAlert() {
 	var period = 8
 	d := time.Duration(time.Second * time.Duration(period))
 	timer := time.NewTicker(d)
@@ -115,12 +117,12 @@ func runAlert(rtAlert *RuntimeAlert) {
 	for {
 		select {
 		case sig := <-sigCh:
-			if sig == pb.Message_RELOAD {
+			if sig == pb.Informer_RELOAD {
 				acID := rtAlert.alertConfig.AlertConfigID
-				fmt.Println("runtime rtAlert was reload, alert_config_id is: ")
+				fmt.Println("runtime rtAlert was reload, alert_config_id is: ", acID)
 				var err error
 				fmt.Printf("%p,%v", rtAlert, rtAlert)
-				err = reload(acID, rtAlert)
+				err = rtAlert.reload(acID)
 				fmt.Printf("%p,%v", rtAlert, rtAlert)
 
 				if err != nil {
@@ -128,15 +130,29 @@ func runAlert(rtAlert *RuntimeAlert) {
 					rtAlert.err = err
 				}
 
-			} else if sig == pb.Message_STOP {
+			} else if sig == pb.Informer_TERMINATE {
 				fmt.Println("runtime rtAlert was terminated, alert_config_id is: ", rtAlert.alertConfig.AlertConfigID)
 				return
 			}
 
 		case <-timer.C:
-
-			fmt.Println("new evalted period")
+			// TODO need to add exception catcher function
+			fmt.Println("new evalted period", len(CachedRuntimeAlert.Map), runtime.NumGoroutine())
 			alertConfig := rtAlert.alertConfig
+
+			// 0. check this alert_config's hostid, whether is consistency with this node or not
+			// this step is important, because when network became unreachable, alert system will launch another node(pod)
+			// to take replace of this node(pod), it means the same alert configs will be executed in a newly created node
+			// if both are not consistency, goroutine will be exist.
+			hostID, err := models.GetAlertConfigBindingHost(alertConfig.AlertConfigID)
+			if err != nil {
+				glog.Errorln(err.Error())
+			}
+
+			if hostID != option.HostID {
+				return
+			}
+
 			// 1. rtAlert config is enable?
 			//enable := isAlertEnable(alertConfig.EnableStart, alertConfig.EnableEnd)
 			//if !enable {
@@ -156,14 +172,14 @@ func runAlert(rtAlert *RuntimeAlert) {
 			close(ch)
 
 			// 4. decide whether a resource trigger a rule
-			trigger(ch, rules)
-
+			rtAlert.trigger(ch)
 		}
 
 	}
 }
 
-func trigger(ch chan *metric.ResourceMetrics, rules []*models.AlertRule) {
+func (rtAlert *RuntimeAlertConfig) trigger(ch chan *metric.ResourceMetrics) {
+	rules := rtAlert.alertConfig.AlertRuleGroup.AlertRules
 	for metricByRule := range ch {
 		fmt.Println(metricByRule)
 		if metricByRule != nil {
@@ -172,8 +188,8 @@ func trigger(ch chan *metric.ResourceMetrics, rules []*models.AlertRule) {
 			consCount := int(rule.ConsecutiveCount)
 			condition := rule.ConditionType
 			threshold := rule.Threshold
-			//matricName := metricByRule.RuleName
 			resourceMetric := metricByRule.ResourceMetric
+
 			for resName := range resourceMetric {
 				// timestamp and value
 				tvs := resourceMetric[resName]
@@ -183,7 +199,9 @@ func trigger(ch chan *metric.ResourceMetrics, rules []*models.AlertRule) {
 				}
 
 				f := true
-				for i := ll - consCount; i < ll; i++ {
+				// `tvs` will be send to user and insert into `alert_histories` if alert fired
+				tvs = tvs[ll-consCount:]
+				for i := 0; i < len(tvs); i++ {
 					v, err := strconv.ParseFloat(tvs[i].V, 32)
 					if err != nil {
 					}
@@ -203,13 +221,58 @@ func trigger(ch chan *metric.ResourceMetrics, rules []*models.AlertRule) {
 					}
 				}
 
-				if f {
-					// fired alert on alert_rule rules[indx] and resource resourceMetric[resName]
-					fmt.Println("fired alert", rules[indx].MetricName, resName)
-				} else {
-					// need to change alert status according last alert status
+				ruleID := rule.AlertRuleID
+				firedAlerts := rtAlert.firedAlerts
+				if firedAlerts == nil {
+					firedAlerts = make(map[string]map[string]time.Time)
 				}
 
+				if f {
+					// add fired alert info into `firedAlerts` if not exist
+					if firedRules, ok := firedAlerts[resName]; ok && firedRules != nil {
+						if _, ok := firedRules[ruleID]; !ok {
+							firedRules[ruleID] = time.Now()
+						}
+
+					} else {
+						firedRules = make(map[string]time.Time)
+						firedRules[ruleID] = time.Now()
+					}
+
+					// insert alert fired item into `alert_history`
+					ah := rtAlert.makeAlertHistoryItem(indx, resName, tvs, f)
+					_, err := models.CreateAlertHistory(ah)
+
+					if err != nil {
+						fmt.Println(err.Error())
+					}
+
+					fmt.Println("fired alert", rules[indx].MetricName, resName)
+
+				} else {
+					// checking whether fired alert has been recovery or not
+					// remove alert fired alert info from `firedAlerts` if exist
+					if firedRules, ok := firedAlerts[resName]; ok && firedRules != nil {
+						if _, ok := firedRules[ruleID]; ok {
+							delete(firedRules, ruleID)
+						}
+
+						if len(firedRules) == 0 {
+							delete(firedAlerts, resName)
+						}
+					}
+					// insert alert recovery item into `alert_histories`
+					ah := rtAlert.makeAlertHistoryItem(indx, resName, tvs, f)
+					_, err := models.CreateAlertHistory(ah)
+					if err != nil {
+						fmt.Println(err.Error())
+					}
+
+					fmt.Println("recovery alert", rules[indx].MetricName, resName)
+				}
+
+				// repeat send
+				// check it's the time for the fired alert is going to send
 			}
 		}
 
@@ -280,7 +343,7 @@ func isAlertEnable(start time.Time, end time.Time) bool {
 }
 
 // reload alert config
-func reload(acID string, rtAlert *RuntimeAlert) error {
+func (rtAlert *RuntimeAlertConfig) reload(acID string) error {
 	// get alert config by id from DB
 	alertConfig, err := models.GetAlertConfig(&models.AlertConfig{AlertConfigID: acID})
 
@@ -309,6 +372,11 @@ func reload(acID string, rtAlert *RuntimeAlert) error {
 		return err
 	}
 
+	rtAlert.alertConfig = alertConfig
+	rtAlert.resourceNames = resName
+	rtAlert.uri = uri
+
+	// TODO need to keep consistency with status before this reload
 	l := len(alertRules.AlertRules)
 	var freq = make([]int32, l)
 	var currentFreq = make([]int32, l)
@@ -320,13 +388,43 @@ func reload(acID string, rtAlert *RuntimeAlert) error {
 		ruleEnable[i] = rule.Enable
 	}
 
-	rtAlert.alertConfig = alertConfig
-	rtAlert.resourceNames = resName
-	rtAlert.uri = uri
-	rtAlert.ruleEnable = ruleEnable
 	rtAlert.freq = freq
 	rtAlert.currentFreq = currentFreq
+	rtAlert.ruleEnable = ruleEnable
+
+	firedAlerts := rtAlert.firedAlerts
+	if firedAlerts == nil {
+		rtAlert.firedAlerts = make(map[string]map[string]time.Time)
+	} else {
+		removeOldRulesAndResources(resources, firedAlerts, alertRules)
+	}
+
 	return nil
+}
+
+// is's necessary to clean up `firedAlerts`, for the reason reloading may discard old rules and add new rules
+// `firedAlerts`  saved the fired alert triggered by an existing rule on a existing resource
+// `firedAlerts` field was arranged by map[resource_name](map[alert_rule_id]2019.1.1-00:00:00)
+// 0. remove old resources
+func removeOldRulesAndResources(resources *models.ResourceGroup, firedAlerts map[string]map[string]time.Time, alertRules *models.AlertRuleGroup) {
+	l := len(resources.Resources)
+	for i := 0; i < l; i++ {
+		rs := resources.Resources[i]
+		if _, ok := firedAlerts[rs.ResourceName]; !ok {
+			delete(firedAlerts, rs.ResourceName)
+		}
+	}
+	// 1. remove old rules
+	l = len(alertRules.AlertRules)
+	for k := range firedAlerts {
+		currRuleMap := firedAlerts[k]
+		for i := 0; i < l; i++ {
+			ruleID := alertRules.AlertRules[i].AlertRuleID
+			if _, ok := currRuleMap[ruleID]; !ok {
+				delete(firedAlerts[k], ruleID)
+			}
+		}
+	}
 }
 
 // get resources uri and resource names
@@ -442,57 +540,54 @@ func IsMatch(p map[string]string, q map[string]string) bool {
 	return true
 }
 
-//
-//func DeleteRuntimeAlert(alertConfigID string) error {
-//	// first step: need to delete items in related tables
-//	err := models.DeleteAlertBindingItem(alertConfigID)
-//	// if an error occured, delete runtime alert failed
-//	if err != nil {
-//		glog.Errorln(err.Error())
-//		return err
-//	}
-//
-//	// second step: delete item in CachedRuntimeAlert map
-//	if alert, ok := CachedRuntimeAlert[alertConfigID]; ok {
-//		if alert != nil {
-//			alert.SignalSender <- pb.AlertConfig_Terminate
-//			for {
-//				sig := <-alert.SignalReceiver
-//				// TODO
-//				if sig == 0 {
-//					glog.Infof("terminate running alert goroutine successfully, alert_config_id is: %s", alertConfigID)
-//					delete(CachedRuntimeAlert, alertConfigID)
-//					return nil
-//				}
-//
-//			}
-//		}
-//	}
-//	return nil
-//}
-//
-//// does goroutine still alive?
-//func GetRuntimeAlertStatus(alertConfigID string) *RuntimeAlertStatus {
-//	if alert, ok := CachedRuntimeAlert[alertConfigID]; ok {
-//		if alert != nil {
-//			alert.StatusCh <- "ping"
-//			for {
-//				sig := <-alert.StatusCh
-//				if sig == "pong" {
-//					glog.Infof("alert goroutine is running, alert_config_id is: %s", alertConfigID)
-//					return nil
-//				}
-//			}
-//		}
-//
-//		return &RuntimeAlertStatus{
-//			Status:    Alive,
-//			timestamp: time.Now(),
-//		}
-//	}
-//
-//	return &RuntimeAlertStatus{
-//		Status:    Unkonw,
-//		timestamp: time.Now(),
-//	}
-//}
+func (rtAlert *RuntimeAlertConfig) makeAlertHistoryItem(ruleIndx int, resName string, tvs []metric.TV, isFired bool) *models.AlertHistory {
+	ac := rtAlert.alertConfig
+	ruleGroup := ac.AlertRuleGroup
+	resGroup := ac.ResourceGroup
+	recvGroup := ac.ReceiverGroup
+
+	ah := models.AlertHistory{}
+	firedRule := ruleGroup.AlertRules[ruleIndx]
+
+	ah.AlertConfigID = ac.AlertConfigID
+	//ah.ProductID =
+	ah.ReceiverGroupID = ac.ReceiverGroupID
+	ah.ReceiverGroup = fmt.Sprintf("%v", recvGroup)
+	ah.ReceiverGroupName = recvGroup.ReceiverGroupName
+
+	ah.ResourceGroupID = ac.ResourceGroupID
+	ah.ResourceGroupName = resGroup.ResourceGroupName
+	ah.AlertedResource = resName
+
+	ah.AlertRuleGroupID = ruleGroup.AlertRuleGroupID
+	ah.TriggerMetricName = firedRule.MetricName
+	ah.AlertRuleGroupName = ruleGroup.AlertRuleGroupName
+
+	ah.SeverityID = ac.SeverityID
+	ah.SeverityCh = ac.SeverityCh
+
+	ah.RepeatSendType = uint32(firedRule.RepeatSendType)
+	ah.InitRepeatSendInterval = firedRule.InitRepeatSendInterval
+	ah.MaxRepeatSendCount = firedRule.MaxRepeatSendCount
+
+	ah.CreatedAt = time.Now()
+	ah.UpdatedAt = time.Now()
+	lastEvalutedTime := tvs[len(tvs)-1].T
+	if isFired {
+		ah.AlertFiredAt = time.Unix(int64(lastEvalutedTime), 0)
+	} else {
+		ah.AlertRecoveryAt = time.Unix(int64(lastEvalutedTime), 0)
+	}
+
+	// TODO
+	ah.CurrentRepeatSendInterval = 3
+	ah.CurrentRepeatSendInterval = 3
+	ah.SilenceStartAt = time.Now()
+	ah.SilenceEndAt = time.Now()
+	ah.Cause = ""
+
+	ah.RequestNotificationStatus = ""
+	ah.NotificationSendAt = time.Now()
+
+	return &ah
+}

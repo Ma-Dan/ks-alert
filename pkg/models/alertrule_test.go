@@ -2,7 +2,8 @@ package models
 
 import (
 	"fmt"
-	"github.com/carmanzhang/ks-alert/pkg/dispatcher/pb"
+	"github.com/carmanzhang/ks-alert/pkg/pb"
+	"github.com/carmanzhang/ks-alert/pkg/utils/dbutil"
 	"testing"
 	"time"
 )
@@ -10,7 +11,9 @@ import (
 func TestCreateAlertRuleGroup(t *testing.T) {
 	Convey("test create alert rule group", t, func() {
 		Convey("test create", func() {
-			group, err := CreateAlertRuleGroup(&AlertRuleGroup{
+			db, _ := dbutil.DBClient()
+			arg := AlertRuleGroup{}
+			v, err := arg.Create(db, &AlertRuleGroup{
 				AlertRuleGroupName: "xxx",
 				SystemRule:         true,
 				UpdatedAt:          time.Now(),
@@ -59,7 +62,7 @@ func TestCreateAlertRuleGroup(t *testing.T) {
 			if err != nil {
 				fmt.Println(err)
 			}
-			fmt.Println(group)
+			fmt.Println(v)
 		})
 	})
 }
@@ -67,7 +70,9 @@ func TestCreateAlertRuleGroup(t *testing.T) {
 func TestUpdateAlertRuleGroup(t *testing.T) {
 	Convey("test update alert rule group", t, func() {
 		Convey("test update", func() {
-			err := UpdateAlertRuleGroup(&AlertRuleGroup{
+			db, _ := dbutil.DBClient()
+			arg := AlertRuleGroup{}
+			v, err := arg.Update(db, &AlertRuleGroup{
 				AlertRuleGroupName: "kkkkkkk",
 				SystemRule:         false,
 				UpdatedAt:          time.Now(),
@@ -115,6 +120,7 @@ func TestUpdateAlertRuleGroup(t *testing.T) {
 			if err != nil {
 				fmt.Println(err)
 			}
+			fmt.Println(v)
 		})
 	})
 }
@@ -122,14 +128,16 @@ func TestUpdateAlertRuleGroup(t *testing.T) {
 func TestGetAlertRuleGroup(t *testing.T) {
 	Convey("test get alert rule group", t, func() {
 		Convey("test get", func() {
-			group, err := GetAlertRuleGroup(&pb.AlertRuleGroupSpec{
+			db, _ := dbutil.DBClient()
+			arg := AlertRuleGroup{}
+			v, err := arg.Get(db, &pb.AlertRuleGroupSpec{
 				AlertRuleGroupId: "rule_group-n3no33k98nw330",
 			})
 
 			if err != nil {
 				fmt.Println(err.Error())
 			}
-			fmt.Println(group)
+			fmt.Println(v)
 		})
 	})
 }

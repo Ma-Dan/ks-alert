@@ -2,7 +2,7 @@ package handler
 
 import (
 	"context"
-	"github.com/carmanzhang/ks-alert/pkg/dispatcher/pb"
+	"github.com/carmanzhang/ks-alert/pkg/pb"
 )
 
 type SilenceHandler struct{}

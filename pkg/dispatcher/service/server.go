@@ -3,8 +3,8 @@ package service
 import (
 	"fmt"
 	"github.com/carmanzhang/ks-alert/pkg/dispatcher/handler"
-	"github.com/carmanzhang/ks-alert/pkg/dispatcher/pb"
 	"github.com/carmanzhang/ks-alert/pkg/option"
+	"github.com/carmanzhang/ks-alert/pkg/pb"
 	"github.com/carmanzhang/ks-alert/pkg/registry"
 	"google.golang.org/grpc"
 	"log"
@@ -20,12 +20,12 @@ const (
 )
 
 func Run() {
-	lis, err := net.Listen("tcp", fmt.Sprintf(*option.DispatcherServiceHost+":%d", *option.DispatcherServicePort))
+	lis, err := net.Listen("tcp", fmt.Sprintf(*option.ServiceHost+":%d", *option.DispatcherServicePort))
 	if err != nil {
 		panic(err)
 	}
 	// register executor service information in etcd
-	err = registry.Register(*option.DispatcherServiceName, *option.DispatcherServiceHost, *option.DispatcherServicePort, *option.EtcdAddress, time.Second*DispatcherServiceRegistrationInterval, 60)
+	err = registry.Register(*option.DispatcherServiceName, *option.ServiceHost, *option.DispatcherServicePort, *option.EtcdAddress, time.Second*DispatcherServiceRegistrationInterval, 60)
 	if err != nil {
 		panic(err)
 	}
@@ -39,7 +39,7 @@ func Run() {
 		registry.UnRegister()
 		os.Exit(1)
 	}()
-	log.Printf("starting dispatcher service at %s:%d", *option.DispatcherServiceHost, *option.DispatcherServicePort)
+	log.Printf("starting dispatcher service at %s:%d", *option.ServiceHost, *option.DispatcherServicePort)
 	s := grpc.NewServer()
 
 	pb.RegisterAlertConfigHandlerServer(s, &handler.AlertHandler{})

@@ -2,7 +2,7 @@ package models
 
 import (
 	"fmt"
-	"github.com/carmanzhang/ks-alert/pkg/dispatcher/pb"
+	"github.com/carmanzhang/ks-alert/pkg/pb"
 	"github.com/carmanzhang/ks-alert/pkg/utils/dbutil"
 	"github.com/carmanzhang/ks-alert/pkg/utils/idutil"
 	"github.com/pkg/errors"

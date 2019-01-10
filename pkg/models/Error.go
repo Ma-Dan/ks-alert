@@ -2,6 +2,8 @@ package models
 
 import (
 	"fmt"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"strings"
 )
 
@@ -14,7 +16,14 @@ const (
 	InvalidParam = 1
 	AssertError  = 2
 	DBError      = 3
+	GrpcError    = 4
 )
+
+// Grpc error
+type GrpcStatusError interface {
+	GRPCStatus() *status.Status
+	Error() string
+}
 
 type Error struct {
 	Code int32
@@ -37,6 +46,14 @@ func ErrorWrapper(err error, extMsg ...string) *Error {
 	case Error:
 		txt = v.Text
 		code = v.Code
+	case GrpcStatusError:
+		s := v.GRPCStatus()
+		if s.Code() == codes.Unknown {
+			code = 0
+		} else if s.Code() < 20 {
+			code = 4
+		}
+		txt = v.Error()
 	default:
 		txt = v.Error()
 		code = 0
