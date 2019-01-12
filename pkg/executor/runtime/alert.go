@@ -25,7 +25,7 @@ var olderTime = time.Date(0, 1, 1, 0, 0, 0, 0, time.UTC)
 // this chan is used to control corresponding goroutine
 type RuntimeAlertConfig struct {
 	SigCh         chan pb.Informer_Signal
-	StatusCh      chan string
+	StatusCh      chan StatusType
 	UpdatedAt     time.Time
 	CreatedAt     time.Time
 	err           error
@@ -106,7 +106,15 @@ func Action(ctx context.Context, msg *pb.Informer) error {
 		runtimeAlert.SigCh <- pb.Informer_RELOAD
 
 	default:
+		runtimeAlert, ok := CachedRuntimeAlert.Map[msg.AlertConfigId]
+		if !ok {
+			return errors.New("alert config was not executor by executor")
+		}
+		runtimeAlert.StatusCh <- Alive
+		status := <-runtimeAlert.StatusCh
+		glog.Infof("%s,%s", msg.AlertConfigId, status)
 	}
+
 	return nil
 }
 
@@ -117,8 +125,12 @@ func (rtAlert *RuntimeAlertConfig) runAlert() {
 	defer timer.Stop()
 
 	sigCh := rtAlert.SigCh
+	statusCh := rtAlert.StatusCh
 	for {
 		select {
+		case <-statusCh:
+			statusCh <- Alive
+
 		case sig := <-sigCh:
 			if sig == pb.Informer_RELOAD {
 				acID := rtAlert.alertConfig.AlertConfigID
@@ -215,17 +227,17 @@ func (rtAlert *RuntimeAlertConfig) evaluteAlertInPipeline(metricByRule *metric.R
 			sendPolicy, err := models.GetOrCreateSendPolicy(&models.SendPolicy{AlertRuleID: ruleID, ResourceID: resID})
 			if err != nil {
 				glog.Errorln(err.Error())
-
+				continue
 			}
 
 			// 3. check repeat send policy satisfied, this policy may need to update
-			updatedPolicy, isNeededReSend := checkReSendSatisfied(sendPolicy, rule, lastEvalutedTime)
+			updatedPolicy, needSend := checkReSendSatisfied(sendPolicy, rule, lastEvalutedTime)
 
 			// 4. update send policy
 			err = models.CreateOrUpdateSendPolicy(updatedPolicy)
 			if err != nil {
 				glog.Errorln(err.Error())
-
+				continue
 			}
 
 			// 5. insert an record(fired alert record or recovery record)
@@ -235,14 +247,16 @@ func (rtAlert *RuntimeAlertConfig) evaluteAlertInPipeline(metricByRule *metric.R
 			_, err = models.CreateAlertHistory(ah)
 			if err != nil {
 				glog.Errorln(err.Error())
-
+				continue
 			}
 
+			//***************************************************************************
+			// TODO step6-step8 need agregate `alert_history`
 			// 6. make notice
-			if !isNeededReSend {
-
+			if !needSend {
+				continue
 			}
-			// need agregate `alert_history`, get fired alert durations
+			//  get fired alert durations
 			//duratinos := getFiredAlertDurations()
 			notice := notification.Notice{
 				ResourceName:          resName,
@@ -273,8 +287,9 @@ func (rtAlert *RuntimeAlertConfig) evaluteAlertInPipeline(metricByRule *metric.R
 			err = models.UpdateAlertSendStatus(ah, sendStatus)
 			if err != nil {
 				glog.Error(err.Error())
-
+				continue
 			}
+			//***************************************************************************
 		}
 	}
 }
@@ -374,7 +389,7 @@ func checkReSendSatisfied(sendPolicy *models.SendPolicy, rule *models.AlertRule,
 				sendPolicy.CurrentRepeatSendAt = lastEvalutedTime
 			} else {
 				nextReSendTime, nextReSendInterval := NextReSendTimeAndInterval(currReSendTime, sendType, currReSendInterval, initSendInterval)
-				if lastEvalutedTime.After(nextReSendTime) {
+				if !lastEvalutedTime.Before(nextReSendTime) {
 					b = true
 					if currReSendInterval == 0 {
 						sendPolicy.CurrentRepeatSendInterval = initSendInterval
@@ -385,15 +400,18 @@ func checkReSendSatisfied(sendPolicy *models.SendPolicy, rule *models.AlertRule,
 					sendPolicy.CurrentRepeatSendAt = lastEvalutedTime
 				} else {
 					// dees not reach next repeat send interval
+					fmt.Println("dees not reach next repeat send interval", lastEvalutedTime, nextReSendTime)
 				}
 			}
 
 		} else {
 			// exceed maximum repeat send count, this fired alert will be inhibited
+			fmt.Println("exceed maximum repeat send count, this fired alert will be inhibited")
 		}
 
 	} else {
 		// still in silence period
+		fmt.Println("still in silence period")
 	}
 
 	return sendPolicy, b
@@ -544,7 +562,7 @@ func (rtAlert *RuntimeAlertConfig) reload(acID string) error {
 	} else {
 		removeOldRulesAndResources(resources, firedAlerts, alertRules)
 	}
-
+	rtAlert.UpdatedAt = time.Now()
 	// TODO delete useless item in `send_policies`
 	return nil
 }

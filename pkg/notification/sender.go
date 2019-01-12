@@ -28,6 +28,8 @@ type SendStatus struct {
 type SendStatusMap map[string]SendStatus
 
 var senderClient = &http.Client{}
+
+//
 var notificationAddress = "http://139.198.190.141:8082/notice"
 
 func sendRequest(epurl string, email string, noticeStr string) (string, error) {

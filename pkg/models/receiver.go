@@ -197,7 +197,7 @@ func (r ReceiverGroup) Get(tx *gorm.DB, v interface{}) (interface{}, error) {
 		//
 		sql := "SELECT r.* FROM receiver_binding_groups as rb LEFT JOIN receivers as r ON rb.receiver_id=r.receiver_id WHERE rb.receiver_group_id=?"
 
-		if err := tx.Exec(sql, rg.ReceiverGroupID).Find(&receivers).Error; err != nil {
+		if err := tx.Debug().Raw(sql, rg.ReceiverGroupID).Scan(&receivers).Error; err != nil {
 			return nil, Error{Text: err.Error(), Code: DBError}
 		}
 

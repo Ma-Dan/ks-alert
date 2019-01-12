@@ -38,7 +38,11 @@ func CreateSendPolicy(sendPolicy *SendPolicy) error {
 
 	err = db.Model(&SendPolicy{}).Create(sendPolicy).Error
 
-	return Error{Text: err.Error(), Code: DBError}
+	if err != nil {
+		return Error{Text: err.Error(), Code: DBError}
+	} else {
+		return nil
+	}
 }
 
 func CreateOrUpdateSendPolicy(sendPolicy *SendPolicy) error {
@@ -74,7 +78,12 @@ func GetSendPolicy(sendPolicy *SendPolicy) (*SendPolicy, error) {
 		return nil, nil
 	}
 
-	return &policy, Error{Text: db.Error.Error(), Code: DBError}
+	err = db.Error
+	if err != nil {
+		return &policy, Error{Text: err.Error(), Code: DBError}
+	} else {
+		return &policy, nil
+	}
 }
 
 func GetOrCreateSendPolicy(sp *SendPolicy) (*SendPolicy, error) {

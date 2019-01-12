@@ -1,6 +1,8 @@
 package models
 
 import (
+	"fmt"
+	"github.com/carmanzhang/ks-alert/pkg/utils/dbutil"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 )
@@ -59,5 +61,14 @@ func TestCreateReceiverBindingGroupItem(t *testing.T) {
 		//
 		//receivers := []Receiver{*receiver01, *receiver02, *receiver03}
 		//fmt.Println(receiverGroup, receivers)
+	})
+}
+
+func TestGet(t *testing.T) {
+	Convey("test CreateReceiverBindingGroup Item", t, func() {
+		db, _ := dbutil.DBClient()
+
+		get, err := ReceiverGroup{}.Get(db, &ReceiverGroup{ReceiverGroupID: "receiver_group-259xkom7j7rzn8"})
+		fmt.Println(get, err)
 	})
 }
