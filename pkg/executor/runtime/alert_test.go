@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/carmanzhang/ks-alert/pkg/models"
 	"github.com/carmanzhang/ks-alert/pkg/utils/jsonutil"
+	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 	"time"
 )
@@ -14,20 +15,17 @@ func TestNextReSendTimeAndInterval(t *testing.T) {
 		fmt.Println(x)
 
 		Convey("test 01", func() {
-			nextReSendTimeAndInterval, interval := NextReSendTimeAndInterval(x, 0, 2)
-			fmt.Println(nextReSendTimeAndInterval)
+			interval := NextReSendInterval(-1, 0, 2)
 			fmt.Println(interval)
 		})
 
 		Convey("test 02", func() {
-			nextReSendTimeAndInterval, interval := NextReSendTimeAndInterval(x, 1, 4)
-			fmt.Println(nextReSendTimeAndInterval)
+			interval := NextReSendInterval(1, 1, 4)
 			fmt.Println(interval)
 		})
 
 		Convey("test 03", func() {
-			nextReSendTimeAndInterval, interval := NextReSendTimeAndInterval(x, -1, 10)
-			fmt.Println(nextReSendTimeAndInterval)
+			interval := NextReSendInterval(0, -1, 10)
 			fmt.Println(interval)
 		})
 	})
