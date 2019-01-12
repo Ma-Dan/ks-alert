@@ -5,7 +5,33 @@ import (
 	"github.com/carmanzhang/ks-alert/pkg/models"
 	"github.com/carmanzhang/ks-alert/pkg/utils/jsonutil"
 	"testing"
+	"time"
 )
+
+func TestNextReSendTimeAndInterval(t *testing.T) {
+	Convey("test get next repeat send info", t, func() {
+		x := time.Now()
+		fmt.Println(x)
+
+		Convey("test 01", func() {
+			nextReSendTimeAndInterval, interval := NextReSendTimeAndInterval(x, 0, 2)
+			fmt.Println(nextReSendTimeAndInterval)
+			fmt.Println(interval)
+		})
+
+		Convey("test 02", func() {
+			nextReSendTimeAndInterval, interval := NextReSendTimeAndInterval(x, 1, 4)
+			fmt.Println(nextReSendTimeAndInterval)
+			fmt.Println(interval)
+		})
+
+		Convey("test 03", func() {
+			nextReSendTimeAndInterval, interval := NextReSendTimeAndInterval(x, -1, 10)
+			fmt.Println(nextReSendTimeAndInterval)
+			fmt.Println(interval)
+		})
+	})
+}
 
 func TestAssembeURLPrefix(t *testing.T) {
 	Convey("test uri", t, func() {

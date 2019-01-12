@@ -10,5 +10,5 @@ message RepeatSend {
 
 enum RepeatSendType {
     Fixed = 0;
-    exponential = 1;
+    Exponential = 1;
 }

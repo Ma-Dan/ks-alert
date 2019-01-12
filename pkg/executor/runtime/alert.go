@@ -7,10 +7,11 @@ import (
 	"github.com/carmanzhang/ks-alert/pkg/executor/client"
 	"github.com/carmanzhang/ks-alert/pkg/executor/metric"
 	"github.com/carmanzhang/ks-alert/pkg/models"
+	"github.com/carmanzhang/ks-alert/pkg/notification"
 	"github.com/carmanzhang/ks-alert/pkg/option"
 	"github.com/carmanzhang/ks-alert/pkg/pb"
 	"github.com/carmanzhang/ks-alert/pkg/utils/jsonutil"
-	"k8s.io/klog/glog"
+	"github.com/golang/glog"
 	"regexp"
 	"runtime"
 	"strconv"
@@ -18,6 +19,8 @@ import (
 	"sync"
 	"time"
 )
+
+var olderTime = time.Date(0, 1, 1, 0, 0, 0, 0, time.UTC)
 
 // this chan is used to control corresponding goroutine
 type RuntimeAlertConfig struct {
@@ -28,7 +31,7 @@ type RuntimeAlertConfig struct {
 	err           error
 	alertConfig   *models.AlertConfig
 	uri           string
-	resourceNames []string
+	resourceNames map[string]string
 	freq          []int32
 	currentFreq   []int32
 	ruleEnable    []bool
@@ -121,9 +124,7 @@ func (rtAlert *RuntimeAlertConfig) runAlert() {
 				acID := rtAlert.alertConfig.AlertConfigID
 				fmt.Println("runtime rtAlert was reload, alert_config_id is: ", acID)
 				var err error
-				fmt.Printf("%p,%v", rtAlert, rtAlert)
 				err = rtAlert.reload(acID)
-				fmt.Printf("%p,%v", rtAlert, rtAlert)
 
 				if err != nil {
 					glog.Errorln(err.Error())
@@ -137,8 +138,8 @@ func (rtAlert *RuntimeAlertConfig) runAlert() {
 
 		case <-timer.C:
 			// TODO need to add exception catcher function
-			fmt.Println("new evalted period", len(CachedRuntimeAlert.Map), runtime.NumGoroutine())
-			fmt.Println(jsonutil.Marshal(rtAlert.firedAlerts))
+			fmt.Println("new evalted period: ", len(CachedRuntimeAlert.Map), runtime.NumGoroutine())
+			fmt.Println("fired alert: ", jsonutil.Marshal(rtAlert.firedAlerts))
 			alertConfig := rtAlert.alertConfig
 
 			// 0. check this alert_config's hostid, whether is consistency with this node or not
@@ -173,113 +174,251 @@ func (rtAlert *RuntimeAlertConfig) runAlert() {
 			close(ch)
 
 			// 4. decide whether a resource trigger a rule
-			rtAlert.trigger(ch)
+			for metricByRule := range ch {
+				rtAlert.evaluteAlertInPipeline(metricByRule)
+			}
 		}
 
 	}
 }
 
-func (rtAlert *RuntimeAlertConfig) trigger(ch chan *metric.ResourceMetrics) {
+func (rtAlert *RuntimeAlertConfig) evaluteAlertInPipeline(metricByRule *metric.ResourceMetrics) {
 	rules := rtAlert.alertConfig.AlertRuleGroup.AlertRules
-	for metricByRule := range ch {
-		fmt.Println(metricByRule)
-		if metricByRule != nil {
-			indx := metricByRule.RuleIndx
-			rule := rules[indx]
-			consCount := int(rule.ConsecutiveCount)
-			condition := rule.ConditionType
-			threshold := rule.Threshold
-			resourceMetric := metricByRule.ResourceMetric
+	if metricByRule != nil {
+		indx := metricByRule.RuleIndx
+		rule := rules[indx]
+		consCount := int(rule.ConsecutiveCount)
+		resourceMetric := metricByRule.ResourceMetric
+		resNameMap := rtAlert.resourceNames
+		for resName := range resourceMetric {
+			// timestamp and value
+			tvs := resourceMetric[resName]
+			ll := len(tvs)
+			if ll < consCount {
+				continue
+			}
 
-			for resName := range resourceMetric {
-				// timestamp and value
-				tvs := resourceMetric[resName]
-				ll := len(tvs)
-				if ll < consCount {
-					continue
-				}
+			tvs = tvs[ll-consCount:]
+			ts := tvs[len(tvs)-1].T
+			lastEvalutedTime := time.Unix(int64(ts), 0)
 
-				f := true
-				// `tvs` will be send to user and insert into `alert_histories` if alert fired
-				tvs = tvs[ll-consCount:]
-				for i := 0; i < len(tvs); i++ {
-					v, err := strconv.ParseFloat(tvs[i].V, 32)
-					if err != nil {
-					}
-					switch condition {
-					case ">=":
-						f = f && (v >= float64(threshold))
-					case ">":
-						f = f && (v > float64(threshold))
-					case "<=":
-						f = f && (v <= float64(threshold))
-					case "<":
-						f = f && (v < float64(threshold))
-					}
+			// 0. is alert fired?
+			isFired := isFired(rule, tvs)
 
-					if !f {
-						break
-					}
-				}
+			// 1. update alert status (fired or recovered)
+			ruleID := rule.AlertRuleID
+			isRecovery := rtAlert.updateAlertFiredStatus(resName, ruleID, isFired)
 
-				ruleID := rule.AlertRuleID
-				firedAlerts := rtAlert.firedAlerts
-				if firedAlerts == nil {
-					firedAlerts = make(map[string]map[string]time.Time)
-				}
+			// repeat send, check it's the time for the fired alert is going to send
+			// 2. get send policies (silence and repeat send policy) from db
+			resID := resNameMap[resName]
+			sendPolicy, err := models.GetOrCreateSendPolicy(&models.SendPolicy{AlertRuleID: ruleID, ResourceID: resID})
+			if err != nil {
+				glog.Errorln(err.Error())
 
-				if f {
-					// add fired alert info into `firedAlerts` if not exist
-					if firedRules, ok := firedAlerts[resName]; ok && firedRules != nil {
-						if _, ok := firedRules[ruleID]; !ok {
-							firedRules[ruleID] = time.Now()
-						}
+			}
 
-					} else {
-						firedRules = make(map[string]time.Time)
-						firedRules[ruleID] = time.Now()
-						firedAlerts[resName] = firedRules
-					}
+			// 3. check repeat send policy satisfied, this policy may need to update
+			updatedPolicy, isNeededReSend := checkReSendSatisfied(sendPolicy, rule, lastEvalutedTime)
 
-					// insert alert fired item into `alert_history`
-					ah := rtAlert.makeAlertHistoryItem(indx, resName, tvs, f)
-					_, err := models.CreateAlertHistory(ah)
+			// 4. update send policy
+			err = models.CreateOrUpdateSendPolicy(updatedPolicy)
+			if err != nil {
+				glog.Errorln(err.Error())
 
-					if err != nil {
-						fmt.Println(err.Error())
-					}
+			}
 
-					fmt.Println("fired alert", rules[indx].MetricName, resName)
+			// 5. insert an record(fired alert record or recovery record)
+			// insert alert recovery item into `alert_histories`
+			// `tvs` will be send to user and insert into `alert_histories` if alert fired
+			ah := rtAlert.makeAlertHistoryItem(updatedPolicy, rule, resName, lastEvalutedTime, tvs, isRecovery)
+			_, err = models.CreateAlertHistory(ah)
+			if err != nil {
+				glog.Errorln(err.Error())
 
-				} else {
-					// checking whether fired alert has been recovery or not
-					// remove alert fired alert info from `firedAlerts` if exist
-					if firedRules, ok := firedAlerts[resName]; ok && firedRules != nil {
-						if _, ok := firedRules[ruleID]; ok {
-							delete(firedRules, ruleID)
+			}
 
-							// insert alert recovery item into `alert_histories`
-							ah := rtAlert.makeAlertHistoryItem(indx, resName, tvs, f)
-							_, err := models.CreateAlertHistory(ah)
-							if err != nil {
-								fmt.Println(err.Error())
-							}
-							fmt.Println("recovery alert", rules[indx].MetricName, resName)
-						}
+			// 6. make notice
+			if !isNeededReSend {
 
-						if len(firedRules) == 0 {
-							delete(firedAlerts, resName)
-						}
-					}
-				}
+			}
+			// need agregate `alert_history`, get fired alert durations
+			//duratinos := getFiredAlertDurations()
+			notice := notification.Notice{
+				ResourceName:          resName,
+				Metrics:               &tvs,
+				Rule:                  rule,
+				TriggerTime:           lastEvalutedTime,
+				CumulateReSendCount:   updatedPolicy.CumulateRepeatSendCount,
+				CurrentReSendInterval: updatedPolicy.CurrentRepeatSendInterval,
+				// TODO
+				//NextReSendInterval:    1,
+				//FiredAlertDurations:
+				MaxReSendCount: rule.MaxRepeatSendCount,
+			}
 
-				// repeat send
-				// check it's the time for the fired alert is going to send
+			noticeStr := notice.MakeNotice(false)
+
+			// 7. send notice
+			sendStatusMap := notification.Sender{}.Send(rtAlert.alertConfig.ReceiverGroup.Receivers, noticeStr)
+
+			// 8. update send status in `alert_history`
+			var sendStatus string
+			if sendStatusMap == nil {
+				sendStatus = ""
+			} else {
+				sendStatus = jsonutil.Marshal(sendStatusMap)
+			}
+
+			err = models.UpdateAlertSendStatus(ah, sendStatus)
+			if err != nil {
+				glog.Error(err.Error())
 
 			}
 		}
-
 	}
+}
+
+// checking whether fired alert has been recovery or not
+// remove alert fired alert info from `firedAlerts` if exist
+func (rtAlert *RuntimeAlertConfig) updateAlertFiredStatus(resName string, ruleID string, isFired bool) bool {
+	firedAlerts := rtAlert.firedAlerts
+	if firedAlerts == nil {
+		firedAlerts = make(map[string]map[string]time.Time)
+	}
+
+	isRecovery := false
+
+	if isFired {
+		// add fired alert info into `firedAlerts` if not exist
+		if firedRules, ok := firedAlerts[resName]; ok && firedRules != nil {
+			if _, ok := firedRules[ruleID]; !ok {
+				firedRules[ruleID] = time.Now()
+			}
+
+		} else {
+			firedRules = make(map[string]time.Time)
+			firedRules[ruleID] = time.Now()
+			firedAlerts[resName] = firedRules
+		}
+	} else {
+		if firedRules, ok := firedAlerts[resName]; ok && firedRules != nil {
+			if _, ok := firedRules[ruleID]; ok {
+				delete(firedRules, ruleID)
+				isRecovery = true
+				//fmt.Println("recovery alert", rules[indx].MetricName, resName)
+			}
+
+			if len(firedRules) == 0 {
+				delete(firedAlerts, resName)
+			}
+		}
+	}
+
+	return isRecovery
+}
+
+func isFired(rule *models.AlertRule, tvs []metric.TV) bool {
+	condition := rule.ConditionType
+	threshold := rule.Threshold
+	f := true
+	for i := 0; i < len(tvs); i++ {
+		v, err := strconv.ParseFloat(tvs[i].V, 32)
+		if err != nil {
+		}
+		switch condition {
+		case ">=":
+			f = f && (v >= float64(threshold))
+		case ">":
+			f = f && (v > float64(threshold))
+		case "<=":
+			f = f && (v <= float64(threshold))
+		case "<":
+			f = f && (v < float64(threshold))
+		}
+
+		if !f {
+			break
+		}
+	}
+	return f
+}
+
+func checkReSendSatisfied(sendPolicy *models.SendPolicy, rule *models.AlertRule, lastEvalutedTime time.Time) (*models.SendPolicy, bool) {
+	// check silence policy
+	//silenceStart := sendPolicy.SilenceStartAt
+	var b = false
+	silenceEnd := sendPolicy.SilenceEndAt
+	if silenceEnd.Before(time.Now()) {
+		// silence policy lose effectiveness，
+		// does not take any effect, need to change the SilenceStart and SilenceEnd
+		//pasedTime, _ := time.Parse("0001-01-01T00:00:00Z", "")
+		sendPolicy.SilenceStartAt = olderTime
+		sendPolicy.SilenceEndAt = olderTime
+
+		// check repeat send policy
+		sendType := rule.RepeatSendType
+		maxSendCount := rule.MaxRepeatSendCount
+		initSendInterval := rule.InitRepeatSendInterval
+
+		currReSendTime := sendPolicy.CurrentRepeatSendAt
+		alreaySendCount := sendPolicy.CumulateRepeatSendCount
+		currReSendInterval := sendPolicy.CurrentRepeatSendInterval
+
+		if alreaySendCount < maxSendCount {
+
+			if alreaySendCount == 0 {
+				b = true
+				sendPolicy.CurrentRepeatSendInterval = 0
+				sendPolicy.CumulateRepeatSendCount = 1
+				sendPolicy.CurrentRepeatSendAt = lastEvalutedTime
+			} else {
+				nextReSendTime, nextReSendInterval := NextReSendTimeAndInterval(currReSendTime, sendType, currReSendInterval, initSendInterval)
+				if lastEvalutedTime.After(nextReSendTime) {
+					b = true
+					if currReSendInterval == 0 {
+						sendPolicy.CurrentRepeatSendInterval = initSendInterval
+					} else {
+						sendPolicy.CurrentRepeatSendInterval = nextReSendInterval
+					}
+					sendPolicy.CumulateRepeatSendCount += 1
+					sendPolicy.CurrentRepeatSendAt = lastEvalutedTime
+				} else {
+					// dees not reach next repeat send interval
+				}
+			}
+
+		} else {
+			// exceed maximum repeat send count, this fired alert will be inhibited
+		}
+
+	} else {
+		// still in silence period
+	}
+
+	return sendPolicy, b
+}
+
+func NextReSendTimeAndInterval(currRepeatSendTime time.Time, sendType int32, currRepeatSendInterval, initSendInterval uint32) (time.Time, uint32) {
+	// 	0: "Fixed",
+	//	1: "Exponential",
+	var nextReSendTime = currRepeatSendTime
+	var nextReSendInterval uint32 = 0
+
+	if currRepeatSendInterval == 0 {
+		nextReSendInterval = initSendInterval
+	} else {
+		if sendType == 1 {
+			nextReSendInterval = currRepeatSendInterval * 2
+		} else {
+			nextReSendInterval = currRepeatSendInterval
+		}
+	}
+
+	d := time.Minute * time.Duration(nextReSendInterval)
+	nextReSendTime = nextReSendTime.Add(d)
+
+	return nextReSendTime, nextReSendInterval
 }
 
 // alert rules which are need to execute
@@ -296,13 +435,18 @@ func getExecutingRuleIndx(freq, currentFreq []int32, ruleEnable []bool) []int {
 			evaluatedRuleIndx = append(evaluatedRuleIndx, i)
 		}
 	}
-	fmt.Println("currentFreq: ", currentFreq)
-	fmt.Println("Freq: ", freq)
+	fmt.Println("freq: ", currentFreq, freq)
 	return evaluatedRuleIndx
 }
 
-func getResourceMetrics(rules []*models.AlertRule, evaluatedRuleIndx []int, uri string, resourceNames []string, ch chan *metric.ResourceMetrics) {
+func getResourceMetrics(rules []*models.AlertRule, evaluatedRuleIndx []int, uri string, resourceNames map[string]string, ch chan *metric.ResourceMetrics) {
+	var resNameArray []string
+	for n := range resourceNames {
+		resNameArray = append(resNameArray, n)
+	}
+
 	wg := sync.WaitGroup{}
+
 	for i := 0; i < len(evaluatedRuleIndx); i++ {
 		j := evaluatedRuleIndx[i]
 		metricName := rules[j].MetricName
@@ -322,11 +466,10 @@ func getResourceMetrics(rules []*models.AlertRule, evaluatedRuleIndx []int, uri 
 
 		wg.Add(1)
 		go func() {
-			metricStr := client.SendMonitoringRequest(uri, resourceNames, metricName, startTime, endTime, stepInMinute)
+			metricStr := client.SendMonitoringRequest(uri, resNameArray, metricName, startTime, endTime, stepInMinute)
 			resourceMetrics := metric.GetResourceTimeSeriesMetric(metricStr, metricName, startTime, endTime)
 			resourceMetrics.RuleIndx = j
-			fmt.Println(">>>:", resourceMetrics)
-			fmt.Println(">>>:", rules)
+			fmt.Println("pull metrics: ", resourceMetrics)
 			ch <- resourceMetrics
 			wg.Done()
 		}()
@@ -369,14 +512,14 @@ func (rtAlert *RuntimeAlertConfig) reload(acID string) error {
 		return errors.New("at least one resource must be specified")
 	}
 
-	uri, resName, err := GetResourcesSpec(alertConfig.ResourceGroup)
+	uri, resNames, err := GetResourcesSpec(alertConfig.ResourceGroup)
 
 	if err != nil {
 		return err
 	}
 
 	rtAlert.alertConfig = alertConfig
-	rtAlert.resourceNames = resName
+	rtAlert.resourceNames = resNames
 	rtAlert.uri = uri
 
 	// TODO need to keep consistency with status before this reload
@@ -402,6 +545,7 @@ func (rtAlert *RuntimeAlertConfig) reload(acID string) error {
 		removeOldRulesAndResources(resources, firedAlerts, alertRules)
 	}
 
+	// TODO delete useless item in `send_policies`
 	return nil
 }
 
@@ -438,7 +582,7 @@ func removeOldRulesAndResources(resources *models.ResourceGroup, firedAlerts map
 }
 
 // get resources uri and resource names
-func GetResourcesSpec(resourceGroup *models.ResourceGroup) (string, []string, error) {
+func GetResourcesSpec(resourceGroup *models.ResourceGroup) (string, map[string]string, error) {
 
 	var uriTmpl models.ResourceUriTmpl
 	jsonutil.Unmarshal(resourceGroup.URIParams, &uriTmpl)
@@ -468,7 +612,6 @@ func GetResourcesSpec(resourceGroup *models.ResourceGroup) (string, []string, er
 	}
 
 	var uriTmpls models.ResourceUriTmpls
-	fmt.Println(resourceType.ResourceURITmpls)
 	jsonutil.Unmarshal(resourceType.ResourceURITmpls, &uriTmpls)
 
 	l := len(uriTmpls.ResourceUriTmpl)
@@ -499,11 +642,11 @@ func GetResourcesSpec(resourceGroup *models.ResourceGroup) (string, []string, er
 
 	resources := resourceGroup.Resources
 	l = len(resources)
-	var resNames []string
+	var resNames = make(map[string]string, l)
 
 	for i := 0; i < l; i++ {
 		if resources[i] != nil {
-			resNames = append(resNames, resources[i].ResourceName)
+			resNames[resources[i].ResourceName] = resources[i].ResourceID
 		}
 	}
 
@@ -550,15 +693,15 @@ func IsMatch(p map[string]string, q map[string]string) bool {
 	return true
 }
 
-func (rtAlert *RuntimeAlertConfig) makeAlertHistoryItem(ruleIndx int, resName string, tvs []metric.TV, isFired bool) *models.AlertHistory {
+func (rtAlert *RuntimeAlertConfig) makeAlertHistoryItem(sendPolicy *models.SendPolicy,
+	firedRule *models.AlertRule, resName string,
+	lastEvalutedTime time.Time, tvs []metric.TV, isRecovery bool) *models.AlertHistory {
 	ac := rtAlert.alertConfig
 	ruleGroup := ac.AlertRuleGroup
 	resGroup := ac.ResourceGroup
 	recvGroup := ac.ReceiverGroup
 
 	ah := models.AlertHistory{}
-	firedRule := ruleGroup.AlertRules[ruleIndx]
-
 	ah.AlertConfigID = ac.AlertConfigID
 	//ah.ProductID =
 	ah.ReceiverGroupID = ac.ReceiverGroupID
@@ -579,25 +722,35 @@ func (rtAlert *RuntimeAlertConfig) makeAlertHistoryItem(ruleIndx int, resName st
 	ah.RepeatSendType = uint32(firedRule.RepeatSendType)
 	ah.InitRepeatSendInterval = firedRule.InitRepeatSendInterval
 	ah.MaxRepeatSendCount = firedRule.MaxRepeatSendCount
+	ah.CurrentRepeatSendInterval = sendPolicy.CurrentRepeatSendInterval
+	ah.CumulateRepeatSendCount = sendPolicy.CumulateRepeatSendCount
 
 	ah.CreatedAt = time.Now()
 	ah.UpdatedAt = time.Now()
-	lastEvalutedTime := tvs[len(tvs)-1].T
-	if isFired {
-		ah.AlertFiredAt = time.Unix(int64(lastEvalutedTime), 0)
+
+	if isRecovery {
+		ah.AlertRecoveryAt = lastEvalutedTime
 	} else {
-		ah.AlertRecoveryAt = time.Unix(int64(lastEvalutedTime), 0)
+		ah.AlertFiredAt = lastEvalutedTime
 	}
 
-	// TODO
-	ah.CurrentRepeatSendInterval = 3
-	ah.CurrentRepeatSendInterval = 3
-	ah.SilenceStartAt = time.Now()
-	ah.SilenceEndAt = time.Now()
-	ah.Cause = ""
+	if !sendPolicy.SilenceStartAt.Equal(olderTime) {
+		ah.SilenceStartAt = sendPolicy.SilenceStartAt
+	}
 
-	ah.RequestNotificationStatus = ""
-	ah.NotificationSendAt = time.Now()
+	if !sendPolicy.SilenceEndAt.Equal(olderTime) {
+		ah.SilenceEndAt = sendPolicy.SilenceEndAt
+	}
+
+	ah.MetricData = jsonutil.Marshal(tvs)
+
+	//if sendStatusMap != nil {
+	//	ah.RequestNotificationStatus = jsonutil.Marshal(sendStatusMap)
+	//} else {
+	//	ah.RequestNotificationStatus = ""
+	//}
+	//
+	//ah.NotificationSendAt = time.Now()
 
 	return &ah
 }
