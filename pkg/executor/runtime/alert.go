@@ -22,20 +22,27 @@ import (
 
 var olderTime = time.Date(0, 1, 1, 0, 0, 0, 0, time.UTC)
 
+const (
+	MaxKeepAliveReportInterval = 3
+	TickerFrequence            = 8
+)
+
 // this chan is used to control corresponding goroutine
 type RuntimeAlertConfig struct {
-	SigCh         chan pb.Informer_Signal
-	StatusCh      chan StatusType
-	UpdatedAt     time.Time
-	CreatedAt     time.Time
-	err           error
-	alertConfig   *models.AlertConfig
-	uri           string
-	resourceNames map[string]string
-	freq          []int32
-	currentFreq   []int32
-	ruleEnable    []bool
-	firedAlerts   map[string]map[string]time.Time
+	SigCh            chan pb.Informer_Signal
+	StatusCh         chan StatusType
+	UpdatedAt        time.Time
+	CreatedAt        time.Time
+	err              error
+	alertConfig      *models.AlertConfig
+	uriPath          string
+	queryParams      string
+	resourceNames    map[string]string
+	freq             []int32
+	currentFreq      []int32
+	ruleEnable       []bool
+	firedAlerts      map[string]map[string]time.Time
+	keepAliveCounter int
 }
 
 // goroutine status
@@ -82,7 +89,7 @@ func Action(ctx context.Context, msg *pb.Informer) error {
 		CachedRuntimeAlert.Lock()
 		CachedRuntimeAlert.Map[msg.AlertConfigId] = rtAlert
 		CachedRuntimeAlert.Unlock()
-
+		glog.Infof("executing alert config %s", msg.AlertConfigId)
 		go rtAlert.runAlert()
 
 	case pb.Informer_TERMINATE:
@@ -119,8 +126,7 @@ func Action(ctx context.Context, msg *pb.Informer) error {
 }
 
 func (rtAlert *RuntimeAlertConfig) runAlert() {
-	var period = 8
-	d := time.Duration(time.Second * time.Duration(period))
+	d := time.Duration(time.Second * time.Duration(TickerFrequence))
 	timer := time.NewTicker(d)
 	defer timer.Stop()
 
@@ -141,6 +147,7 @@ func (rtAlert *RuntimeAlertConfig) runAlert() {
 				if err != nil {
 					glog.Errorln(err.Error())
 					rtAlert.err = err
+					return
 				}
 
 			} else if sig == pb.Informer_TERMINATE {
@@ -149,8 +156,21 @@ func (rtAlert *RuntimeAlertConfig) runAlert() {
 			}
 
 		case <-timer.C:
+			counter := rtAlert.keepAliveCounter
+			counter = (counter + 1) % MaxKeepAliveReportInterval
+			rtAlert.keepAliveCounter = counter
+
+			if counter == 0 {
+				go func() {
+					err := models.UpdateAlertConfigKeepAliveTime(rtAlert.alertConfig.AlertConfigID)
+					if err != nil {
+						glog.Errorln(err.Error())
+					}
+				}()
+			}
+
 			// TODO need to add exception catcher function
-			fmt.Println("new evalted period: ", len(CachedRuntimeAlert.Map), runtime.NumGoroutine())
+			fmt.Println("new evalted period: ", len(CachedRuntimeAlert.Map), runtime.NumGoroutine(), counter)
 			fmt.Println("fired alert: ", jsonutil.Marshal(rtAlert.firedAlerts))
 			alertConfig := rtAlert.alertConfig
 
@@ -180,9 +200,8 @@ func (rtAlert *RuntimeAlertConfig) runAlert() {
 			}
 
 			// 3. retrieve metrics from monitoring center using evaluating rules
-			rules := alertConfig.AlertRuleGroup.AlertRules
 			var ch = make(chan *metric.ResourceMetrics, 15)
-			getResourceMetrics(rules, evaluatedRuleIndx, rtAlert.uri, rtAlert.resourceNames, ch)
+			rtAlert.getResourceMetrics(evaluatedRuleIndx, ch)
 			close(ch)
 
 			// 4. decide whether a resource trigger a rule
@@ -462,9 +481,14 @@ func getExecutingRuleIndx(freq, currentFreq []int32, ruleEnable []bool) []int {
 	return evaluatedRuleIndx
 }
 
-func getResourceMetrics(rules []*models.AlertRule, evaluatedRuleIndx []int, uri string, resourceNames map[string]string, ch chan *metric.ResourceMetrics) {
+func (rtAlert *RuntimeAlertConfig) getResourceMetrics(evaluatedRuleIndx []int, ch chan *metric.ResourceMetrics) {
 
 	wg := sync.WaitGroup{}
+	resourceNames := rtAlert.resourceNames
+	uriPath := rtAlert.uriPath
+	queryParams := rtAlert.queryParams
+
+	rules := rtAlert.alertConfig.AlertRuleGroup.AlertRules
 
 	for i := 0; i < len(evaluatedRuleIndx); i++ {
 		j := evaluatedRuleIndx[i]
@@ -508,7 +532,7 @@ func getResourceMetrics(rules []*models.AlertRule, evaluatedRuleIndx []int, uri 
 
 		wg.Add(1)
 		go func() {
-			metricStr := client.SendMonitoringRequest(uri, resNameArray, metricName, startTime, endTime, stepInMinute)
+			metricStr := client.SendMonitoringRequest(uriPath, queryParams, resNameArray, metricName, startTime, endTime, stepInMinute)
 			resourceMetrics := metric.GetResourceTimeSeriesMetric(metricStr, metricName, startTime, endTime)
 			resourceMetrics.RuleIndx = j
 			fmt.Println("pull metrics: ", resourceMetrics)
@@ -553,7 +577,7 @@ func (rtAlert *RuntimeAlertConfig) reload(acID string) error {
 		return errors.New("at least one resource must be specified")
 	}
 
-	uri, resNames, err := GetResourcesSpec(alertConfig.ResourceGroup)
+	uriPath, queryParams, resNames, err := GetResourcesSpec(alertConfig.ResourceGroup)
 
 	if err != nil {
 		return err
@@ -561,7 +585,8 @@ func (rtAlert *RuntimeAlertConfig) reload(acID string) error {
 
 	rtAlert.alertConfig = alertConfig
 	rtAlert.resourceNames = resNames
-	rtAlert.uri = uri
+	rtAlert.uriPath = uriPath
+	rtAlert.queryParams = queryParams
 
 	// TODO need to keep consistency with status before this reload
 	l := len(alertRules.AlertRules)
@@ -622,17 +647,18 @@ func removeOldRulesAndResources(resources *models.ResourceGroup, firedAlerts map
 	}
 }
 
-// get resources uri and resource names
-func GetResourcesSpec(resourceGroup *models.ResourceGroup) (string, map[string]string, error) {
+// get resources uriPath and resource names
+func GetResourcesSpec(resourceGroup *models.ResourceGroup) (string, string, map[string]string, error) {
 
 	var uriTmpl models.ResourceUriTmpl
 	jsonutil.Unmarshal(resourceGroup.URIParams, &uriTmpl)
 
-	uriParams := uriTmpl.Params
+	pathParams := uriTmpl.PathParams
+	queryParams := uriTmpl.QueryParams
 	// find uriTmpls by resource type id
 	resourceType, err := models.GetResourceType(&models.ResourceType{ResourceTypeID: resourceGroup.ResourceTypeID})
 	if err != nil {
-		return "", nil, err
+		return "", "", nil, err
 	}
 
 	monitorHost := strings.Trim(resourceType.MonitorCenterHost, " ")
@@ -641,7 +667,7 @@ func GetResourcesSpec(resourceGroup *models.ResourceGroup) (string, map[string]s
 		// get monitoring host:port by product id
 		prod, err := models.GetProduct(&models.Product{ProductID: resourceType.ProductID})
 		if err != nil {
-			return "", nil, err
+			return "", "", nil, err
 		}
 
 		monitorHost = strings.Trim(prod.MonitorCenterHost, " ")
@@ -649,7 +675,7 @@ func GetResourcesSpec(resourceGroup *models.ResourceGroup) (string, map[string]s
 	}
 
 	if monitorHost == "" || monitorPort == 0 {
-		return "", nil, errors.New("monitoring center must be specified")
+		return "", "", nil, errors.New("monitoring center must be specified")
 	}
 
 	var uriTmpls models.ResourceUriTmpls
@@ -660,25 +686,31 @@ func GetResourcesSpec(resourceGroup *models.ResourceGroup) (string, map[string]s
 	b := false
 
 	var urlTmpl string
+	var storedQueryParams string
 	for i := 0; i < l; i++ {
 		u := uriTmpls.ResourceUriTmpl[i]
-		// does uriParams match
-		storedUriParams := u.Params
-		if IsMatch(uriParams, storedUriParams) {
+		// does pathParams match
+		storedPathParams := u.PathParams
+		if IsMatch(pathParams, storedPathParams) {
 			urlTmpl = u.UriTmpl
+			storedQueryParams = u.QueryParams
 			b = true
 			break
 		}
 	}
 
 	if !b {
-		return "", nil, errors.New("resource uri parameters dose not match any existing resource uri template")
+		return "", "", nil, errors.New("resource uriPath parameters dose not match any existing resource uriPath template")
 	}
 
-	uri, err := AssembeURLPrefix(monitorHost, monitorPort, urlTmpl, uriParams)
+	if queryParams == "" {
+		queryParams = storedQueryParams
+	}
+
+	uriPath, err := AssembleURLPrefix(monitorHost, monitorPort, urlTmpl, pathParams)
 
 	if err != nil {
-		return "", nil, err
+		return "", "", nil, err
 	}
 
 	resources := resourceGroup.Resources
@@ -691,10 +723,10 @@ func GetResourcesSpec(resourceGroup *models.ResourceGroup) (string, map[string]s
 		}
 	}
 
-	return uri, resNames, nil
+	return uriPath, queryParams, resNames, nil
 }
 
-func AssembeURLPrefix(host string, port int32, uriTmpl string, params map[string]string) (string, error) {
+func AssembleURLPrefix(host string, port int32, uriTmpl string, params map[string]string) (string, error) {
 	r, err := regexp.Compile(`\{\w+\}`)
 	if err != nil {
 		// compile error

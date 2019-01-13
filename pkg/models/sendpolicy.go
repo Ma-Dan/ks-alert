@@ -86,6 +86,22 @@ func GetSendPolicy(sendPolicy *SendPolicy) (*SendPolicy, error) {
 	}
 }
 
+func UpdateSendPolicySilenceRule(sendPolicy *SendPolicy) error {
+	db, err := dbutil.DBClient()
+
+	if err != nil {
+		return Error{Text: err.Error(), Code: DBError}
+	}
+
+	startAt := sendPolicy.SilenceStartAt
+	endAt := sendPolicy.SilenceEndAt
+
+	if err := db.Model(sendPolicy).Updates(map[string]interface{}{"silence_start_at": startAt, "silence_end_at": endAt}).Error; err != nil {
+		return Error{Text: err.Error(), Code: DBError}
+	}
+	return nil
+}
+
 func GetOrCreateSendPolicy(sp *SendPolicy) (*SendPolicy, error) {
 	sendPolicy, err := GetSendPolicy(sp)
 	if err != nil {

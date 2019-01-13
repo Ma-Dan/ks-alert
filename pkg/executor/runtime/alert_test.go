@@ -32,15 +32,15 @@ func TestNextReSendTimeAndInterval(t *testing.T) {
 }
 
 func TestAssembeURLPrefix(t *testing.T) {
-	Convey("test uri", t, func() {
-		Convey("test uri", func() {
+	Convey("test uriPath", t, func() {
+		Convey("test uriPath", func() {
 			params := map[string]string{
 				"ws": "system-workspace",
 				"ns": "kube-system",
 				"wk": "calic",
 			}
 
-			uri, err := AssembeURLPrefix("localhost", 8080, "/workspaces/{ws}/namespaces/{ns}/workload/{wk}", params)
+			uri, err := AssembleURLPrefix("localhost", 8080, "/workspaces/{ws}/namespaces/{ns}/workload/{wk}", params)
 			fmt.Println(uri)
 			if err != nil {
 				fmt.Println(err)

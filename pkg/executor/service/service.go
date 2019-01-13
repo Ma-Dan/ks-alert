@@ -4,10 +4,13 @@ import (
 	"context"
 	"fmt"
 	"github.com/carmanzhang/ks-alert/pkg/executor/handler"
+	"github.com/carmanzhang/ks-alert/pkg/executor/runtime"
+	"github.com/carmanzhang/ks-alert/pkg/models"
 	"github.com/carmanzhang/ks-alert/pkg/option"
 	"github.com/carmanzhang/ks-alert/pkg/pb"
 	"github.com/carmanzhang/ks-alert/pkg/registry"
 	"github.com/carmanzhang/ks-alert/pkg/utils/etcdutil"
+	"github.com/golang/glog"
 	"go.etcd.io/etcd/clientv3"
 	"google.golang.org/grpc"
 	"log"
@@ -68,6 +71,51 @@ func Run() {
 				if counter > 3 {
 					// means this host does not register successfully, main thread will be terminated
 					panic("this host does not register successfully in 3 consecutive checks, terminated main thread")
+				}
+			}
+		}
+	}()
+
+	// ensure `hostid` in alert_config running at the right node
+	go func() {
+		//timer := time.NewTicker(time.Minute * 1)
+		timer := time.NewTicker(time.Second * 15)
+		hostID := fmt.Sprintf("%s:%d", *option.ServiceHost, *option.ExecutorServicePort)
+		latestReportTime := time.Now().Add(-time.Minute * runtime.MaxKeepAliveReportInterval)
+		recordLimit := 3
+		for {
+			select {
+			case <-timer.C:
+				alertConfigs, err := models.GetAbnormalExecutedAlertConfig(hostID, latestReportTime, recordLimit)
+
+				if err != nil {
+					glog.Errorln(err.Error())
+				}
+
+				for i := range *alertConfigs {
+					ac := &(*alertConfigs)[i]
+					if ac.HostID != hostID {
+						ac.HostID = hostID
+					}
+					ac.KeepAliveAt = time.Now()
+					ac.Version += 1
+				}
+
+				bools, err := models.UpdateAlertConfigBindingHostAndVersion(alertConfigs)
+
+				if err != nil {
+					glog.Errorln(err.Error())
+				}
+
+				for i, b := range bools {
+					if b {
+						acID := (*alertConfigs)[i].AlertConfigID
+						fmt.Println("executing", acID)
+						err := runtime.Action(context.Background(), &pb.Informer{Signal: pb.Informer_CREATE, AlertConfigId: acID})
+						if err != nil {
+							glog.Errorln(err.Error())
+						}
+					}
 				}
 			}
 		}
