@@ -54,7 +54,8 @@ type ResourceUriTmpls struct {
 type ResourceUriTmpl struct {
 	UriTmpl      string            `json:"uri_tmpl,omitempty"`
 	ResourceName []string          `json:"resource_name,omitempty"`
-	Params       map[string]string `json:"params,omitempty"`
+	PathParams   map[string]string `json:"path_params,omitempty"`
+	QueryParams  string            `json:"query_params,omitempty"`
 }
 
 func GetResourceType(resourceType *ResourceType) (*ResourceType, error) {

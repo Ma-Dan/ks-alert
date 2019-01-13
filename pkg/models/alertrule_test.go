@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/carmanzhang/ks-alert/pkg/pb"
 	"github.com/carmanzhang/ks-alert/pkg/utils/dbutil"
+	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 	"time"
 )
@@ -51,7 +52,7 @@ func TestCreateAlertRuleGroup(t *testing.T) {
 						InhibitRule:            false,
 						Enable:                 true,
 						SystemRule:             true,
-						RepeatSendType:         int32(pb.RepeatSendType_exponential),
+						RepeatSendType:         int32(pb.RepeatSendType_Exponential),
 						InitRepeatSendInterval: 15,
 						MaxRepeatSendCount:     10,
 						CreatedAt:              time.Now(),
@@ -110,7 +111,7 @@ func TestUpdateAlertRuleGroup(t *testing.T) {
 						InhibitRule:            false,
 						Enable:                 true,
 						SystemRule:             true,
-						RepeatSendType:         int32(pb.RepeatSendType_exponential),
+						RepeatSendType:         int32(pb.RepeatSendType_Exponential),
 						InitRepeatSendInterval: 15,
 						MaxRepeatSendCount:     10,
 						//AlertRuleID:            "rule_id-qn4m4xpry0633x",

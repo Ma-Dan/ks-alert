@@ -7,16 +7,12 @@ option go_package = "pb";
 import "error.proto";
 
 // silence
-message SilenceID {
-    string alert_config_id = 1;
-    string alert_rule_id = 2;
-    string resource_id = 3;
-}
 
 message Silence {
-    SilenceID silence_id = 1;
-    int32 dutation = 2;
+    string alert_rule_id = 1;
+    string resource_id = 2;
     int64 start_timestamp = 3;
+    int32 dutation = 4;
 }
 
 message SilenceResponse {

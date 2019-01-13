@@ -10,5 +10,6 @@ message ResourceUriTmpls {
 message ResourceUriTmpl {
     string uri_tmpl = 1;
     repeated string resource_name = 2;
-    map<string, string> params = 3;
+    map<string, string> path_params = 3;
+    string query_params = 4;
 }

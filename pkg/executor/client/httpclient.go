@@ -16,7 +16,7 @@ const (
 	DefaultScheme = "http"
 )
 
-func SendMonitoringRequest(uri string, resources []string, metricName string, startTime int64, endTime int64, stepInMinute int32) string {
+func SendMonitoringRequest(uriPath, extraQueryParams string, resources []string, metricName string, startTime int64, endTime int64, stepInMinute int32) string {
 	startTs := strconv.FormatInt(startTime, 10)
 	endTs := strconv.FormatInt(endTime, 10)
 	step := fmt.Sprintf("%dm", stepInMinute)
@@ -31,11 +31,17 @@ func SendMonitoringRequest(uri string, resources []string, metricName string, st
 	}
 
 	var urlStr string
-	if strings.HasPrefix(uri, "http://") || strings.HasPrefix(uri, "https://") {
-		urlStr = uri + "?" + parmas.Encode()
+
+	queryParams := parmas.Encode()
+	if extraQueryParams != "" {
+		queryParams = queryParams + "&" + extraQueryParams
+	}
+
+	if strings.HasPrefix(uriPath, "http://") || strings.HasPrefix(uriPath, "https://") {
+		urlStr = uriPath + "?" + queryParams
 
 	} else {
-		urlStr = DefaultScheme + "://" + uri + "?" + parmas.Encode()
+		urlStr = DefaultScheme + "://" + uriPath + "?" + queryParams
 	}
 
 	glog.Info(urlStr)

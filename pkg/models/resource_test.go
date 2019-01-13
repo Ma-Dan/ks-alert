@@ -45,7 +45,7 @@ package models
 //					URI: "workspaces",
 //				},
 //				{
-//					Params: map[string]string{"ws_name": ""},
+//					PathParams: map[string]string{"ws_name": ""},
 //					URI:    "workspaces/{ws_name}",
 //				},
 //			},
@@ -58,7 +58,7 @@ package models
 //					URI: "namespaces",
 //				},
 //				{
-//					Params: map[string]string{"ns_name": ""},
+//					PathParams: map[string]string{"ns_name": ""},
 //					URI:    "namespaces/{ns_name}",
 //				},
 //			},
@@ -68,22 +68,22 @@ package models
 //		err = CreateSourceType(productID, "pods", "", true, &ResourceURITmpls{
 //			ResourceURITmpl: []ResourceURITmpl{
 //				{
-//					Params: map[string]string{"ns_name": ""},
+//					PathParams: map[string]string{"ns_name": ""},
 //					URI:    "namespces/{ns_name}/pods",
 //				},
 //
 //				{
-//					Params: map[string]string{"ns_name": "", "pod_name": ""},
+//					PathParams: map[string]string{"ns_name": "", "pod_name": ""},
 //					URI:    "namespces/{ns_name}/pods/{pod_name}",
 //				},
 //
 //				{
-//					Params: map[string]string{"node_id": ""},
+//					PathParams: map[string]string{"node_id": ""},
 //					URI:    "nodes/{node_id}/pods",
 //				},
 //
 //				{
-//					Params: map[string]string{"node_id": "", "pod_name": ""},
+//					PathParams: map[string]string{"node_id": "", "pod_name": ""},
 //					URI:    "nodes/{node_id}/pods/{pod_name}",
 //				},
 //			},
@@ -93,22 +93,22 @@ package models
 //		err = CreateSourceType(productID, "containers", "", true, &ResourceURITmpls{
 //			ResourceURITmpl: []ResourceURITmpl{
 //				{
-//					Params: map[string]string{"ns_name": "", "pod_name": ""},
+//					PathParams: map[string]string{"ns_name": "", "pod_name": ""},
 //					URI:    "namespces/{ns_name}/pods/{pod_name}/containers",
 //				},
 //
 //				{
-//					Params: map[string]string{"ns_name": "", "pod_name": "", "container_name": ""},
+//					PathParams: map[string]string{"ns_name": "", "pod_name": "", "container_name": ""},
 //					URI:    "namespces/{ns_name}/pods/{pod_name}/containers/{container_name}",
 //				},
 //
 //				{
-//					Params: map[string]string{"node_id": "", "pod_name": ""},
+//					PathParams: map[string]string{"node_id": "", "pod_name": ""},
 //					URI:    "nodes/{node_id}/pods/{pod_name}/containers",
 //				},
 //
 //				{
-//					Params: map[string]string{"node_id": "", "pod_name": "", "container_name": ""},
+//					PathParams: map[string]string{"node_id": "", "pod_name": "", "container_name": ""},
 //					URI:    "nodes/{node_id}/pods/{pod_name}/containers/{container_name}",
 //				},
 //			},
@@ -142,7 +142,7 @@ package models
 ////	&ResourceURITmpls{
 ////				ResourceURITmpl: []ResourceURITmpl{
 ////					{
-////						Params:    map[string]string{},
+////						PathParams:    map[string]string{},
 ////						Resources: []string{"i-0jk3bsyk", "i-k89a62il", "i-obveybo3", "i-zteam1zt"},
 ////					},
 ////				},
@@ -152,7 +152,7 @@ package models
 ////			&ResourceURITmpls{
 ////				ResourceURITmpl: []ResourceURITmpl{
 ////					{
-////						Params:    map[string]string{"ns_name": "kubesphere-monitoring-system"},
+////						PathParams:    map[string]string{"ns_name": "kubesphere-monitoring-system"},
 ////						Resources: []string{"prometheus-k8s-0", "kube-state-metrics-c95f7d66-wqps2", "node-exporter-4cn7k", "prometheus-operator-5f9c5d444f-k49z4"},
 ////					},
 ////				},
@@ -170,12 +170,12 @@ package models
 //		tmpls := ResourceURITmpls{
 //			ResourceURITmpl: []ResourceURITmpl{
 //				ResourceURITmpl{
-//					Params: map[string]string{"ns_name": ""},
+//					PathParams: map[string]string{"ns_name": ""},
 //					URI:    "namespces/{ns_name}/pods",
 //				},
 //
 //				ResourceURITmpl{
-//					Params: map[string]string{"node_id": "", "pod_name": ""},
+//					PathParams: map[string]string{"node_id": "", "pod_name": ""},
 //					URI:    "nodes/{node_id}/pods/{pod_name}",
 //				},
 //			},

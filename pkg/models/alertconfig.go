@@ -2,6 +2,7 @@ package models
 
 import (
 	"fmt"
+	"github.com/carmanzhang/ks-alert/pkg/option"
 	"github.com/carmanzhang/ks-alert/pkg/utils/dbutil"
 	"github.com/carmanzhang/ks-alert/pkg/utils/idutil"
 	"github.com/jinzhu/gorm"
@@ -102,20 +103,69 @@ func (r AlertConfig) Create(tx *gorm.DB, v interface{}) (interface{}, error) {
 	return ac, nil
 }
 
-func UpdateAlertConfigBindingHost(hostID, acID string) error {
+func UpdateAlertConfigKeepAliveTime(acID string) error {
 	db, err := dbutil.DBClient()
 
 	if err != nil {
 		return Error{Text: err.Error(), Code: DBError}
 	}
 
-	sql := fmt.Sprintf("UPDATE alert_configs SET host_id='%s', updated_at='%v' WHERE alert_config_id='%s'", hostID, time.Now(), acID)
+	now := time.Now()
+
+	sql := fmt.Sprintf("UPDATE alert_configs SET keep_alive_at='%v', updated_at='%v' WHERE alert_config_id='%s'", now, now, acID)
 
 	if err := db.Exec(sql).Error; err != nil {
 		return Error{Text: err.Error(), Code: DBError}
 	}
 
 	return nil
+}
+
+func GetAbnormalExecutedAlertConfig(hostID string, latestReportTime time.Time, limit int) (*[]AlertConfig, error) {
+	db, err := dbutil.DBClient()
+
+	if err != nil {
+		return nil, Error{Text: err.Error(), Code: DBError}
+	}
+
+	//sql := fmt.Sprintf(`SELECT * FROM alert_configs WHERE host_id='%s' AND keep_alive_at<'%v' UNION
+	//	(SELECT * FROM alert_configs WHERE host_id!='%s' AND keep_alive_at<'%v' order by keep_alive_at asc limit 10)`,
+	//	hostID, latestReportTime, hostID, latestReportTime)
+
+	sql := "SELECT * FROM alert_configs WHERE host_id=? AND keep_alive_at<? " +
+		"UNION " +
+		"(SELECT * FROM alert_configs WHERE host_id!=? AND keep_alive_at<? order by keep_alive_at asc)"
+
+	var alertConfigs []AlertConfig
+	err = db.Debug().Raw(sql, hostID, latestReportTime, hostID, latestReportTime).Limit(limit).Scan(&alertConfigs).Error
+
+	return &alertConfigs, err
+}
+
+func UpdateAlertConfigBindingHostAndVersion(alertConfigs *[]AlertConfig) ([]bool, error) {
+	db, err := dbutil.DBClient()
+
+	if err != nil {
+		return nil, Error{Text: err.Error(), Code: DBError}
+	}
+
+	l := len(*alertConfigs)
+	var b = make([]bool, l)
+
+	for i := 0; i < l; i++ {
+		ac := (*alertConfigs)[i]
+
+		sql := fmt.Sprintf("UPDATE alert_configs SET host_id='%s', version='%d', keep_alive_at='%v', updated_at='%v' WHERE alert_config_id='%s' AND version='%d' ",
+			ac.HostID, ac.Version, ac.KeepAliveAt, ac.UpdatedAt, ac.AlertConfigID, ac.Version-1)
+
+		if db.Debug().Exec(sql).RowsAffected == 0 {
+			b[i] = false
+		} else {
+			b[i] = true
+		}
+	}
+
+	return b, nil
 }
 
 func GetAlertConfigBindingHost(acID string) (string, error) {
@@ -293,4 +343,27 @@ func (r AlertConfig) Delete(tx *gorm.DB, v interface{}) (interface{}, error) {
 	}
 
 	return nil, nil
+}
+
+func GetAlertConfigRows() (map[string]string, error) {
+	var alertConfigIDMap = make(map[string]string)
+
+	db, err := dbutil.DBClient()
+	if err != nil {
+		return alertConfigIDMap, Error{Text: err.Error(), Code: DBError}
+	}
+
+	hostID := fmt.Sprintf("%s:%d", *option.ServiceHost, *option.ExecutorServicePort)
+
+	rows, err := db.Raw("select alert_config_id from alert_configs where host_id = ?", hostID).Rows()
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var acID string
+		rows.Scan(&acID)
+		alertConfigIDMap[acID] = ""
+	}
+
+	return alertConfigIDMap, nil
 }
