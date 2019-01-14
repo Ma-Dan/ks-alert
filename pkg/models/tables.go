@@ -11,10 +11,10 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-	createTables(db)
+	CreateTables(db)
 }
 
-func createTables(db *gorm.DB) {
+func CreateTables(db *gorm.DB) {
 
 	if !db.HasTable(&Enterprise{}) {
 		if err := db.Set("gorm:table_options", "ENGINE=InnoDB DEFAULT CHARSET=utf8").CreateTable(&Enterprise{}).Error; err != nil {

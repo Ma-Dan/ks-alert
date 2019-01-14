@@ -20,6 +20,12 @@ var (
 	ExecutorServicePort = flag.Int("executor_port", 50001, "listening port")
 
 	EtcdAddress = flag.String("etcd_addr", "http://127.0.0.1:2379", "register etcd address")
+
+	MysqlHost = flag.String("mysql", "127.0.0.1", "")
+	MysqlPort = flag.String("mysql_port", "3306", "")
+	Database  = flag.String("database", "alert", "")
+	User      = flag.String("user", "root", "")
+	Password  = flag.String("password", "password", "")
 )
 
 var HostID string

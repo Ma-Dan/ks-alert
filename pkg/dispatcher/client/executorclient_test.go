@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/carmanzhang/ks-alert/pkg/pb"
-	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 	"time"
 )
@@ -19,7 +18,7 @@ func TestGetExecutorGrpcClient(t *testing.T) {
 		time.Sleep(time.Millisecond * 500)
 		clientX := pb.NewExecutorClient(conn)
 
-		resp, err := clientX.Execute(context.Background(), &pb.Informer{Signal: pb.Informer_RELOAD, AlertConfigId: "alert-config-4j19on01934zj4"})
+		resp, err := clientX.Execute(context.Background(), &pb.Informer{Signal: pb.Informer_RELOAD, AlertConfigId: "alert-config-3jvxm4343roxkk"})
 		//resp, err := clientX.Execute(context.Background(), &pb.Informer{Signal: pb.Informer_TERMINATE, AlertConfigId: "alert-config-0wjmywop7pwn8v"})
 		fmt.Println(resp, err)
 	})

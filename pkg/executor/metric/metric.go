@@ -3,6 +3,7 @@ package metric
 import (
 	"encoding/json"
 	"fmt"
+	"k8s.io/klog/glog"
 )
 
 const (
@@ -61,7 +62,7 @@ func GetResourceTimeSeriesMetric(metricStr string, metricName string, startTime 
 	var metrics Metrics
 	err := json.Unmarshal([]byte(metricStr), &metrics)
 	if err != nil {
-		fmt.Println(err.Error())
+		glog.Errorln(err.Error())
 	}
 	l := len(metrics.Results)
 

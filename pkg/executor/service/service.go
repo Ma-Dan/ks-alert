@@ -52,7 +52,21 @@ func Run() {
 	go func() {
 		prefix := "/" + *option.ExecutorServiceName + "/"
 		//prefix := "/alert_executor_service"
-		e, _ := etcdutil.Connect([]string{*option.EtcdAddress}, "")
+		var e *etcdutil.Etcd
+		for {
+			time.Sleep(time.Second * 5)
+			var err error
+			e, err = etcdutil.Connect([]string{*option.EtcdAddress}, "")
+			if err != nil {
+				glog.Errorln(err.Error())
+			}
+			if e == nil {
+				continue
+			} else {
+				break
+			}
+		}
+
 		timer := time.NewTicker(time.Minute * 1)
 		var counter = 0
 		for {
@@ -81,11 +95,11 @@ func Run() {
 		//timer := time.NewTicker(time.Minute * 1)
 		timer := time.NewTicker(time.Second * 15)
 		hostID := fmt.Sprintf("%s:%d", *option.ServiceHost, *option.ExecutorServicePort)
-		latestReportTime := time.Now().Add(-time.Minute * runtime.MaxKeepAliveReportInterval)
 		recordLimit := 3
 		for {
 			select {
 			case <-timer.C:
+				latestReportTime := time.Now().Add(-time.Minute * runtime.MaxKeepAliveReportInterval)
 				alertConfigs, err := models.GetAbnormalExecutedAlertConfig(hostID, latestReportTime, recordLimit)
 
 				if err != nil {

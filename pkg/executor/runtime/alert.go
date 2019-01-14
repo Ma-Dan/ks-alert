@@ -417,7 +417,7 @@ func checkSendSatisfied(sendPolicy *models.SendPolicy, rule *models.AlertRule) b
 		}
 	} else {
 		// still in silence period
-		fmt.Println("still in silence period")
+		fmt.Println("still in silence period", sendPolicy.SilenceStartAt, sendPolicy.SilenceEndAt)
 	}
 
 	return b
@@ -534,9 +534,11 @@ func (rtAlert *RuntimeAlertConfig) getResourceMetrics(evaluatedRuleIndx []int, c
 		go func() {
 			metricStr := client.SendMonitoringRequest(uriPath, queryParams, resNameArray, metricName, startTime, endTime, stepInMinute)
 			resourceMetrics := metric.GetResourceTimeSeriesMetric(metricStr, metricName, startTime, endTime)
-			resourceMetrics.RuleIndx = j
-			fmt.Println("pull metrics: ", resourceMetrics)
-			ch <- resourceMetrics
+			if resourceMetrics != nil {
+				resourceMetrics.RuleIndx = j
+				fmt.Println("pull metrics: ", resourceMetrics)
+				ch <- resourceMetrics
+			}
 			wg.Done()
 		}()
 	}

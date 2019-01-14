@@ -4,7 +4,6 @@ import (
 	"context"
 	"github.com/carmanzhang/ks-alert/pkg/models"
 	"github.com/carmanzhang/ks-alert/pkg/pb"
-	"github.com/golang/glog"
 	"time"
 )
 
@@ -26,13 +25,7 @@ func getAlertRuleGroupResponse(v interface{}, err error) *pb.AlertRuleGroupRespo
 	arg := ConvertAlertRuleGroup2PB(ruleGroup)
 
 	var respon = pb.AlertRuleGroupResponse{AlertRuleGroup: arg}
-
-	if err != nil {
-		glog.Errorln(err.Error())
-		respon.Error = ErrorConverter(err)
-	} else {
-		respon.Error = ErrorConverter(*models.NewError(0, models.Success))
-	}
+	respon.Error = ErrorWrapper(err)
 
 	return &respon
 }

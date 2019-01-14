@@ -5,7 +5,6 @@ import (
 	"github.com/carmanzhang/ks-alert/pkg/models"
 	"github.com/carmanzhang/ks-alert/pkg/pb"
 	"github.com/carmanzhang/ks-alert/pkg/utils/jsonutil"
-	"k8s.io/klog/glog"
 	"time"
 )
 
@@ -26,18 +25,8 @@ func getResourceGroupResponse(v interface{}, err error) *pb.ResourceGroupRespons
 	rg := ConvertResourceGroup2PB(resGroup)
 
 	var respon = pb.ResourceGroupResponse{ResourceGroup: rg}
-	if err != nil {
-		glog.Errorln(err.Error())
-		respon.Error = ErrorConverter(err)
-	} else {
-		respon.Error = ErrorConverter(*models.NewError(0, models.Success))
-	}
+	respon.Error = ErrorWrapper(err)
 	return &respon
-}
-
-func ErrorConverter(err error) *pb.Error {
-	e := models.ErrorWrapper(err)
-	return &pb.Error{Text: e.Text, Code: e.Code}
 }
 
 func (server ResourceHandler) UpdateResource(ctx context.Context, rgSpec *pb.ResourceGroup) (*pb.ResourceGroupResponse, error) {

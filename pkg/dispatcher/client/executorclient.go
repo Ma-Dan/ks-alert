@@ -1,6 +1,7 @@
 package client
 
 import (
+	"github.com/carmanzhang/ks-alert/pkg/models"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"time"
@@ -48,7 +49,7 @@ func GetExecutorGrpcConn(svcAddress string) (*grpc.ClientConn, error) {
 	conn, err := grpc.DialContext(ctx, svcAddress, grpc.WithInsecure())
 
 	if err != nil {
-		return nil, err
+		return nil, models.Error{Text: err.Error(), Code: models.GrpcError}
 	}
 
 	cachedGrpcConn[svcAddress] = conn
