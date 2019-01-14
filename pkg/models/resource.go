@@ -123,27 +123,21 @@ func DeleteResourceType(resourceType *ResourceType) error {
 	return err
 }
 
-func (r ResourceGroup) Create(tx *gorm.DB, v interface{}) (interface{}, error) {
-	resGroup, ok := v.(*ResourceGroup)
-
-	if !ok {
-		return nil, Error{Text: fmt.Sprintf("type %v assert error", resGroup), Code: AssertError}
-	}
-
-	if resGroup.ResourceGroupName == "" || resGroup.ResourceTypeID == "" {
+func (r *ResourceGroup) Create(tx *gorm.DB) (interface{}, error) {
+	if r.ResourceGroupName == "" || r.ResourceTypeID == "" {
 		return nil, Error{Text: "resource group name and resource type id must be specified", Code: InvalidParam}
 	}
 
-	if resGroup.Resources == nil || len(resGroup.Resources) == 0 {
+	if r.Resources == nil || len(r.Resources) == 0 {
 		return nil, Error{Text: "resources must be specified", Code: InvalidParam}
 	}
 
 	var resourceWithName []*Resource
-	resources := resGroup.Resources
+	resources := r.Resources
 	for i := 0; i < len(resources); i++ {
-		r := resources[i]
-		if r.ResourceName != "" {
-			resourceWithName = append(resourceWithName, r)
+		rs := resources[i]
+		if rs.ResourceName != "" {
+			resourceWithName = append(resourceWithName, rs)
 		}
 	}
 
@@ -151,11 +145,11 @@ func (r ResourceGroup) Create(tx *gorm.DB, v interface{}) (interface{}, error) {
 		return nil, Error{Text: "at least one resource name must be specified", Code: InvalidParam}
 	}
 
-	resGroup.ResourceGroupID = idutil.GetUuid36("resource_group-")
+	r.ResourceGroupID = idutil.GetUuid36("resource_group-")
 
 	// create group
-	item := fmt.Sprintf("('%s','%s','%s','%s','%s','%v','%v')", resGroup.ResourceGroupID, resGroup.ResourceGroupName,
-		resGroup.ResourceTypeID, resGroup.Description, resGroup.URIParams, resGroup.CreatedAt, resGroup.UpdatedAt)
+	item := fmt.Sprintf("('%s','%s','%s','%s','%s','%v','%v')", r.ResourceGroupID, r.ResourceGroupName,
+		r.ResourceTypeID, r.Description, r.URIParams, r.CreatedAt, r.UpdatedAt)
 
 	sql := "INSERT INTO resource_groups (resource_group_id, resource_group_name, resource_type_id, " +
 		"description, uri_params, created_at, updated_at) VALUES " + item
@@ -167,32 +161,25 @@ func (r ResourceGroup) Create(tx *gorm.DB, v interface{}) (interface{}, error) {
 	// create item
 	l := len(resourceWithName)
 	for i := 0; i < l; i++ {
-		r := resourceWithName[i]
-		r.ResourceID = idutil.GetUuid36("resource-")
-		r.ResourceGroupID = resGroup.ResourceGroupID
+		rs := resourceWithName[i]
+		rs.ResourceID = idutil.GetUuid36("resource-")
+		rs.ResourceGroupID = r.ResourceGroupID
 	}
 
 	if err := CreateOrUpdateResources(tx, resourceWithName); err != nil {
 		return nil, err
 	}
 
-	return resGroup, nil
+	return r, nil
 }
 
-func (r ResourceGroup) Update(tx *gorm.DB, v interface{}) (interface{}, error) {
-
-	resGroup, ok := v.(*ResourceGroup)
-
-	if !ok {
-		return nil, Error{Text: fmt.Sprintf("type %v assert error", resGroup), Code: AssertError}
-	}
-
-	if resGroup.ResourceGroupID == "" || resGroup.ResourceGroupName == "" {
+func (r *ResourceGroup) Update(tx *gorm.DB) (interface{}, error) {
+	if r.ResourceGroupID == "" || r.ResourceGroupName == "" {
 		return nil, Error{Text: "resource group id or name must be specified", Code: InvalidParam}
 	}
 
 	// 1. get resource group first
-	vget, err := r.Get(tx, v)
+	vget, err := r.Get(tx)
 
 	if err != nil {
 		return nil, err
@@ -201,23 +188,23 @@ func (r ResourceGroup) Update(tx *gorm.DB, v interface{}) (interface{}, error) {
 	rg := vget.(*ResourceGroup)
 
 	if rg == nil || rg.ResourceGroupID == "" {
-		return nil, Error{Text: fmt.Sprintf("resource group id: %s not exist", resGroup.ResourceGroupID), Code: InvalidParam}
+		return nil, Error{Text: fmt.Sprintf("resource group id: %s not exist", r.ResourceGroupID), Code: InvalidParam}
 	}
 
 	// 2. update resource group
 	sql := fmt.Sprintf("UPDATE resource_groups SET resource_group_name='%s',description='%s',"+
 		"uri_params='%v', updated_at='%v' WHERE resource_group_id='%s'",
-		resGroup.ResourceGroupName, resGroup.Description,
-		resGroup.URIParams, time.Now(), resGroup.ResourceGroupID)
+		r.ResourceGroupName, r.Description,
+		r.URIParams, time.Now(), r.ResourceGroupID)
 
 	if err := tx.Exec(sql).Error; err != nil {
 		return nil, Error{Text: err.Error(), Code: DBError}
 	}
 
 	// 3. delete resources or update resource
-	var needDeleted, needUpdated = CompareResources(resGroup.Resources, rg.Resources, resGroup.ResourceGroupID)
+	var needDeleted, needUpdated = CompareResources(r.Resources, rg.Resources, r.ResourceGroupID)
 
-	err = DeleteResources(tx, resGroup.ResourceGroupID, needDeleted)
+	err = DeleteResources(tx, r.ResourceGroupID, needDeleted)
 
 	if err != nil {
 		return nil, err
@@ -229,18 +216,11 @@ func (r ResourceGroup) Update(tx *gorm.DB, v interface{}) (interface{}, error) {
 		return nil, err
 	}
 
-	return resGroup, nil
+	return r, nil
 }
 
-func (r ResourceGroup) Get(tx *gorm.DB, v interface{}) (interface{}, error) {
-
-	rgSpec, ok := v.(*ResourceGroup)
-
-	if !ok {
-		return nil, Error{Text: fmt.Sprintf("type %v assert error", rgSpec), Code: AssertError}
-	}
-
-	rgID := rgSpec.ResourceGroupID
+func (r *ResourceGroup) Get(tx *gorm.DB) (interface{}, error) {
+	rgID := r.ResourceGroupID
 
 	if rgID == "" {
 		return nil, Error{Text: "resource group id must be specified", Code: InvalidParam}
@@ -248,7 +228,7 @@ func (r ResourceGroup) Get(tx *gorm.DB, v interface{}) (interface{}, error) {
 
 	var rg ResourceGroup
 
-	err := tx.Model(&ResourceGroup{}).Where("resource_group_id=?", rgSpec.ResourceGroupID).First(&rg).Error
+	err := tx.Model(&ResourceGroup{}).Where("resource_group_id=?", r.ResourceGroupID).First(&rg).Error
 
 	if err != nil {
 		return nil, Error{Text: err.Error(), Code: DBError}
@@ -273,22 +253,16 @@ func (r ResourceGroup) Get(tx *gorm.DB, v interface{}) (interface{}, error) {
 	return &rg, nil
 }
 
-func (r ResourceGroup) Delete(tx *gorm.DB, v interface{}) (interface{}, error) {
-	rg, ok := v.(*ResourceGroup)
-
-	if !ok {
-		return nil, Error{Text: fmt.Sprintf("type %v assert error", rg), Code: AssertError}
-	}
-
-	rgID := rg.ResourceGroupID
+func (r *ResourceGroup) Delete(tx *gorm.DB) (interface{}, error) {
+	rgID := r.ResourceGroupID
 
 	if rgID == "" {
 		return nil, Error{Text: "resource group id must be specified", Code: InvalidParam}
 	}
 
-	sql := "DELETE rg, r FROM resource_groups as rg LEFT JOIN resources as r ON rg.resource_group_id=r.resource_group_id WHERE rg.resource_group_id=?"
+	sql := "DELETE r, r FROM resource_groups as r LEFT JOIN resources as r ON r.resource_group_id=r.resource_group_id WHERE r.resource_group_id=?"
 
-	if err := tx.Debug().Exec(sql, rg.ResourceGroupID).Error; err != nil {
+	if err := tx.Debug().Exec(sql, r.ResourceGroupID).Error; err != nil {
 		return nil, Error{Text: err.Error(), Code: DBError}
 	}
 

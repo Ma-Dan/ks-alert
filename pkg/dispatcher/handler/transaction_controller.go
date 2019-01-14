@@ -1,7 +1,7 @@
 package handler
 
 import (
-	"github.com/carmanzhang/ks-alert/pkg/models"
+	"fmt"
 	"github.com/carmanzhang/ks-alert/pkg/utils/dbutil"
 	"github.com/pkg/errors"
 	"k8s.io/klog/glog"
@@ -36,17 +36,18 @@ func DoTransactionAction(v interface{}, tp TP, method string) (interface{}, erro
 
 	var res interface{}
 	var err error
+	res, err = CallReflect(v, method, tx)
 
-	switch tp {
-	case AlertConfig:
-		res, err = CallReflect(models.AlertConfig{}, method, tx, v)
-	case RuleGroup:
-		res, err = CallReflect(models.AlertRuleGroup{}, method, tx, v)
-	case ReceiverGroup:
-		res, err = CallReflect(models.ReceiverGroup{}, method, tx, v)
-	case ResourceGroup:
-		res, err = CallReflect(models.ResourceGroup{}, method, tx, v)
-	}
+	//switch tp {
+	//case AlertConfig:
+	//	res, err = CallReflect(v, method, tx)
+	//case RuleGroup:
+	//	res, err = CallReflect(v, method, tx)
+	//case ReceiverGroup:
+	//	res, err = CallReflect(v, method, tx)
+	//case ResourceGroup:
+	//	res, err = CallReflect(v, method, tx)
+	//}
 
 	if err != nil {
 		tx.Rollback()
@@ -66,7 +67,7 @@ func CallReflect(any interface{}, method string, args ...interface{}) (interface
 	for i, _ := range args {
 		inputs[i] = reflect.ValueOf(args[i])
 	}
-
+	fmt.Printf("%p\n", any)
 	v := reflect.ValueOf(any).MethodByName(method)
 
 	if v.String() == "<invalid Value>" {
