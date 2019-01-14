@@ -3,7 +3,6 @@ package models
 import (
 	"github.com/carmanzhang/ks-alert/pkg/utils/dbutil"
 	"github.com/carmanzhang/ks-alert/pkg/utils/idutil"
-	"github.com/golang/glog"
 	"time"
 )
 
@@ -56,31 +55,24 @@ func CreateAlertHistory(ah *AlertHistory) (*AlertHistory, error) {
 	db, err := dbutil.DBClient()
 
 	if err != nil {
-		glog.Errorln(err.Error())
-		return nil, err
+		return nil, Error{Text: err.Error(), Code: DBError}
 	}
+
 	ah.AlertHistoryID = idutil.GetUuid36("alert_history_")
 	err = db.Model(&AlertHistory{}).Create(ah).Error
+
+	if err != nil {
+		return nil, Error{Text: err.Error(), Code: DBError}
+	}
+
 	return ah, err
 }
-
-//func CreateAlertHistory1(rtAlert *runtime.RuntimeAlertConfig) (*AlertHistory, error) {
-//	db, err := dbutil.DBClient()
-//
-//	if err != nil {
-//		glog.Errorln(err.Error())
-//		return nil, err
-//	}
-//
-//	err = db.Model(&AlertHistory{}).Create(ah).Error
-//	return nil, err
-//}
 
 // TODO need to implement
 func GetAlertHistory(ah *AlertHistory) ([]*AlertHistory, error) {
 	db, err := dbutil.DBClient()
 	if err != nil {
-		return nil, err
+		return nil, Error{Text: err.Error(), Code: DBError}
 	}
 
 	var alertHistories []AlertHistory
@@ -97,13 +89,13 @@ func GetAlertHistory(ah *AlertHistory) ([]*AlertHistory, error) {
 func UpdateAlertSendStatus(ah *AlertHistory, sendStatus string) error {
 	db, err := dbutil.DBClient()
 	if err != nil {
-		return err
+		return Error{Text: err.Error(), Code: DBError}
 	}
 
-	db.Model(ah).Where("alert_history_id = ?", ah.AlertHistoryID).Update("request_notification_status", sendStatus)
+	err = db.Model(ah).Where("alert_history_id = ?", ah.AlertHistoryID).Update("request_notification_status", sendStatus).Error
 
-	if db.Error != nil {
-		return err
+	if err != nil {
+		return Error{Text: err.Error(), Code: DBError}
 	}
 
 	return nil

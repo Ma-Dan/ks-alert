@@ -228,8 +228,6 @@ func (r *AlertRuleGroup) Get(tx *gorm.DB) (interface{}, error) {
 			rules = append(rules, &alertRules[i])
 		}
 		rg.AlertRules = rules
-
-		return &rg, nil
 	}
 
 	return &rg, nil
@@ -248,13 +246,13 @@ func (r *AlertRuleGroup) Delete(tx *gorm.DB) (interface{}, error) {
 	if groupID != "" {
 		sql := "DELETE arg, ar FROM alert_rule_groups as arg LEFT JOIN alert_rules as ar ON arg.alert_rule_group_id=ar.alert_rule_group_id WHERE arg.alert_rule_group_id=?"
 
-		if err := tx.Debug().Exec(sql, groupID).Error; err != nil {
+		if err := tx.Exec(sql, groupID).Error; err != nil {
 			return nil, Error{Text: err.Error(), Code: DBError}
 		}
 	} else if typeID != "" {
 		sql := "DELETE arg, ar FROM alert_rule_groups as arg LEFT JOIN alert_rules as ar ON arg.resource_type_id=ar.resource_type_id WHERE arg.resource_type_id=? AND arg.system_rule"
 
-		if err := tx.Debug().Exec(sql, typeID, true).Error; err != nil {
+		if err := tx.Exec(sql, typeID, true).Error; err != nil {
 			return nil, Error{Text: err.Error(), Code: DBError}
 		}
 	}

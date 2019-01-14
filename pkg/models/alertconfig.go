@@ -6,7 +6,6 @@ import (
 	"github.com/carmanzhang/ks-alert/pkg/utils/dbutil"
 	"github.com/carmanzhang/ks-alert/pkg/utils/idutil"
 	"github.com/jinzhu/gorm"
-	"k8s.io/klog/glog"
 	"time"
 )
 
@@ -113,9 +112,13 @@ func GetAbnormalExecutedAlertConfig(hostID string, latestReportTime time.Time, l
 		"(SELECT * FROM alert_configs WHERE host_id!=? AND keep_alive_at<? order by keep_alive_at asc)"
 
 	var alertConfigs []AlertConfig
-	err = db.Debug().Raw(sql, hostID, latestReportTime, hostID, latestReportTime).Limit(limit).Scan(&alertConfigs).Error
+	err = db.Raw(sql, hostID, latestReportTime, hostID, latestReportTime).Limit(limit).Scan(&alertConfigs).Error
 
-	return &alertConfigs, err
+	if err != nil {
+		return nil, Error{Text: err.Error(), Code: DBError}
+	}
+
+	return &alertConfigs, nil
 }
 
 func UpdateAlertConfigBindingHostAndVersion(alertConfigs *[]AlertConfig) ([]bool, error) {
@@ -134,7 +137,7 @@ func UpdateAlertConfigBindingHostAndVersion(alertConfigs *[]AlertConfig) ([]bool
 		sql := fmt.Sprintf("UPDATE alert_configs SET host_id='%s', version='%d', keep_alive_at='%v', updated_at='%v' WHERE alert_config_id='%s' AND version='%d' ",
 			ac.HostID, ac.Version, ac.KeepAliveAt, ac.UpdatedAt, ac.AlertConfigID, ac.Version-1)
 
-		if db.Debug().Exec(sql).RowsAffected == 0 {
+		if db.Exec(sql).RowsAffected == 0 {
 			b[i] = false
 		} else {
 			b[i] = true
@@ -201,7 +204,7 @@ func (r *AlertConfig) Update(tx *gorm.DB) (interface{}, error) {
 	r.ResourceGroupID = resGroup.(*ResourceGroup).ResourceGroupID
 	r.ReceiverGroupID = recvGroup.(*ReceiverGroup).ReceiverGroupID
 
-	if err := tx.Debug().Model(AlertConfig{}).Where("alert_config_id=?", r.AlertConfigID).Update(r).Error; err != nil {
+	if err := tx.Model(AlertConfig{}).Where("alert_config_id=?", r.AlertConfigID).Update(r).Error; err != nil {
 		return nil, Error{Text: err.Error(), Code: DBError}
 	}
 
@@ -238,21 +241,20 @@ func (r *AlertConfig) Get(tx *gorm.DB) (interface{}, error) {
 
 	ruleGroup, err := (&AlertRuleGroup{AlertRuleGroupID: alertConfig.AlertRuleGroupID}).Get(tx)
 
-	// TODO maybe need return this err?
 	if err != nil {
-		glog.Errorln(err.Error())
+		return nil, err
 	}
 
 	resGroup, err := (&ResourceGroup{ResourceGroupID: alertConfig.ResourceGroupID}).Get(tx)
 
 	if err != nil {
-		glog.Errorln(err.Error())
+		return nil, err
 	}
 
 	recvGroup, err := (&ReceiverGroup{ReceiverGroupID: alertConfig.ReceiverGroupID}).Get(tx)
 
 	if err != nil {
-		glog.Errorln(err.Error())
+		return nil, err
 	}
 
 	alertConfig.AlertRuleGroup = ruleGroup.(*AlertRuleGroup)

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/carmanzhang/ks-alert/pkg/utils/dbutil"
 	"github.com/carmanzhang/ks-alert/pkg/utils/idutil"
-	"github.com/golang/glog"
 	"github.com/jinzhu/gorm"
 	"strings"
 	"time"
@@ -60,9 +59,9 @@ type ResourceUriTmpl struct {
 
 func GetResourceType(resourceType *ResourceType) (*ResourceType, error) {
 	db, err := dbutil.DBClient()
+
 	if err != nil {
-		glog.Errorln(err.Error())
-		return nil, err
+		return nil, Error{Text: err.Error(), Code: DBError}
 	}
 
 	var tp ResourceType
@@ -73,7 +72,7 @@ func GetResourceType(resourceType *ResourceType) (*ResourceType, error) {
 	}
 
 	if db.Error != nil {
-		return nil, err
+		return nil, Error{Text: err.Error(), Code: DBError}
 	}
 
 	return &tp, nil
@@ -83,14 +82,18 @@ func CreateResourceType(resourceType *ResourceType) (*ResourceType, error) {
 	db, err := dbutil.DBClient()
 
 	if err != nil {
-		glog.Errorln(err.Error())
-		return nil, err
+		return nil, Error{Text: err.Error(), Code: DBError}
 	}
 
 	resourceType.ResourceTypeID = idutil.GetUuid36("resource_type-")
 
 	err = db.Model(&ResourceType{}).Create(resourceType).Error
-	return resourceType, err
+
+	if err != nil {
+		return nil, Error{Text: err.Error(), Code: DBError}
+	}
+
+	return resourceType, nil
 
 }
 
@@ -98,8 +101,7 @@ func UpdateResourceType(resourceType *ResourceType) error {
 	db, err := dbutil.DBClient()
 
 	if err != nil {
-		glog.Errorln(err.Error())
-		return err
+		return Error{Text: err.Error(), Code: DBError}
 	}
 
 	if resourceType.ResourceTypeID != "" {
@@ -108,19 +110,27 @@ func UpdateResourceType(resourceType *ResourceType) error {
 		err = db.Model(resourceType).Where("product_id = ? and resource_type_name = ? ", resourceType.ProductID, resourceType.ResourceTypeName).Update(resourceType).Error
 	}
 
-	return err
+	if err != nil {
+		return Error{Text: err.Error(), Code: DBError}
+	}
+
+	return nil
 }
 
 func DeleteResourceType(resourceType *ResourceType) error {
 	db, err := dbutil.DBClient()
 
 	if err != nil {
-		glog.Errorln(err.Error())
-		return err
+		return Error{Text: err.Error(), Code: DBError}
 	}
 
 	err = db.Delete(resourceType).Error
-	return err
+
+	if err != nil {
+		return Error{Text: err.Error(), Code: DBError}
+	}
+
+	return nil
 }
 
 func (r *ResourceGroup) Create(tx *gorm.DB) (interface{}, error) {
@@ -296,7 +306,7 @@ func CreateOrUpdateResources(tx *gorm.DB, resources []*Resource) error {
 	// on duplicate key update
 	sql = sql + "on duplicate key update resource_name=values(resource_name),updated_at=values(updated_at)"
 
-	if err := tx.Debug().Exec(sql).Error; err != nil {
+	if err := tx.Exec(sql).Error; err != nil {
 		return Error{Text: err.Error(), Code: DBError}
 	}
 

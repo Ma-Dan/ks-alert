@@ -1,12 +1,10 @@
 package models
 
 import (
+	"fmt"
 	"github.com/carmanzhang/ks-alert/pkg/utils/dbutil"
 	"github.com/carmanzhang/ks-alert/pkg/utils/idutil"
 	"time"
-	"k8s.io/klog/glog"
-	"github.com/pkg/errors"
-	"fmt"
 )
 
 type Enterprise struct {
@@ -27,14 +25,18 @@ func CreateEnterprise(enterprise *Enterprise) (*Enterprise, error) {
 	db, err := dbutil.DBClient()
 
 	if err != nil {
-		glog.Errorln(err.Error())
-		return nil, err
+		return nil, Error{Text: err.Error(), Code: DBError}
 	}
 
 	enterprise.EnterpriseID = idutil.GetUuid36("enterprise-")
 
 	err = db.Model(&Enterprise{}).Create(enterprise).Error
-	return enterprise, err
+
+	if err != nil {
+		return nil, Error{Text: err.Error(), Code: DBError}
+	}
+
+	return enterprise, nil
 }
 
 func GetEnterprise(enterprise *Enterprise) (*Enterprise, error) {
@@ -42,25 +44,24 @@ func GetEnterprise(enterprise *Enterprise) (*Enterprise, error) {
 	entName := enterprise.EnterpriseName
 
 	db, err := dbutil.DBClient()
+
 	if err != nil {
-		glog.Errorln(err.Error())
-		return &Enterprise{}, err
+		return nil, Error{Text: err.Error(), Code: DBError}
 	}
 
 	var ent Enterprise
 
 	if entID != "" {
-		db.Model(&Enterprise{}).Where(&Enterprise{EnterpriseID:entID}).First(&ent)
+		db.Model(&Enterprise{}).Where(&Enterprise{EnterpriseID: entID}).First(&ent)
 	}
 
-	if ent.EnterpriseID == "" && entName != ""{
-		db.Model(&Enterprise{}).Where(&Enterprise{EnterpriseName:entName}).First(&ent)
+	if ent.EnterpriseID == "" && entName != "" {
+		db.Model(&Enterprise{}).Where(&Enterprise{EnterpriseName: entName}).First(&ent)
 	}
 
 	if ent.EnterpriseID == "" {
 		errStr := fmt.Sprintf("can not find the enterprise with enterprise_id: %s or enterprise_name: %s", entID, entName)
-		glog.Infoln(errStr)
-		return &Enterprise{}, errors.New(errStr)
+		return nil, Error{Text: errStr, Code: DBError}
 	}
 	return &ent, nil
 }
@@ -76,39 +77,39 @@ func DeleteEnterprise(enterprise *Enterprise) error {
 	db, err := dbutil.DBClient()
 
 	if err != nil {
-		glog.Errorln(err.Error())
-		return err
+		return Error{Text: err.Error(), Code: DBError}
 	}
 
 	if entID != "" {
-		db.Delete(&Enterprise{EnterpriseID: entID})
-		glog.Errorln(db.Error)
-		return db.Error
-	}else if entName != "" {
-		db.Delete(&Enterprise{EnterpriseName:entName})
-		glog.Errorln(db.Error)
-		return db.Error
+		err = db.Delete(&Enterprise{EnterpriseID: entID}).Error
+	} else if entName != "" {
+		err = db.Delete(&Enterprise{EnterpriseName: entName}).Error
+	}
+
+	if err != nil {
+		return Error{Text: err.Error(), Code: DBError}
 	}
 
 	return nil
 }
 
-
-func UpdateEnterprise(ent *Enterprise) (error)  {
+func UpdateEnterprise(ent *Enterprise) error {
 	db, err := dbutil.DBClient()
 
 	if err != nil {
-		glog.Errorln(err.Error())
-		return err
+		return Error{Text: err.Error(), Code: DBError}
 	}
-
 
 	if ent.EnterpriseID != "" {
 		err = db.Model(ent).Where("enterprise_id = ?", ent.EnterpriseID).Update(ent).Error
 
-	}else if ent.EnterpriseName != "" {
+	} else if ent.EnterpriseName != "" {
 		err = db.Model(ent).Where("enterprise_name = ?", ent.EnterpriseName).Update(ent).Error
 	}
 
-	return err
+	if err != nil {
+		return Error{Text: err.Error(), Code: DBError}
+	}
+
+	return nil
 }

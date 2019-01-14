@@ -3,7 +3,6 @@ package models
 import (
 	"github.com/carmanzhang/ks-alert/pkg/utils/dbutil"
 	"github.com/carmanzhang/ks-alert/pkg/utils/idutil"
-	"k8s.io/klog/glog"
 	"time"
 )
 
@@ -32,26 +31,35 @@ func CreateProduct(product *Product) (*Product, error) {
 	db, err := dbutil.DBClient()
 
 	if err != nil {
-		glog.Errorln(err.Error())
-		return nil, err
+		return nil, Error{Text: err.Error(), Code: DBError}
 	}
 
 	product.ProductID = idutil.GetUuid36("product-")
 
 	err = db.Model(&Product{}).Create(product).Error
+
+	if err != nil {
+		return nil, Error{Text: err.Error(), Code: DBError}
+	}
+
 	return product, err
 }
 
 func GetProduct(product *Product) (*Product, error) {
 
 	db, err := dbutil.DBClient()
+
 	if err != nil {
-		glog.Errorln(err.Error())
-		return nil, err
+		return nil, Error{Text: err.Error(), Code: DBError}
 	}
 
 	var products Product
-	db.Model(&Product{}).Where(product).First(&products)
+	err = db.Model(&Product{}).Where(product).First(&products).Error
+
+	if err != nil {
+		return nil, Error{Text: err.Error(), Code: DBError}
+	}
+
 	return &products, err
 }
 
@@ -60,24 +68,23 @@ func DeleteProduct(prod *Product) error {
 	prodName := prod.ProductName
 
 	if _, err := GetProduct(prod); err != nil {
-		return err
+		return Error{Text: err.Error(), Code: DBError}
 	}
 
 	db, err := dbutil.DBClient()
 
 	if err != nil {
-		glog.Errorln(err.Error())
-		return err
+		return Error{Text: err.Error(), Code: DBError}
 	}
 
 	if prodID != "" {
-		db.Delete(&Product{ProductID: prodID})
-		glog.Errorln(db.Error)
-		return db.Error
+		err = db.Delete(&Product{ProductID: prodID}).Error
 	} else if prodName != "" {
-		db.Delete(&Product{ProductName: prodName})
-		glog.Errorln(db.Error)
-		return db.Error
+		err = db.Delete(&Product{ProductName: prodName}).Error
+	}
+
+	if err != nil {
+		return Error{Text: err.Error(), Code: DBError}
 	}
 
 	// TODO need to delete related items in table `resource type` `alert rule` ...
@@ -88,15 +95,17 @@ func UpdateProduct(prod *Product) error {
 	db, err := dbutil.DBClient()
 
 	if err != nil {
-		glog.Errorln(err.Error())
-		return err
+		return Error{Text: err.Error(), Code: DBError}
 	}
 
 	if prod.ProductID != "" {
 		err = db.Model(prod).Where("product_id = ?", prod.ProductID).Update(prod).Error
-
 	} else if prod.ProductName != "" {
 		err = db.Model(prod).Where("product_name = ?", prod.ProductName).Update(prod).Error
+	}
+
+	if err != nil {
+		return Error{Text: err.Error(), Code: DBError}
 	}
 
 	return err

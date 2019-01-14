@@ -80,10 +80,10 @@ func GetSendPolicy(sendPolicy *SendPolicy) (*SendPolicy, error) {
 
 	err = db.Error
 	if err != nil {
-		return &policy, Error{Text: err.Error(), Code: DBError}
-	} else {
-		return &policy, nil
+		return nil, Error{Text: err.Error(), Code: DBError}
 	}
+
+	return &policy, nil
 }
 
 func UpdateSendPolicySilenceRule(sendPolicy *SendPolicy) error {

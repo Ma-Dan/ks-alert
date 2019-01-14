@@ -22,7 +22,7 @@ func UpdateSuggestion(suggestion *Suggestion) (*Suggestion, error) {
 	db, err := dbutil.DBClient()
 
 	if err != nil {
-		return nil, err
+		return nil, Error{Text: err.Error(), Code: DBError}
 	}
 
 	// may be there is no suggestions
@@ -61,7 +61,7 @@ func UpdateSuggestion(suggestion *Suggestion) (*Suggestion, error) {
 	err = db.Exec(sql).Error
 
 	if err != nil {
-		return nil, err
+		return nil, Error{Text: err.Error(), Code: DBError}
 	}
 
 	return suggestion, nil
@@ -72,7 +72,7 @@ func GetSuggestion(sugSpec *Suggestion) (*Suggestion, error) {
 	db, err := dbutil.DBClient()
 
 	if err != nil {
-		return nil, err
+		return nil, Error{Text: err.Error(), Code: DBError}
 	}
 
 	// get suggestion by alert_config_id and alert_rule_id and resource_id
@@ -81,7 +81,7 @@ func GetSuggestion(sugSpec *Suggestion) (*Suggestion, error) {
 	//err = db.Debug().Raw("SELECT * from suggestions WHERE alert_config_id=? AND alert_rule_id=? AND resource_id=?",
 	//	sugSpec.AlertConfigID, sugSpec.AlertRuleID, sugSpec.ResourceID).Scan(&suggestion).Error
 
-	b := db.Debug().Where("alert_config_id=? AND alert_rule_id=? AND resource_id=?",
+	b := db.Where("alert_config_id=? AND alert_rule_id=? AND resource_id=?",
 		sugSpec.AlertConfigID, sugSpec.AlertRuleID, sugSpec.ResourceID).First(&suggestion).RecordNotFound()
 
 	if b {
@@ -90,7 +90,7 @@ func GetSuggestion(sugSpec *Suggestion) (*Suggestion, error) {
 
 	err = db.Error
 	if err != nil {
-		return nil, err
+		return nil, Error{Text: err.Error(), Code: DBError}
 	}
 
 	return &suggestion, nil
