@@ -246,10 +246,17 @@ func (rtAlert *RuntimeAlertConfig) evaluteAlertInPipeline(metricByRule *metric.R
 			// 2. insert an record(fired alert record or recovery record)
 			// insert alert recovery item into `alert_histories`
 			// `tvs` will be send to user and insert into `alert_histories` if alert fired
-			ah := rtAlert.makeAlertHistoryItem(rule, resName, lastEvalutedTime, tvs, isRecovery)
-			_, err := models.CreateAlertHistory(ah)
-			if err != nil {
-				glog.Errorln(err.Error())
+			var ah *models.AlertHistory
+			if isFired || isRecovery {
+				ah = rtAlert.makeAlertHistoryItem(rule, resName, lastEvalutedTime, tvs, isRecovery)
+				_, err := models.CreateAlertHistory(ah)
+				if err != nil {
+					glog.Errorln(err.Error())
+					continue
+				}
+			}
+
+			if !isFired {
 				continue
 			}
 
