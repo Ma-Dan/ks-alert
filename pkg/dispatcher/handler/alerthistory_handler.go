@@ -7,6 +7,6 @@ import (
 
 type AlertHistoryHandler struct{}
 
-func (server AlertHistoryHandler) GetAlertHistory(ctx context.Context, alertHistory *pb.AlertHistoryRequest) (*pb.AlertHistoryResponse, error) {
+func (h AlertHistoryHandler) GetAlertHistory(ctx context.Context, alertHistory *pb.AlertHistoryRequest) (*pb.AlertHistoryResponse, error) {
 	return nil, nil
 }

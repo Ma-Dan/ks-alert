@@ -2,11 +2,9 @@ package handler
 
 import (
 	"context"
-	"errors"
 	"github.com/carmanzhang/ks-alert/pkg/models"
 	"github.com/carmanzhang/ks-alert/pkg/pb"
 	"github.com/carmanzhang/ks-alert/pkg/utils/jsonutil"
-	"k8s.io/klog/glog"
 	"time"
 )
 
@@ -17,36 +15,35 @@ type SuggestionHandler struct{}
 
 func (server SuggestionHandler) UpdateSuggestion(ctx context.Context, suggestion *pb.Suggestion) (*pb.SuggestionResponse, error) {
 	if suggestion.AlertConfigId == "" || suggestion.AlertRuleId == "" || suggestion.ResourceId == "" {
-		return nil, errors.New("alert config id and alert rule id and resource id must be specified")
+		return getSuggestionResponse(nil, models.Error{
+			Code: models.InvalidParam,
+			Text: "alert config id and alert rule id and resource id must be specified",
+		}), nil
 	}
 
 	sug, err := models.UpdateSuggestion(ConvertPB2Suggestion(suggestion))
 
-	if err != nil {
-		glog.Errorln(err.Error())
-		return nil, err
-	}
+	return getSuggestionResponse(sug, err), nil
+}
 
-	return &pb.SuggestionResponse{
-		Suggestion: ConvertSuggestion2PB(sug),
-	}, nil
+func getSuggestionResponse(suggestion *models.Suggestion, err error) *pb.SuggestionResponse {
+	arg := ConvertSuggestion2PB(suggestion)
+	var respon = pb.SuggestionResponse{Suggestion: arg}
+	respon.Error = ErrorWrapper(err)
+
+	return &respon
 }
 
 func (server SuggestionHandler) GetSuggestion(ctx context.Context, suggestion *pb.Suggestion) (*pb.SuggestionResponse, error) {
 	if suggestion.AlertConfigId == "" || suggestion.AlertRuleId == "" || suggestion.ResourceId == "" {
-		return nil, errors.New("alert config id and alert rule id and resource id must be specified")
+		return getSuggestionResponse(nil, models.Error{
+			Code: models.InvalidParam,
+			Text: "alert config id and alert rule id and resource id must be specified",
+		}), nil
 	}
 
 	sug, err := models.GetSuggestion(ConvertPB2Suggestion(suggestion))
-
-	if err != nil {
-		glog.Errorln(err.Error())
-		return nil, err
-	}
-
-	return &pb.SuggestionResponse{
-		Suggestion: ConvertSuggestion2PB(sug),
-	}, nil
+	return getSuggestionResponse(sug, err), nil
 }
 
 func ConvertSuggestion2PB(s *models.Suggestion) *pb.Suggestion {

@@ -17,7 +17,7 @@ import (
 // alert
 type AlertHandler struct{}
 
-func (server AlertHandler) CreateAlertConfig(ctx context.Context, pbac *pb.AlertConfig) (*pb.AlertConfigResponse, error) {
+func (h AlertHandler) CreateAlertConfig(ctx context.Context, pbac *pb.AlertConfig) (*pb.AlertConfigResponse, error) {
 
 	ac := ConvertPB2AlertConfig(pbac)
 	// the host(node) which this alert congfig whill be executed
@@ -75,7 +75,7 @@ func getAlertConfigResponse(v interface{}) *pb.AlertConfigResponse {
 	return respon
 }
 
-func (server AlertHandler) DeleteAlertConfig(ctx context.Context, alertConfigSpec *pb.AlertConfigSpec) (*pb.AlertConfigResponse, error) {
+func (h AlertHandler) DeleteAlertConfig(ctx context.Context, alertConfigSpec *pb.AlertConfigSpec) (*pb.AlertConfigResponse, error) {
 	acID := alertConfigSpec.AlertConfigId
 	hostID, err := models.GetAlertConfigBindingHost(acID)
 	if err != nil {
@@ -101,7 +101,7 @@ func (server AlertHandler) DeleteAlertConfig(ctx context.Context, alertConfigSpe
 	return respon, nil
 }
 
-func (server AlertHandler) UpdateAlertConfig(ctx context.Context, alertConfig *pb.AlertConfig) (*pb.AlertConfigResponse, error) {
+func (h AlertHandler) UpdateAlertConfig(ctx context.Context, alertConfig *pb.AlertConfig) (*pb.AlertConfigResponse, error) {
 	ac := ConvertPB2AlertConfig(alertConfig)
 
 	v, err := DoTransactionAction(ac, AlertConfig, MethodUpdate)
@@ -134,7 +134,7 @@ func (server AlertHandler) UpdateAlertConfig(ctx context.Context, alertConfig *p
 	return respon, nil
 }
 
-func (server AlertHandler) GetAlertConfig(ctx context.Context, alertConfigSpec *pb.AlertConfigSpec) (*pb.AlertConfigResponse, error) {
+func (h AlertHandler) GetAlertConfig(ctx context.Context, alertConfigSpec *pb.AlertConfigSpec) (*pb.AlertConfigResponse, error) {
 	ac := models.AlertConfig{AlertConfigID: alertConfigSpec.AlertConfigId}
 	v, err := DoTransactionAction(&ac, AlertConfig, MethodGet)
 	respon := getAlertConfigResponse(v)

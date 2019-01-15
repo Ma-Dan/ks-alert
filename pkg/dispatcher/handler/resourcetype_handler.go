@@ -14,51 +14,33 @@ type ResourceTypeHandler struct{}
 func (server ResourceTypeHandler) CreateResourceType(ctx context.Context, resourceType *pb.ResourceType) (*pb.ResourceTypeResponse, error) {
 
 	if resourceType.ProductId == "" {
-		return &pb.ResourceTypeResponse{
-			Error: &pb.Error{
-
-				Text: "product_id must be specified",
-			},
-		}, nil
+		return getResourceTypeResponse(nil, models.Error{
+			Code: models.InvalidParam,
+			Text: "product_id must be specified"}), nil
 	}
 
 	prod, err := models.CreateResourceType(ConvertPB2ResourceType(resourceType))
+	return getResourceTypeResponse(prod, err), nil
+}
 
-	if err != nil {
-		return nil, err
-	}
+func getResourceTypeResponse(resourceType *models.ResourceType, err error) *pb.ResourceTypeResponse {
+	arg := ConvertResourceType2PB(resourceType)
+	var respon = pb.ResourceTypeResponse{ResourceType: arg}
+	respon.Error = ErrorWrapper(err)
 
-	return &pb.ResourceTypeResponse{
-		ResourceType: ConvertResourceType2PB(prod),
-		Error: &pb.Error{
-
-			Text: "success",
-		},
-	}, nil
+	return &respon
 }
 
 func (server ResourceTypeHandler) UpdateResourceType(ctx context.Context, resourceType *pb.ResourceType) (*pb.ResourceTypeResponse, error) {
 	if resourceType.ProductId == "" {
-		return &pb.ResourceTypeResponse{
-			Error: &pb.Error{
-
-				Text: "product_id must be specified",
-			},
-		}, nil
+		return getResourceTypeResponse(nil, models.Error{
+			Code: models.InvalidParam,
+			Text: "product_id must be specified"}), nil
 	}
 
 	err := models.UpdateResourceType(ConvertPB2ResourceType(resourceType))
 
-	if err != nil {
-		return nil, err
-	}
-
-	return &pb.ResourceTypeResponse{
-		Error: &pb.Error{
-
-			Text: "success",
-		},
-	}, nil
+	return getResourceTypeResponse(nil, err), nil
 }
 
 func (server ResourceTypeHandler) GetResourceType(ctx context.Context, resourceTypeSpec *pb.ResourceTypeSpec) (*pb.ResourceTypeResponse, error) {
@@ -67,41 +49,17 @@ func (server ResourceTypeHandler) GetResourceType(ctx context.Context, resourceT
 	prodID := resourceTypeSpec.ProductId
 	typeName := resourceTypeSpec.ResourceTypeName
 
-	var pErr = &pb.Error{
-
-		Text: "success",
-	}
-
-	var resourceType *models.ResourceType
-
 	if typeID != "" {
 		tp, err := models.GetResourceType(&models.ResourceType{ResourceTypeID: typeID})
-		if err != nil {
-			pErr = &pb.Error{
-
-				Text: err.Error(),
-			}
-		}
-		resourceType = tp
+		return getResourceTypeResponse(tp, err), nil
 	} else if prodID != "" && typeName != "" {
 		tp, err := models.GetResourceType(&models.ResourceType{ProductID: prodID, ResourceTypeName: typeName})
-		if err != nil {
-			pErr = &pb.Error{
-
-				Text: err.Error(),
-			}
-		}
-		resourceType = tp
+		return getResourceTypeResponse(tp, err), nil
 	} else {
-		pErr = &pb.Error{
-			Text: "invalid param",
-		}
+		return getResourceTypeResponse(nil, models.Error{
+			Code: models.InvalidParam,
+			Text: "invalid params"}), nil
 	}
-
-	return &pb.ResourceTypeResponse{
-		Error:        pErr,
-		ResourceType: ConvertResourceType2PB(resourceType),
-	}, nil
 }
 
 func (server ResourceTypeHandler) DeleteResourceType(ctx context.Context, resourceTypeSpec *pb.ResourceTypeSpec) (*pb.ResourceTypeResponse, error) {
@@ -110,36 +68,18 @@ func (server ResourceTypeHandler) DeleteResourceType(ctx context.Context, resour
 	prodID := resourceTypeSpec.ProductId
 	typeName := resourceTypeSpec.ResourceTypeName
 
-	var pErr = &pb.Error{
-
-		Text: "success",
-	}
+	var err error
 
 	if typeID != "" {
-		err := models.DeleteResourceType(&models.ResourceType{ResourceTypeID: typeID})
-		if err != nil {
-			pErr = &pb.Error{
-
-				Text: err.Error(),
-			}
-		}
+		err = models.DeleteResourceType(&models.ResourceType{ResourceTypeID: typeID})
 	} else if prodID != "" && typeName != "" {
-		err := models.DeleteResourceType(&models.ResourceType{ProductID: prodID, ResourceTypeName: typeName})
-		if err != nil {
-			pErr = &pb.Error{
-
-				Text: err.Error(),
-			}
-		}
+		err = models.DeleteResourceType(&models.ResourceType{ProductID: prodID, ResourceTypeName: typeName})
 	} else {
-		pErr = &pb.Error{
-			Text: "invalid param",
-		}
+		err = models.Error{
+			Code: models.InvalidParam,
+			Text: "invalid params"}
 	}
-
-	return &pb.ResourceTypeResponse{
-		Error: pErr,
-	}, nil
+	return getResourceTypeResponse(nil, err), nil
 }
 
 func ConvertPB2ResourceType(pbPrd *pb.ResourceType) *models.ResourceType {

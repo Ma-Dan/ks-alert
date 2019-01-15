@@ -10,7 +10,7 @@ import (
 type AlertRuleHandler struct{}
 
 // alert rule
-func (server AlertRuleHandler) CreateAlertRule(ctx context.Context, ruleGroup *pb.AlertRuleGroup) (*pb.AlertRuleGroupResponse, error) {
+func (h AlertRuleHandler) CreateAlertRule(ctx context.Context, ruleGroup *pb.AlertRuleGroup) (*pb.AlertRuleGroupResponse, error) {
 	v, err := DoTransactionAction(ConvertPB2AlertRuleGroup(ruleGroup), RuleGroup, MethodCreate)
 	respon := getAlertRuleGroupResponse(v, err)
 	return respon, nil
@@ -30,14 +30,14 @@ func getAlertRuleGroupResponse(v interface{}, err error) *pb.AlertRuleGroupRespo
 	return &respon
 }
 
-func (server AlertRuleHandler) UpdateAlertRule(ctx context.Context, ruleGroup *pb.AlertRuleGroup) (*pb.AlertRuleGroupResponse, error) {
+func (h AlertRuleHandler) UpdateAlertRule(ctx context.Context, ruleGroup *pb.AlertRuleGroup) (*pb.AlertRuleGroupResponse, error) {
 	v, err := DoTransactionAction(ConvertPB2AlertRuleGroup(ruleGroup), RuleGroup, MethodUpdate)
 
 	respon := getAlertRuleGroupResponse(v, err)
 	return respon, nil
 }
 
-func (server AlertRuleHandler) GetAlertRule(ctx context.Context, alertRuleSpec *pb.AlertRuleGroupSpec) (*pb.AlertRuleGroupResponse, error) {
+func (h AlertRuleHandler) GetAlertRule(ctx context.Context, alertRuleSpec *pb.AlertRuleGroupSpec) (*pb.AlertRuleGroupResponse, error) {
 
 	ruleGroup := models.AlertRuleGroup{
 		AlertRuleGroupID: alertRuleSpec.AlertRuleGroupId,
@@ -51,7 +51,7 @@ func (server AlertRuleHandler) GetAlertRule(ctx context.Context, alertRuleSpec *
 	return respon, nil
 }
 
-func (server AlertRuleHandler) DeleteAlertRule(ctx context.Context, alertRuleSpec *pb.AlertRuleGroupSpec) (*pb.AlertRuleGroupResponse, error) {
+func (h AlertRuleHandler) DeleteAlertRule(ctx context.Context, alertRuleSpec *pb.AlertRuleGroupSpec) (*pb.AlertRuleGroupResponse, error) {
 	ruleGroup := models.AlertRuleGroup{
 		AlertRuleGroupID: alertRuleSpec.AlertRuleGroupId,
 		ResourceTypeID:   alertRuleSpec.ResourceTypeId,

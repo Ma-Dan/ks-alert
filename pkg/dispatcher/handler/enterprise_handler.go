@@ -10,107 +10,38 @@ import (
 type EnterpriseHandler struct{}
 
 // enterprise
-func (server EnterpriseHandler) CreateEnterprise(ctx context.Context, pbEnt *pb.Enterprise) (*pb.EnterpriseResponse, error) {
+func (h EnterpriseHandler) CreateEnterprise(ctx context.Context, pbEnt *pb.Enterprise) (*pb.EnterpriseResponse, error) {
 	enterprise, err := models.CreateEnterprise(ConvertPB2Enterprise(pbEnt))
-
-	if err != nil {
-		return nil, err
-	}
-
-	return &pb.EnterpriseResponse{
-		Enterprise: ConvertEnterprise2PB(enterprise),
-		Error: &pb.Error{
-			Text: "success",
-		},
-	}, nil
+	return getEnterpriseResponse(enterprise, err), nil
 }
 
-func (server EnterpriseHandler) DeleteEnterprise(ctx context.Context, entSpec *pb.EnterpriseSpec) (*pb.EnterpriseResponse, error) {
+func getEnterpriseResponse(enterprise *models.Enterprise, err error) *pb.EnterpriseResponse {
+	arg := ConvertEnterprise2PB(enterprise)
+
+	var respon = pb.EnterpriseResponse{Enterprise: arg}
+	respon.Error = ErrorWrapper(err)
+
+	return &respon
+}
+
+func (h EnterpriseHandler) DeleteEnterprise(ctx context.Context, entSpec *pb.EnterpriseSpec) (*pb.EnterpriseResponse, error) {
 	entID := entSpec.GetEnterpriseId()
 	entName := entSpec.GetEnterpriseName()
-
-	var pErr *pb.Error
-
-	if entID == "" && entName == "" {
-		pErr = &pb.Error{
-			Text: "invalid param",
-		}
-
-		return &pb.EnterpriseResponse{
-			Error: pErr,
-		}, nil
-	}
-
 	err := models.DeleteEnterprise(&models.Enterprise{EnterpriseName: entName, EnterpriseID: entID})
-
-	if err != nil {
-		pErr = &pb.Error{
-			Text: err.Error(),
-		}
-	} else {
-		pErr = &pb.Error{
-			Text: "success",
-		}
-	}
-
-	return &pb.EnterpriseResponse{
-		Error: pErr,
-	}, nil
+	return getEnterpriseResponse(nil, err), nil
 }
 
-func (server EnterpriseHandler) UpdateEnterprise(ctx context.Context, pbEnt *pb.Enterprise) (*pb.EnterpriseResponse, error) {
+func (h EnterpriseHandler) UpdateEnterprise(ctx context.Context, pbEnt *pb.Enterprise) (*pb.EnterpriseResponse, error) {
 	ent := ConvertPB2Enterprise(pbEnt)
 	err := models.UpdateEnterprise(ent)
-
-	if err != nil {
-		return &pb.EnterpriseResponse{
-			Error: &pb.Error{
-				Text: err.Error(),
-			},
-		}, err
-	}
-
-	return &pb.EnterpriseResponse{
-		Error: &pb.Error{
-			Text: "success",
-		},
-	}, nil
-
-	return nil, nil
+	return getEnterpriseResponse(nil, err), nil
 }
-func (server EnterpriseHandler) GetEnterprise(ctx context.Context, entSpec *pb.EnterpriseSpec) (*pb.EnterpriseResponse, error) {
+
+func (h EnterpriseHandler) GetEnterprise(ctx context.Context, entSpec *pb.EnterpriseSpec) (*pb.EnterpriseResponse, error) {
 	entID := entSpec.GetEnterpriseId()
 	entName := entSpec.GetEnterpriseName()
-
-	var pErr *pb.Error
-
-	if entID == "" && entName == "" {
-		pErr = &pb.Error{
-			Text: "invalid param",
-		}
-
-		return &pb.EnterpriseResponse{
-			Error: pErr,
-		}, nil
-	}
-
 	ent, err := models.GetEnterprise(&models.Enterprise{EnterpriseName: entName, EnterpriseID: entID})
-
-	if err != nil {
-		pErr = &pb.Error{
-			Text: err.Error(),
-		}
-	} else {
-		pErr = &pb.Error{
-			Text: "success",
-		}
-	}
-
-	return &pb.EnterpriseResponse{
-		Error:      pErr,
-		Enterprise: ConvertEnterprise2PB(ent),
-	}, nil
-	return nil, nil
+	return getEnterpriseResponse(ent, err), nil
 }
 
 func ConvertPB2Enterprise(pbEnt *pb.Enterprise) *models.Enterprise {
@@ -129,6 +60,9 @@ func ConvertPB2Enterprise(pbEnt *pb.Enterprise) *models.Enterprise {
 }
 
 func ConvertEnterprise2PB(enp *models.Enterprise) *pb.Enterprise {
+	if enp == nil {
+		return nil
+	}
 	pbEnt := pb.Enterprise{
 		EnterpriseId:   enp.EnterpriseID,
 		EnterpriseName: enp.EnterpriseName,
