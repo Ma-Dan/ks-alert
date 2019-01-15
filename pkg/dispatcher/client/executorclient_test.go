@@ -4,12 +4,13 @@ import (
 	"context"
 	"fmt"
 	"github.com/carmanzhang/ks-alert/pkg/pb"
+	"github.com/smartystreets/goconvey/convey"
 	"testing"
 	"time"
 )
 
 func TestGetExecutorGrpcClient(t *testing.T) {
-	Convey("test get executor grpc client", t, func() {
+	convey.Convey("test get executor grpc client", t, func() {
 		conn, err := GetExecutorGrpcConn("127.0.0.1:50001")
 		if err != nil {
 			panic(err)

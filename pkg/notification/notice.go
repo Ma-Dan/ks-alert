@@ -16,6 +16,7 @@ type Notice struct {
 	MaxReSendCount        uint32               `json:"max_resend_count"`
 	CurrentReSendInterval uint32               `json:"current_resend_interval"`
 	NextReSendInterval    uint32               `json:"next_resend_interval"`
+	SendNoticeAt          time.Time            `json:"send_notice_at"`
 	FiredAlertDurations   *FiredAlertDurations `json:"fired_alert_durations"`
 }
 
@@ -42,6 +43,7 @@ type CompactedNotice struct {
 	MaxReSendCount        uint32               `json:"max_resend_count"`
 	CurrentReSendInterval uint32               `json:"current_resend_interval"`
 	NextReSendInterval    uint32               `json:"next_resend_interval"`
+	SendNoticeAt          time.Time            `json:"send_notice_at"`
 	FiredAlertDurations   *FiredAlertDurations `json:"fired_alert_durations"`
 }
 

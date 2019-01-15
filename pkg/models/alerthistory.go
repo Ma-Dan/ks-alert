@@ -38,11 +38,11 @@ type AlertHistory struct {
 	AlertFiredAt    time.Time `gorm:""`
 	AlertRecoveryAt time.Time `gorm:""`
 
-	RepeatSendType            uint32 `gorm:"type:varchar(10);not null;"`
-	CurrentRepeatSendInterval uint32 `gorm:"type:int unsigned;not null;"`
-	CumulateRepeatSendCount   uint32 `gorm:"type:int unsigned;not null;"`
-	InitRepeatSendInterval    uint32 `gorm:"type:int unsigned;not null;"`
-	MaxRepeatSendCount        uint32 `gorm:"type:int unsigned;not null;"`
+	RepeatSendType          uint32 `gorm:"type:varchar(10);not null;"`
+	NextRepeatSendInterval  uint32 `gorm:"type:int unsigned;not null;"`
+	CumulateRepeatSendCount uint32 `gorm:"type:int unsigned;not null;"`
+	InitRepeatSendInterval  uint32 `gorm:"type:int unsigned;not null;"`
+	MaxRepeatSendCount      uint32 `gorm:"type:int unsigned;not null;"`
 
 	RequestNotificationStatus string    `gorm:"type:text;"`
 	NotificationSendAt        time.Time `gorm:""`
@@ -86,13 +86,15 @@ func GetAlertHistory(ah *AlertHistory) ([]*AlertHistory, error) {
 	return als, nil
 }
 
-func UpdateAlertSendStatus(ah *AlertHistory, sendStatus string) error {
+func UpdateAlertHistory(ah *AlertHistory) error {
+
 	db, err := dbutil.DBClient()
 	if err != nil {
 		return Error{Text: err.Error(), Code: DBError}
 	}
 
-	err = db.Model(ah).Where("alert_history_id = ?", ah.AlertHistoryID).Update("request_notification_status", sendStatus).Error
+	//err = db.Model(ah).Where("alert_history_id = ?", ah.AlertHistoryID).Update("request_notification_status", sendStatus).Error
+	err = db.Save(ah).Error
 
 	if err != nil {
 		return Error{Text: err.Error(), Code: DBError}

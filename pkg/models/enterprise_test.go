@@ -1,6 +1,7 @@
 package models
 
 import (
+	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 	"time"
 )
