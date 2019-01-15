@@ -4,14 +4,13 @@ import (
 	"context"
 	"github.com/carmanzhang/ks-alert/pkg/models"
 	"github.com/carmanzhang/ks-alert/pkg/pb"
-	"github.com/golang/glog"
 	"time"
 )
 
 type AlertRuleHandler struct{}
 
 // alert rule
-func (server AlertRuleHandler) CreateAlertRule(ctx context.Context, ruleGroup *pb.AlertRuleGroup) (*pb.AlertRuleGroupResponse, error) {
+func (h AlertRuleHandler) CreateAlertRule(ctx context.Context, ruleGroup *pb.AlertRuleGroup) (*pb.AlertRuleGroupResponse, error) {
 	v, err := DoTransactionAction(ConvertPB2AlertRuleGroup(ruleGroup), RuleGroup, MethodCreate)
 	respon := getAlertRuleGroupResponse(v, err)
 	return respon, nil
@@ -26,25 +25,19 @@ func getAlertRuleGroupResponse(v interface{}, err error) *pb.AlertRuleGroupRespo
 	arg := ConvertAlertRuleGroup2PB(ruleGroup)
 
 	var respon = pb.AlertRuleGroupResponse{AlertRuleGroup: arg}
-
-	if err != nil {
-		glog.Errorln(err.Error())
-		respon.Error = ErrorConverter(err)
-	} else {
-		respon.Error = ErrorConverter(*models.NewError(0, models.Success))
-	}
+	respon.Error = ErrorWrapper(err)
 
 	return &respon
 }
 
-func (server AlertRuleHandler) UpdateAlertRule(ctx context.Context, ruleGroup *pb.AlertRuleGroup) (*pb.AlertRuleGroupResponse, error) {
+func (h AlertRuleHandler) UpdateAlertRule(ctx context.Context, ruleGroup *pb.AlertRuleGroup) (*pb.AlertRuleGroupResponse, error) {
 	v, err := DoTransactionAction(ConvertPB2AlertRuleGroup(ruleGroup), RuleGroup, MethodUpdate)
 
 	respon := getAlertRuleGroupResponse(v, err)
 	return respon, nil
 }
 
-func (server AlertRuleHandler) GetAlertRule(ctx context.Context, alertRuleSpec *pb.AlertRuleGroupSpec) (*pb.AlertRuleGroupResponse, error) {
+func (h AlertRuleHandler) GetAlertRule(ctx context.Context, alertRuleSpec *pb.AlertRuleGroupSpec) (*pb.AlertRuleGroupResponse, error) {
 
 	ruleGroup := models.AlertRuleGroup{
 		AlertRuleGroupID: alertRuleSpec.AlertRuleGroupId,
@@ -58,7 +51,7 @@ func (server AlertRuleHandler) GetAlertRule(ctx context.Context, alertRuleSpec *
 	return respon, nil
 }
 
-func (server AlertRuleHandler) DeleteAlertRule(ctx context.Context, alertRuleSpec *pb.AlertRuleGroupSpec) (*pb.AlertRuleGroupResponse, error) {
+func (h AlertRuleHandler) DeleteAlertRule(ctx context.Context, alertRuleSpec *pb.AlertRuleGroupSpec) (*pb.AlertRuleGroupResponse, error) {
 	ruleGroup := models.AlertRuleGroup{
 		AlertRuleGroupID: alertRuleSpec.AlertRuleGroupId,
 		ResourceTypeID:   alertRuleSpec.ResourceTypeId,

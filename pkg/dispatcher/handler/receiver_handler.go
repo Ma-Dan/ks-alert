@@ -4,7 +4,6 @@ import (
 	"context"
 	"github.com/carmanzhang/ks-alert/pkg/models"
 	"github.com/carmanzhang/ks-alert/pkg/pb"
-	"github.com/golang/glog"
 	"time"
 )
 
@@ -29,12 +28,7 @@ func getReceiverGroupResponse(v interface{}, err error) *pb.ReceiverGroupRespons
 	rg := ConvertReceiverGroup2PB(resGroup)
 
 	var respon = pb.ReceiverGroupResponse{ReceiverGroup: rg}
-	if err != nil {
-		glog.Errorln(err.Error())
-		respon.Error = ErrorConverter(err)
-	} else {
-		respon.Error = ErrorConverter(*models.NewError(0, models.Success))
-	}
+	respon.Error = ErrorWrapper(err)
 	return &respon
 }
 

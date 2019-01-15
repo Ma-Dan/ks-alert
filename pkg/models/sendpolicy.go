@@ -8,15 +8,16 @@ import (
 // use to control time to send fired alert to user or webhooks(use webhook and system wehhook)
 type SendPolicy struct {
 	//SendPolicyID              string    `gorm:"primary_key"`
-	ResourceID                string    `gorm:"primary_key"`
-	AlertRuleID               string    `gorm:"primary_key"`
-	CurrentRepeatSendInterval uint32    `gorm:"type:int unsigned;not null;"`
-	CumulateRepeatSendCount   uint32    `gorm:"type:int unsigned;not null;"`
-	CurrentRepeatSendAt       time.Time `gorm:"not null;"`
-	SilenceStartAt            time.Time `gorm:""`
-	SilenceEndAt              time.Time `gorm:""`
-	CreatedAt                 time.Time `gorm:"not null;"`
-	UpdatedAt                 time.Time `gorm:"not null;"`
+	ResourceID              string    `gorm:"primary_key"`
+	AlertRuleID             string    `gorm:"primary_key"`
+	InitRepeatSendInterval  uint32    `gorm:"type:int unsigned;not null;"`
+	NextRepeatSendInterval  uint32    `gorm:"type:int unsigned;not null;"`
+	CumulateRepeatSendCount uint32    `gorm:"type:int unsigned;not null;"`
+	CurrentRepeatSendAt     time.Time `gorm:"not null;"`
+	SilenceStartAt          time.Time `gorm:""`
+	SilenceEndAt            time.Time `gorm:""`
+	CreatedAt               time.Time `gorm:"not null;"`
+	UpdatedAt               time.Time `gorm:"not null;"`
 }
 
 func CreateSendPolicy(sendPolicy *SendPolicy) error {
@@ -80,10 +81,10 @@ func GetSendPolicy(sendPolicy *SendPolicy) (*SendPolicy, error) {
 
 	err = db.Error
 	if err != nil {
-		return &policy, Error{Text: err.Error(), Code: DBError}
-	} else {
-		return &policy, nil
+		return nil, Error{Text: err.Error(), Code: DBError}
 	}
+
+	return &policy, nil
 }
 
 func UpdateSendPolicySilenceRule(sendPolicy *SendPolicy) error {

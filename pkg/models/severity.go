@@ -5,7 +5,6 @@ import (
 	"github.com/carmanzhang/ks-alert/pkg/pb"
 	"github.com/carmanzhang/ks-alert/pkg/utils/dbutil"
 	"github.com/carmanzhang/ks-alert/pkg/utils/idutil"
-	"github.com/pkg/errors"
 	"time"
 )
 
@@ -23,7 +22,7 @@ func CreateSeverity(severity *Severity) (*Severity, error) {
 	db, err := dbutil.DBClient()
 
 	if err != nil {
-		return nil, err
+		return nil, Error{Text: err.Error(), Code: DBError}
 	}
 
 	severity.SeverityID = idutil.GetUuid36("severity-")
@@ -31,7 +30,7 @@ func CreateSeverity(severity *Severity) (*Severity, error) {
 	err = db.Model(&Severity{}).Create(severity).Error
 
 	if err != nil {
-		return nil, err
+		return nil, Error{Text: err.Error(), Code: DBError}
 	}
 
 	return severity, nil
@@ -42,7 +41,7 @@ func UpdateSeverity(severity *Severity) (*Severity, error) {
 	db, err := dbutil.DBClient()
 
 	if err != nil {
-		return nil, err
+		return nil, Error{Text: err.Error(), Code: DBError}
 	}
 
 	sql := fmt.Sprintf("UPDATE severities SET severity_en='%s',severity_ch='%s',"+
@@ -54,9 +53,9 @@ func UpdateSeverity(severity *Severity) (*Severity, error) {
 
 	if err := db.Exec(sql).Error; err != nil {
 		if db.RecordNotFound() {
-			return nil, errors.New("record not found")
+			return nil, Error{Text: "record not found", Code: DBError}
 		}
-		return nil, err
+		return nil, Error{Text: err.Error(), Code: DBError}
 	}
 
 	return severity, nil
@@ -67,13 +66,13 @@ func DeleteSeverity(sevSpec *pb.SeveritySpec) (*Severity, error) {
 	db, err := dbutil.DBClient()
 
 	if err != nil {
-		return nil, err
+		return nil, Error{Text: err.Error(), Code: DBError}
 	}
 
-	err = db.Debug().Raw("DELETE from severities WHERE severity_id=?", sevSpec.SeverityId).Error
+	err = db.Raw("DELETE from severities WHERE severity_id=?", sevSpec.SeverityId).Error
 
 	if err != nil {
-		return nil, err
+		return nil, Error{Text: err.Error(), Code: DBError}
 	}
 
 	return nil, nil
@@ -84,7 +83,7 @@ func GetSeverity(sevSpec *pb.SeveritySpec) (*[]Severity, error) {
 	db, err := dbutil.DBClient()
 
 	if err != nil {
-		return nil, err
+		return nil, Error{Text: err.Error(), Code: DBError}
 	}
 
 	// get severity by severity_id
@@ -92,10 +91,10 @@ func GetSeverity(sevSpec *pb.SeveritySpec) (*[]Severity, error) {
 	if sevSpec.SeverityId != "" {
 		var sev Severity
 		// db.Raw("SELECT name, age FROM users WHERE name = ?", 3).Scan(&result)
-		err = db.Debug().Raw("SELECT * from severities WHERE severity_id=?", sevSpec.SeverityId).Scan(&sev).Error
+		err = db.Raw("SELECT * from severities WHERE severity_id=?", sevSpec.SeverityId).Scan(&sev).Error
 
 		if err != nil {
-			return nil, err
+			return nil, Error{Text: err.Error(), Code: DBError}
 		}
 
 		if sev.SeverityID != "" {
@@ -106,10 +105,10 @@ func GetSeverity(sevSpec *pb.SeveritySpec) (*[]Severity, error) {
 	if sevSpec.ProductId != "" {
 		var sevs []Severity
 		//err = db.Debug().Exec("SELECT * from severities WHERE (product_id = ?)", sevSpec.ProductId).Find(&sevs).Error
-		err = db.Debug().Find(&sevs, "product_id = ?", sevSpec.ProductId).Error
+		err = db.Find(&sevs, "product_id = ?", sevSpec.ProductId).Error
 
 		if err != nil {
-			return nil, err
+			return nil, Error{Text: err.Error(), Code: DBError}
 		}
 
 		severities = &sevs

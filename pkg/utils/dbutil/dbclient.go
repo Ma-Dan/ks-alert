@@ -2,6 +2,7 @@ package dbutil
 
 import (
 	"errors"
+	"github.com/carmanzhang/ks-alert/pkg/option"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
 )
@@ -9,18 +10,28 @@ import (
 // TODO need to support db connection pool
 var db *gorm.DB
 
-func init() {
-	var err error
-	//db, err = gorm.Open("mysql", "root:password@tcp(139.198.190.141:33306)/alert?charset=utf8&parseTime=True&loc=Local")
-	db, err = gorm.Open("mysql", "root:password@tcp(127.0.0.1:3306)/alert?charset=utf8&parseTime=True&loc=Local")
-	if err != nil {
-		panic(err)
-	}
-}
-
 func DBClient() (*gorm.DB, error) {
+	if db != nil {
+		return db, nil
+	}
+
+	var err error
+	user := *option.User
+	pwd := *option.Password
+	host := *option.MysqlHost
+	port := *option.MysqlPort
+	database := *option.Database
+
+	prefix := user + ":" + pwd + "@tcp(" + host + ":" + port + ")/" + database
+	db, err = gorm.Open("mysql", prefix+"?charset=utf8&parseTime=True&loc=Local")
+
+	if err != nil {
+		return nil, err
+	}
+
 	if db == nil {
 		return db, errors.New("db conection init failed")
 	}
+
 	return db, nil
 }

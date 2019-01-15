@@ -4,62 +4,43 @@ import (
 	"context"
 	"github.com/carmanzhang/ks-alert/pkg/models"
 	"github.com/carmanzhang/ks-alert/pkg/pb"
-	"github.com/pkg/errors"
 	"time"
 )
 
 type SilenceHandler struct{}
 
 // silence
-func (server SilenceHandler) CreateSilence(ctx context.Context, silence *pb.Silence) (*pb.SilenceResponse, error) {
+func (h SilenceHandler) CreateSilence(ctx context.Context, silence *pb.Silence) (*pb.SilenceResponse, error) {
 	err := models.CreateSendPolicy(ConvertSilence2SendPolicy(silence))
-	var respon = pb.SilenceResponse{}
-	if err != nil {
-		respon.Error = ErrorWrapper(err)
-	} else {
-		respon.Error = ErrorWrapper(errors.New("success"))
-	}
-	return &respon, nil
+	return getSilenceResponse(nil, err), nil
 }
 
-func (server SilenceHandler) DeleteSilence(ctx context.Context, silence *pb.Silence) (*pb.SilenceResponse, error) {
+func getSilenceResponse(severity *models.SendPolicy, err error) *pb.SilenceResponse {
+	arg := ConvertSendPolicy2Silence(severity)
+	var respon = pb.SilenceResponse{Silence: arg}
+	respon.Error = ErrorWrapper(err)
+
+	return &respon
+}
+
+func (h SilenceHandler) DeleteSilence(ctx context.Context, silence *pb.Silence) (*pb.SilenceResponse, error) {
 	sp := ConvertSilence2SendPolicy(silence)
 	sp.SilenceStartAt = time.Now()
 	sp.SilenceEndAt = time.Now()
 	err := models.CreateOrUpdateSendPolicy(sp)
-	var respon = pb.SilenceResponse{}
-	if err != nil {
-		respon.Error = ErrorWrapper(err)
-	} else {
-		respon.Error = ErrorWrapper(errors.New("success"))
-	}
-	return &respon, nil
+	return getSilenceResponse(nil, err), nil
 }
 
-func (server SilenceHandler) UpdateSilence(ctx context.Context, silence *pb.Silence) (*pb.SilenceResponse, error) {
+func (h SilenceHandler) UpdateSilence(ctx context.Context, silence *pb.Silence) (*pb.SilenceResponse, error) {
 	sp := ConvertSilence2SendPolicy(silence)
 	err := models.UpdateSendPolicySilenceRule(sp)
-	var respon = pb.SilenceResponse{}
-	if err != nil {
-		respon.Error = ErrorWrapper(err)
-	} else {
-		respon.Error = ErrorWrapper(errors.New("success"))
-	}
-	return &respon, nil
+	return getSilenceResponse(nil, err), nil
 }
 
-func (server SilenceHandler) GetSilence(ctx context.Context, silence *pb.Silence) (*pb.SilenceResponse, error) {
+func (h SilenceHandler) GetSilence(ctx context.Context, silence *pb.Silence) (*pb.SilenceResponse, error) {
 	sp := ConvertSilence2SendPolicy(silence)
 	sendPolicy, err := models.GetSendPolicy(sp)
-	silence = ConvertSendPolicy2Silence(sendPolicy)
-	var respon = pb.SilenceResponse{}
-	if err != nil {
-		respon.Error = ErrorWrapper(err)
-	} else {
-		respon.Silence = silence
-		respon.Error = ErrorWrapper(errors.New("success"))
-	}
-	return &respon, nil
+	return getSilenceResponse(sendPolicy, err), nil
 }
 
 func ConvertSilence2SendPolicy(sl *pb.Silence) *models.SendPolicy {

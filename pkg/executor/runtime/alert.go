@@ -20,7 +20,7 @@ import (
 	"time"
 )
 
-var olderTime = time.Date(0, 1, 1, 0, 0, 0, 0, time.UTC)
+var olderTime = time.Date(1, 1, 1, 0, 0, 0, 0, time.UTC)
 
 const (
 	MaxKeepAliveReportInterval = 3
@@ -74,6 +74,9 @@ func Action(ctx context.Context, msg *pb.Informer) error {
 
 	switch msg.Signal {
 	case pb.Informer_CREATE:
+		if _, ok := CachedRuntimeAlert.Map[msg.AlertConfigId]; ok {
+			return nil
+		}
 		// create alert by specifig alert config id within one goroutine
 		var rtAlert = &RuntimeAlertConfig{
 			SigCh:     make(chan pb.Informer_Signal),
@@ -240,8 +243,24 @@ func (rtAlert *RuntimeAlertConfig) evaluteAlertInPipeline(metricByRule *metric.R
 			ruleID := rule.AlertRuleID
 			isRecovery := rtAlert.updateAlertFiredStatus(resName, ruleID, isFired)
 
-			// 2. check it's the time for the fired alert is going to send
-			// get send policies (silence and repeat send policy) from db
+			// 2. insert an record(fired alert record or recovery record)
+			// insert alert recovery item into `alert_histories`
+			// `tvs` will be send to user and insert into `alert_histories` if alert fired
+			var ah *models.AlertHistory
+			if isFired || isRecovery {
+				ah = rtAlert.makeAlertHistoryItem(rule, resName, lastEvalutedTime, tvs, isRecovery)
+				_, err := models.CreateAlertHistory(ah)
+				if err != nil {
+					glog.Errorln(err.Error())
+					continue
+				}
+			}
+
+			if !isFired {
+				continue
+			}
+
+			// 3. get send policies (silence and repeat send policy) from db
 			resID := resNameMap[resName]
 			sendPolicy, err := models.GetOrCreateSendPolicy(&models.SendPolicy{AlertRuleID: rule.AlertRuleID, ResourceID: resID})
 			if err != nil {
@@ -249,42 +268,43 @@ func (rtAlert *RuntimeAlertConfig) evaluteAlertInPipeline(metricByRule *metric.R
 				continue
 			}
 
-			// 3. check repeat send policy satisfied, this policy may need to update
-			updatedPolicy := updateSendPolicy(sendPolicy, rule)
+			//4. check it's the time for the fired alert is going to send
+			needSend, isResendIntervalChanged := checkSendSatisfied(sendPolicy, rule)
+			if !needSend {
+				continue
+			}
 
-			// 4. update send policy
+			//5. check repeat send policy satisfied, this policy may need to update
+			if isResendIntervalChanged {
+				sendPolicy.NextRepeatSendInterval = rule.InitRepeatSendInterval
+			}
+			currentRepeatSendInterval := sendPolicy.NextRepeatSendInterval
+
+			updatedPolicy := updateSendPolicy(sendPolicy, rule)
+			nextRepeatSendInterval := updatedPolicy.NextRepeatSendInterval
+			cumulateRepeatSendCount := updatedPolicy.CumulateRepeatSendCount
+
 			err = models.CreateOrUpdateSendPolicy(updatedPolicy)
 			if err != nil {
 				glog.Errorln(err.Error())
 				continue
 			}
 
-			// 5. insert an record(fired alert record or recovery record)
-			// insert alert recovery item into `alert_histories`
-			// `tvs` will be send to user and insert into `alert_histories` if alert fired
-			ah := rtAlert.makeAlertHistoryItem(updatedPolicy, rule, resName, lastEvalutedTime, tvs, isRecovery)
-			_, err = models.CreateAlertHistory(ah)
-			if err != nil {
-				glog.Errorln(err.Error())
-				continue
-			}
-
-			//***************************************************************************
-			// TODO step6-step8 need agregate `alert_history`
 			// 6. make notice
-			//  get fired alert durations
-			//duratinos := getFiredAlertDurations()
+			sendNoticeAt := time.Now()
 			notice := notification.Notice{
 				ResourceName:          resName,
 				Metrics:               &tvs,
 				Rule:                  rule,
 				TriggerTime:           lastEvalutedTime,
-				CumulateReSendCount:   updatedPolicy.CumulateRepeatSendCount,
-				CurrentReSendInterval: updatedPolicy.CurrentRepeatSendInterval,
-				// TODO
-				//NextReSendInterval:    1,
-				//FiredAlertDurations:
-				MaxReSendCount: rule.MaxRepeatSendCount,
+				CumulateReSendCount:   cumulateRepeatSendCount,
+				SendNoticeAt:          sendNoticeAt,
+				MaxReSendCount:        rule.MaxRepeatSendCount,
+				CurrentReSendInterval: currentRepeatSendInterval,
+			}
+
+			if cumulateRepeatSendCount < rule.MaxRepeatSendCount {
+				notice.NextReSendInterval = nextRepeatSendInterval
 			}
 
 			noticeStr := notice.MakeNotice(false)
@@ -292,7 +312,7 @@ func (rtAlert *RuntimeAlertConfig) evaluteAlertInPipeline(metricByRule *metric.R
 			// 7. send notice
 			sendStatusMap := notification.Sender{}.Send(rtAlert.alertConfig.ReceiverGroup.Receivers, noticeStr)
 
-			// 8. update send status in `alert_history`
+			// 8. update send status and send policy in `alert_history`
 			var sendStatus string
 			if sendStatusMap == nil {
 				sendStatus = ""
@@ -300,12 +320,23 @@ func (rtAlert *RuntimeAlertConfig) evaluteAlertInPipeline(metricByRule *metric.R
 				sendStatus = jsonutil.Marshal(sendStatusMap)
 			}
 
-			err = models.UpdateAlertSendStatus(ah, sendStatus)
+			ah.RequestNotificationStatus = sendStatus
+			ah.NextRepeatSendInterval = nextRepeatSendInterval
+			ah.CumulateRepeatSendCount = cumulateRepeatSendCount
+			ah.NotificationSendAt = sendNoticeAt
+			if !updatedPolicy.SilenceStartAt.Equal(olderTime) {
+				ah.SilenceStartAt = updatedPolicy.SilenceStartAt
+			}
+
+			if !updatedPolicy.SilenceEndAt.Equal(olderTime) {
+				ah.SilenceEndAt = updatedPolicy.SilenceEndAt
+			}
+
+			err = models.UpdateAlertHistory(ah)
 			if err != nil {
 				glog.Error(err.Error())
 				continue
 			}
-			//***************************************************************************
 		}
 	}
 }
@@ -375,10 +406,11 @@ func isFired(rule *models.AlertRule, tvs []metric.TV) bool {
 	return f
 }
 
-func checkSendSatisfied(sendPolicy *models.SendPolicy, rule *models.AlertRule) bool {
+func checkSendSatisfied(sendPolicy *models.SendPolicy, rule *models.AlertRule) (bool, bool) {
 	// check silence policy
 	//silenceStart := sendPolicy.SilenceStartAt
-	var b = false
+	var needResend = false
+	var isResendIntervalChanged = false
 	silenceEnd := sendPolicy.SilenceEndAt
 	now := time.Now()
 	if silenceEnd.Before(now) {
@@ -386,29 +418,33 @@ func checkSendSatisfied(sendPolicy *models.SendPolicy, rule *models.AlertRule) b
 		// does not take any effect, need to change the SilenceStart and SilenceEnd
 		//pasedTime, _ := time.Parse("0001-01-01T00:00:00Z", "")
 		// check repeat send policy
-		sendType := rule.RepeatSendType
 		maxSendCount := rule.MaxRepeatSendCount
-		initSendInterval := rule.InitRepeatSendInterval
 
 		currReSendTime := sendPolicy.CurrentRepeatSendAt
 		alreaySendCount := sendPolicy.CumulateRepeatSendCount
-		currReSendInterval := sendPolicy.CurrentRepeatSendInterval
+		nextReSendInterval := sendPolicy.NextRepeatSendInterval
 
 		if alreaySendCount < maxSendCount {
 			if alreaySendCount == 0 {
-				b = true
+				needResend = true
 			} else {
-				nextReSendInterval := NextReSendInterval(sendType, currReSendInterval, initSendInterval)
+
+				// maybe rule was updated, but the sendPolicy does not know
+				oldInitReSendInterval := sendPolicy.InitRepeatSendInterval
+				initResendInterval := rule.InitRepeatSendInterval
+				if oldInitReSendInterval != 0 && oldInitReSendInterval != initResendInterval {
+					nextReSendInterval = initResendInterval
+					isResendIntervalChanged = true
+				}
+
 				d := time.Minute * time.Duration(nextReSendInterval)
-				//if currReSendTime.Equal(olderTime) {
-				//	currReSendTime = time.Now()
-				//}
+
 				nextReSendTime := currReSendTime.Add(d)
 				if !now.Before(nextReSendTime) {
-					b = true
+					needResend = true
 				} else {
 					// dees not reach next repeat send interval
-					fmt.Println("dees not reach next repeat send interval", now, nextReSendTime)
+					fmt.Println("dees not reach next repeat send interval", now, nextReSendTime, nextReSendTime.Sub(now))
 				}
 			}
 		} else {
@@ -417,28 +453,33 @@ func checkSendSatisfied(sendPolicy *models.SendPolicy, rule *models.AlertRule) b
 		}
 	} else {
 		// still in silence period
-		fmt.Println("still in silence period")
+		fmt.Println("still in silence period", sendPolicy.SilenceStartAt, sendPolicy.SilenceEndAt)
 	}
 
-	return b
+	return needResend, isResendIntervalChanged
 }
 
 func updateSendPolicy(sendPolicy *models.SendPolicy, rule *models.AlertRule) *models.SendPolicy {
 
 	var newInterval uint32 = 0
 
+	initRepeatSendInterval := rule.InitRepeatSendInterval
+
 	if sendPolicy.CumulateRepeatSendCount == 0 {
-		newInterval = 0
+		newInterval = initRepeatSendInterval
 	} else {
-		currentResendInterval := sendPolicy.CurrentRepeatSendInterval
+		// update next repeat interval, because this fired alert will be send to users
+		// `NextRepeatSendInterval` is the current repeat interval
+		currentResendInterval := sendPolicy.NextRepeatSendInterval
 		if currentResendInterval == 0 {
-			newInterval = rule.InitRepeatSendInterval
+			newInterval = initRepeatSendInterval
 		} else {
-			newInterval = currentResendInterval * 2
+			newInterval = NextReSendInterval(rule.RepeatSendType, currentResendInterval, initRepeatSendInterval)
 		}
 	}
 
-	sendPolicy.CurrentRepeatSendInterval = newInterval
+	sendPolicy.InitRepeatSendInterval = initRepeatSendInterval
+	sendPolicy.NextRepeatSendInterval = newInterval
 	sendPolicy.CumulateRepeatSendCount += 1
 	sendPolicy.CurrentRepeatSendAt = time.Now()
 
@@ -484,61 +525,57 @@ func getExecutingRuleIndx(freq, currentFreq []int32, ruleEnable []bool) []int {
 func (rtAlert *RuntimeAlertConfig) getResourceMetrics(evaluatedRuleIndx []int, ch chan *metric.ResourceMetrics) {
 
 	wg := sync.WaitGroup{}
+	ctx := context.Background()
+	ctx, _ = context.WithTimeout(ctx, time.Second*2)
+
 	resourceNames := rtAlert.resourceNames
 	uriPath := rtAlert.uriPath
 	queryParams := rtAlert.queryParams
 
 	rules := rtAlert.alertConfig.AlertRuleGroup.AlertRules
 
+	l := len(resourceNames)
+	var resNameArray = make([]string, l)
+	for n := range resourceNames {
+		resNameArray = append(resNameArray, n)
+	}
+
 	for i := 0; i < len(evaluatedRuleIndx); i++ {
 		j := evaluatedRuleIndx[i]
 		rule := rules[j]
-
-		// check it's the time for the fired alert is going to send
-		// get send policies (silence and repeat send policy) from db
-		var resNameArray []string
-		for n := range resourceNames {
-			resID := resourceNames[n]
-			sendPolicy, err := models.GetOrCreateSendPolicy(&models.SendPolicy{AlertRuleID: rule.AlertRuleID, ResourceID: resID})
-			if err != nil {
-				glog.Errorln(err.Error())
-				continue
-			}
-
-			needSend := checkSendSatisfied(sendPolicy, rule)
-			if needSend {
-				resNameArray = append(resNameArray, n)
-			}
-		}
-
-		if len(resNameArray) == 0 {
-			return
-		}
-
-		metricName := rule.MetricName
-		// period unit is Minute
-		stepInMinute := rule.Period
-		consCount := rule.ConsecutiveCount
-		if consCount <= 0 || consCount > metric.MaxConsecutiveCount {
-			consCount = metric.ConsecutiveCount
-		}
-
-		if stepInMinute <= 0 || stepInMinute > metric.MaxStep {
-			stepInMinute = metric.Step
-		}
-
-		endTime := time.Now().Truncate(time.Minute).Unix()
-		startTime := endTime - int64((consCount+3)*stepInMinute*60)
-
 		wg.Add(1)
-		go func() {
-			metricStr := client.SendMonitoringRequest(uriPath, queryParams, resNameArray, metricName, startTime, endTime, stepInMinute)
-			resourceMetrics := metric.GetResourceTimeSeriesMetric(metricStr, metricName, startTime, endTime)
-			resourceMetrics.RuleIndx = j
-			fmt.Println("pull metrics: ", resourceMetrics)
-			ch <- resourceMetrics
-			wg.Done()
-		}()
+		go func(rule *models.AlertRule) {
+			for {
+				select {
+				case <-ctx.Done():
+					glog.Warningf("pull metrics was canceled, metric name: %s, resource name: %v", rule.MetricName, resNameArray)
+					wg.Done()
+					return
+				default:
+					metricName := rule.MetricName
+					// period unit is Minute
+					stepInMinute := rule.Period
+					consCount := rule.ConsecutiveCount
+					if consCount <= 0 || consCount > metric.MaxConsecutiveCount {
+						consCount = metric.ConsecutiveCount
+					}
+					if stepInMinute <= 0 || stepInMinute > metric.MaxStep {
+						stepInMinute = metric.Step
+					}
+					endTime := time.Now().Truncate(time.Minute).Unix()
+					startTime := endTime - int64((consCount+3)*stepInMinute*60)
+					metricStr := client.SendMonitoringRequest(uriPath, queryParams, resNameArray, metricName, startTime, endTime, stepInMinute)
+					resourceMetrics := metric.GetResourceTimeSeriesMetric(metricStr, metricName, startTime, endTime)
+					if resourceMetrics != nil {
+						resourceMetrics.RuleIndx = j
+						fmt.Println("pull metrics: ", resourceMetrics)
+						ch <- resourceMetrics
+					}
+					wg.Done()
+					return
+				}
+			}
+		}(rule)
 	}
 	wg.Wait()
 }
@@ -766,7 +803,7 @@ func IsMatch(p map[string]string, q map[string]string) bool {
 	return true
 }
 
-func (rtAlert *RuntimeAlertConfig) makeAlertHistoryItem(sendPolicy *models.SendPolicy,
+func (rtAlert *RuntimeAlertConfig) makeAlertHistoryItem(
 	firedRule *models.AlertRule, resName string,
 	lastEvalutedTime time.Time, tvs []metric.TV, isRecovery bool) *models.AlertHistory {
 	ac := rtAlert.alertConfig
@@ -795,8 +832,6 @@ func (rtAlert *RuntimeAlertConfig) makeAlertHistoryItem(sendPolicy *models.SendP
 	ah.RepeatSendType = uint32(firedRule.RepeatSendType)
 	ah.InitRepeatSendInterval = firedRule.InitRepeatSendInterval
 	ah.MaxRepeatSendCount = firedRule.MaxRepeatSendCount
-	ah.CurrentRepeatSendInterval = sendPolicy.CurrentRepeatSendInterval
-	ah.CumulateRepeatSendCount = sendPolicy.CumulateRepeatSendCount
 
 	ah.CreatedAt = time.Now()
 	ah.UpdatedAt = time.Now()
@@ -807,23 +842,6 @@ func (rtAlert *RuntimeAlertConfig) makeAlertHistoryItem(sendPolicy *models.SendP
 		ah.AlertFiredAt = lastEvalutedTime
 	}
 
-	if !sendPolicy.SilenceStartAt.Equal(olderTime) {
-		ah.SilenceStartAt = sendPolicy.SilenceStartAt
-	}
-
-	if !sendPolicy.SilenceEndAt.Equal(olderTime) {
-		ah.SilenceEndAt = sendPolicy.SilenceEndAt
-	}
-
 	ah.MetricData = jsonutil.Marshal(tvs)
-
-	//if sendStatusMap != nil {
-	//	ah.RequestNotificationStatus = jsonutil.Marshal(sendStatusMap)
-	//} else {
-	//	ah.RequestNotificationStatus = ""
-	//}
-	//
-	//ah.NotificationSendAt = time.Now()
-
 	return &ah
 }

@@ -4,125 +4,68 @@ import (
 	"context"
 	"github.com/carmanzhang/ks-alert/pkg/models"
 	"github.com/carmanzhang/ks-alert/pkg/pb"
-	"k8s.io/klog/glog"
 	"time"
 )
 
 type ProductHandler struct{}
 
 // product
-func (server ProductHandler) CreateProduct(ctx context.Context, pbProd *pb.Product) (*pb.ProductResponse, error) {
+func (h ProductHandler) CreateProduct(ctx context.Context, pbProd *pb.Product) (*pb.ProductResponse, error) {
 	if pbProd.EnterpriseId == "" {
 		ent, err := models.GetEnterprise(&models.Enterprise{EnterpriseName: pbProd.EnterpriseName})
 		if err != nil {
-			glog.Errorln(err.Error())
+			return getProductResponse(nil, err), nil
 		}
-
 		pbProd.EnterpriseId = ent.EnterpriseID
 	}
 
 	prod, err := models.CreateProduct(ConvertPB2Product(pbProd))
-
-	if err != nil {
-		return nil, err
-	}
-
-	return &pb.ProductResponse{
-		Product: ConvertProduct2PB(prod),
-		Error: &pb.Error{
-			Text: "success",
-		},
-	}, nil
+	return getProductResponse(prod, err), nil
 }
 
-func (server ProductHandler) DeleteProduct(ctx context.Context, prodSpec *pb.ProductSpec) (*pb.ProductResponse, error) {
+func getProductResponse(product *models.Product, err error) *pb.ProductResponse {
+	arg := ConvertProduct2PB(product)
+
+	var respon = pb.ProductResponse{Product: arg}
+	respon.Error = ErrorWrapper(err)
+
+	return &respon
+}
+
+func (h ProductHandler) DeleteProduct(ctx context.Context, prodSpec *pb.ProductSpec) (*pb.ProductResponse, error) {
 	prodID := prodSpec.GetProductId()
 	prodName := prodSpec.GetProductName()
 
-	var pErr *pb.Error
-
 	if prodID == "" && prodName == "" {
-		pErr = &pb.Error{
-			Text: "invalid param",
-		}
-
-		return &pb.ProductResponse{
-			Error: pErr,
-		}, nil
+		return getProductResponse(nil, models.Error{
+			Code: models.InvalidParam,
+			Text: "product id and product name must be specified"}), nil
 	}
 
 	err := models.DeleteProduct(&models.Product{ProductName: prodName, ProductID: prodID})
 
-	if err != nil {
-		pErr = &pb.Error{
-			Text: err.Error(),
-		}
-	} else {
-		pErr = &pb.Error{
-			Text: "success",
-		}
-	}
-
-	return &pb.ProductResponse{
-		Error: pErr,
-	}, nil
+	return getProductResponse(nil, err), nil
 }
 
-func (server ProductHandler) UpdateProduct(ctx context.Context, pbProd *pb.Product) (*pb.ProductResponse, error) {
+func (h ProductHandler) UpdateProduct(ctx context.Context, pbProd *pb.Product) (*pb.ProductResponse, error) {
 	prod := ConvertPB2Product(pbProd)
-
 	err := models.UpdateProduct(prod)
-
-	if err != nil {
-		return &pb.ProductResponse{
-			Error: &pb.Error{
-				Text: err.Error(),
-			},
-		}, err
-	}
-
-	return &pb.ProductResponse{
-		Error: &pb.Error{
-			Text: "success",
-		},
-	}, nil
-
-	return nil, nil
+	return getProductResponse(nil, err), nil
 }
 
-func (server ProductHandler) GetProduct(ctx context.Context, prodSpec *pb.ProductSpec) (*pb.ProductResponse, error) {
+func (h ProductHandler) GetProduct(ctx context.Context, prodSpec *pb.ProductSpec) (*pb.ProductResponse, error) {
 	prodID := prodSpec.GetProductId()
 	prodName := prodSpec.GetProductName()
 
-	var pErr *pb.Error
-
 	if prodID == "" && prodName == "" {
-		pErr = &pb.Error{
-			Text: "invalid param",
-		}
-
-		return &pb.ProductResponse{
-			Error: pErr,
-		}, nil
+		return getProductResponse(nil, models.Error{
+			Code: models.InvalidParam,
+			Text: "product id and product name must be specified"}), nil
 	}
 
 	ent, err := models.GetProduct(&models.Product{ProductName: prodName, ProductID: prodID})
 
-	if err != nil {
-		pErr = &pb.Error{
-			Text: err.Error(),
-		}
-	} else {
-		pErr = &pb.Error{
-			Text: "success",
-		}
-	}
-
-	return &pb.ProductResponse{
-		Error:   pErr,
-		Product: ConvertProduct2PB(ent),
-	}, nil
-	return nil, nil
+	return getProductResponse(ent, err), nil
 }
 
 func ConvertPB2Product(pbPrd *pb.Product) *models.Product {

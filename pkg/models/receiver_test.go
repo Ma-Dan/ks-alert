@@ -68,7 +68,8 @@ func TestGet(t *testing.T) {
 	Convey("test CreateReceiverBindingGroup Item", t, func() {
 		db, _ := dbutil.DBClient()
 
-		get, err := ReceiverGroup{}.Get(db, &ReceiverGroup{ReceiverGroupID: "receiver_group-259xkom7j7rzn8"})
+		group := &ReceiverGroup{ReceiverGroupID: "receiver_group-259xkom7j7rzn8"}
+		get, err := group.Get(db)
 		fmt.Println(get, err)
 	})
 }

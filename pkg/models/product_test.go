@@ -1,27 +1,30 @@
 package models
 
 import (
+	"fmt"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 	"time"
-	"fmt"
 )
 
 func TestCreateProduct(t *testing.T) {
 	Convey("test product", t, func() {
 		Convey("test create product", func() {
 			var product = Product{
-				MonitorCenterHost: "localhost",
-				MonitorCenterPort: 8080,
-				ProductName:       "kubesphere",
+				ProductName:       "KubeSphere",
 				HomePage:          "https://www.kubesphere.io/",
-				Email:             "xxxx@yunify.com",
-				Address:           "xxxxxxxxxxx",
+				Email:             "",
+				Address:           "",
 				Contacts:          "Ray",
 				Description:       "",
 				Phone:             "400-8576-886",
 				CreatedAt:         time.Now(),
 				UpdatedAt:         time.Now(),
+				EnterpriseID:      "enterprise-6y19xy9pwm24oo",
+				Webhook:           "TODO",
+				MonitorCenterPort: 8080,
+				MonitorCenterHost: "localhost",
+				WebhookEnable:     true,
 			}
 
 			prod, err := CreateProduct(&product)
@@ -69,8 +72,6 @@ func TestDeleteProduct(t *testing.T) {
 		})
 	})
 }
-
-
 
 func TestUpdateProduct(t *testing.T) {
 	Convey("test delete product", t, func() {

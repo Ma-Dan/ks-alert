@@ -17,42 +17,51 @@ import (
 // alert
 type AlertHandler struct{}
 
-func (server AlertHandler) CreateAlertConfig(ctx context.Context, pbac *pb.AlertConfig) (*pb.AlertConfigResponse, error) {
+func (h AlertHandler) CreateAlertConfig(ctx context.Context, pbac *pb.AlertConfig) (*pb.AlertConfigResponse, error) {
 
 	ac := ConvertPB2AlertConfig(pbac)
 	// the host(node) which this alert congfig whill be executed
 	svcAddr, err := registry.GetIdleExecutorAddress()
+	if err != nil {
+		respon := getAlertConfigResponse(nil)
+		respon.Error = ErrorWrapper(err)
+		return respon, nil
+	}
+
 	ac.HostID = svcAddr
 
 	v, err := DoTransactionAction(ac, AlertConfig, MethodCreate)
 	respon := getAlertConfigResponse(v)
+	respon.Error = ErrorWrapper(err)
 	if err != nil {
-		respon.Error = ErrorWrapper(err)
 		return respon, nil
 	}
 
 	//option.HostID
+	pbErr := ExecuteAlertConfig(svcAddr, respon.AlertConfig.AlertConfigId, pb.Informer_CREATE)
+	respon.Error = pbErr
+	return respon, nil
+}
+
+func ExecuteAlertConfig(svcAddr string, acID string, sig pb.Informer_Signal) *pb.Error {
+	var err error
 	conn, err := client.GetExecutorGrpcConn(svcAddr)
 	if err != nil {
-		respon.Error = ErrorWrapper(err)
-		return respon, nil
+		return ErrorWrapper(err)
 	}
+
 	cli := pb.NewExecutorClient(conn)
-
-	pbErr, err := cli.Execute(ctx, &pb.Informer{AlertConfigId: respon.AlertConfig.AlertConfigId, Signal: pb.Informer_CREATE})
-
+	pbErr, err := cli.Execute(context.Background(), &pb.Informer{AlertConfigId: acID, Signal: sig})
 	// err adaptor
 	if pbErr != nil {
-		respon.Error = ErrorWrapper(err)
-		return respon, nil
+		return ErrorWrapper(err)
 	}
 
 	if err != nil {
-		respon.Error = ErrorWrapper(err)
-		return respon, nil
+		return ErrorWrapper(err)
 	}
 
-	return respon, nil
+	return nil
 }
 
 func getAlertConfigResponse(v interface{}) *pb.AlertConfigResponse {
@@ -66,17 +75,7 @@ func getAlertConfigResponse(v interface{}) *pb.AlertConfigResponse {
 	return respon
 }
 
-func ErrorWrapper(err error) *pb.Error {
-	if err != nil {
-		glog.Errorln(err.Error())
-		e := models.ErrorWrapper(err)
-		return &pb.Error{Text: e.Text, Code: e.Code}
-	} else {
-		return &pb.Error{Text: "Success", Code: 0}
-	}
-}
-
-func (server AlertHandler) DeleteAlertConfig(ctx context.Context, alertConfigSpec *pb.AlertConfigSpec) (*pb.AlertConfigResponse, error) {
+func (h AlertHandler) DeleteAlertConfig(ctx context.Context, alertConfigSpec *pb.AlertConfigSpec) (*pb.AlertConfigResponse, error) {
 	acID := alertConfigSpec.AlertConfigId
 	hostID, err := models.GetAlertConfigBindingHost(acID)
 	if err != nil {
@@ -84,36 +83,58 @@ func (server AlertHandler) DeleteAlertConfig(ctx context.Context, alertConfigSpe
 		respon.Error = ErrorWrapper(err)
 		return respon, nil
 	}
+
 	hostInfo := strings.Split(hostID, "-")
 	svcAddress := fmt.Sprintf("%s:%d", hostInfo[1], *option.ExecutorServicePort)
 
-	conn, err := client.GetExecutorGrpcConn(svcAddress)
+	pbErr := ExecuteAlertConfig(svcAddress, acID, pb.Informer_TERMINATE)
+
+	if pbErr != nil {
+		respon := getAlertConfigResponse(nil)
+		respon.Error = ErrorWrapper(err)
+		return respon, nil
+	}
+
+	v, err := DoTransactionAction(&models.AlertConfig{AlertConfigID: acID}, AlertConfig, MethodDelete)
+	respon := getAlertConfigResponse(v)
+	respon.Error = ErrorWrapper(err)
+	return respon, nil
+}
+
+func (h AlertHandler) UpdateAlertConfig(ctx context.Context, alertConfig *pb.AlertConfig) (*pb.AlertConfigResponse, error) {
+	ac := ConvertPB2AlertConfig(alertConfig)
+
+	v, err := DoTransactionAction(ac, AlertConfig, MethodUpdate)
+	respon := getAlertConfigResponse(v)
+	respon.Error = ErrorWrapper(err)
+	if err != nil {
+		return respon, nil
+	}
+
+	acID := alertConfig.AlertConfigId
+
+	hostID, err := models.GetAlertConfigBindingHost(acID)
 	if err != nil {
 		respon := getAlertConfigResponse(nil)
 		respon.Error = ErrorWrapper(err)
 		return respon, nil
 	}
 
-	cli := pb.NewExecutorClient(conn)
-	msg := pb.Informer{AlertConfigId: acID, Signal: pb.Informer_TERMINATE}
-	_, err = cli.Execute(context.Background(), &msg)
-	ac := models.AlertConfig{AlertConfigID: acID}
-	v, err := DoTransactionAction(&ac, AlertConfig, MethodDelete)
-	respon := getAlertConfigResponse(v)
-	respon.Error = ErrorWrapper(err)
+	hostInfo := strings.Split(hostID, "-")
+	svcAddress := fmt.Sprintf("%s:%d", hostInfo[1], *option.ExecutorServicePort)
+
+	pbErr := ExecuteAlertConfig(svcAddress, acID, pb.Informer_RELOAD)
+
+	if pbErr != nil {
+		respon := getAlertConfigResponse(nil)
+		respon.Error = ErrorWrapper(err)
+		return respon, nil
+	}
+
 	return respon, nil
 }
 
-func (server AlertHandler) UpdateAlertConfig(ctx context.Context, alertConfig *pb.AlertConfig) (*pb.AlertConfigResponse, error) {
-	ac := ConvertPB2AlertConfig(alertConfig)
-
-	v, err := DoTransactionAction(ac, AlertConfig, MethodUpdate)
-	respon := getAlertConfigResponse(v)
-	respon.Error = ErrorWrapper(err)
-	return respon, nil
-}
-
-func (server AlertHandler) GetAlertConfig(ctx context.Context, alertConfigSpec *pb.AlertConfigSpec) (*pb.AlertConfigResponse, error) {
+func (h AlertHandler) GetAlertConfig(ctx context.Context, alertConfigSpec *pb.AlertConfigSpec) (*pb.AlertConfigResponse, error) {
 	ac := models.AlertConfig{AlertConfigID: alertConfigSpec.AlertConfigId}
 	v, err := DoTransactionAction(&ac, AlertConfig, MethodGet)
 	respon := getAlertConfigResponse(v)

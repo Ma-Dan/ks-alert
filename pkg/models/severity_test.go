@@ -5,11 +5,48 @@ import (
 	"github.com/carmanzhang/ks-alert/pkg/pb"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
+	"time"
 )
 
 func TestCreateSeverities(t *testing.T) {
 	Convey("create severities", t, func() {
+		_, err := CreateSeverity(&Severity{
+			ProductID:  "product-m57o28v7101rwz",
+			SeverityCh: "严重",
+			SeverityEn: "Critical",
+			UpdatedAt:  time.Now(),
+			CreatedAt:  time.Now(),
+		})
 
+		So(err, ShouldBeNil)
+
+		_, err = CreateSeverity(&Severity{
+			ProductID:  "product-m57o28v7101rwz",
+			SeverityCh: "较危险",
+			SeverityEn: "Major",
+			UpdatedAt:  time.Now(),
+			CreatedAt:  time.Now(),
+		})
+
+		So(err, ShouldBeNil)
+
+		_, err = CreateSeverity(&Severity{
+			ProductID:  "product-m57o28v7101rwz",
+			SeverityCh: "危险",
+			SeverityEn: "Minor",
+			UpdatedAt:  time.Now(),
+			CreatedAt:  time.Now(),
+		})
+		So(err, ShouldBeNil)
+
+		_, err = CreateSeverity(&Severity{
+			ProductID:  "product-m57o28v7101rwz",
+			SeverityCh: "警告",
+			SeverityEn: "Warn",
+			UpdatedAt:  time.Now(),
+			CreatedAt:  time.Now(),
+		})
+		So(err, ShouldBeNil)
 	})
 }
 

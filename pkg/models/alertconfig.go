@@ -6,27 +6,7 @@ import (
 	"github.com/carmanzhang/ks-alert/pkg/utils/dbutil"
 	"github.com/carmanzhang/ks-alert/pkg/utils/idutil"
 	"github.com/jinzhu/gorm"
-	"k8s.io/klog/glog"
 	"time"
-)
-
-// signal, used to notify goroutine with different
-type Signal int32
-
-const (
-	Run    Signal = iota // value --> 0
-	Create               // value --> 1
-	Terminate
-	Reload
-	Stop
-)
-
-type UpdateType string
-
-const (
-	ALertRuleUpdate UpdateType = "alert_rule"
-	ResourceUpdate  UpdateType = "resource"
-	ReceiverUpdate  UpdateType = "receiver"
 )
 
 type AlertConfig struct {
@@ -62,45 +42,40 @@ type AlertConfig struct {
 	HostID string `gorm:"type:varchar(50);not null;"`
 }
 
-func (r AlertConfig) Create(tx *gorm.DB, v interface{}) (interface{}, error) {
-	ac, ok := v.(*AlertConfig)
+func (r *AlertConfig) Create(tx *gorm.DB) (interface{}, error) {
 
-	if !ok {
-		return nil, Error{Text: fmt.Sprintf("type %v assert error", ac), Code: AssertError}
-	}
-
-	ac.AlertConfigID = idutil.GetUuid36("alert-config-")
+	r.AlertConfigID = idutil.GetUuid36("alert-config-")
 
 	//sql := "INSERT INTO alert_configs (alert_config_id, alert_config_name, alert_rule_group_id, " +
 	//	"resource_group_id, receiver_group_id, severity_id, severity_ch, enable_start, enable_end, description, created_at, updated_at) VALUES " + item
 
-	ruleGroup, err := AlertRuleGroup{}.Create(tx, ac.AlertRuleGroup)
+	ruleGroup, err := r.AlertRuleGroup.Create(tx)
 
 	if err != nil {
 		return nil, err
 	}
 
-	resGroup, err := ResourceGroup{}.Create(tx, ac.ResourceGroup)
+	resGroup, err := r.ResourceGroup.Create(tx)
 
 	if err != nil {
 		return nil, err
 	}
 
-	recvGroup, err := ReceiverGroup{}.Create(tx, ac.ReceiverGroup)
+	recvGroup, err := r.ReceiverGroup.Create(tx)
 
 	if err != nil {
 		return nil, err
 	}
 
-	ac.AlertRuleGroupID = ruleGroup.(*AlertRuleGroup).AlertRuleGroupID
-	ac.ResourceGroupID = resGroup.(*ResourceGroup).ResourceGroupID
-	ac.ReceiverGroupID = recvGroup.(*ReceiverGroup).ReceiverGroupID
+	r.AlertRuleGroupID = ruleGroup.(*AlertRuleGroup).AlertRuleGroupID
+	r.ResourceGroupID = resGroup.(*ResourceGroup).ResourceGroupID
+	r.ReceiverGroupID = recvGroup.(*ReceiverGroup).ReceiverGroupID
 
-	if err := tx.Create(ac).Error; err != nil {
+	if err := tx.Create(r).Error; err != nil {
 		return nil, Error{Text: err.Error(), Code: DBError}
 	}
 
-	return ac, nil
+	return r, nil
 }
 
 func UpdateAlertConfigKeepAliveTime(acID string) error {
@@ -137,9 +112,13 @@ func GetAbnormalExecutedAlertConfig(hostID string, latestReportTime time.Time, l
 		"(SELECT * FROM alert_configs WHERE host_id!=? AND keep_alive_at<? order by keep_alive_at asc)"
 
 	var alertConfigs []AlertConfig
-	err = db.Debug().Raw(sql, hostID, latestReportTime, hostID, latestReportTime).Limit(limit).Scan(&alertConfigs).Error
+	err = db.Raw(sql, hostID, latestReportTime, hostID, latestReportTime).Limit(limit).Scan(&alertConfigs).Error
 
-	return &alertConfigs, err
+	if err != nil {
+		return nil, Error{Text: err.Error(), Code: DBError}
+	}
+
+	return &alertConfigs, nil
 }
 
 func UpdateAlertConfigBindingHostAndVersion(alertConfigs *[]AlertConfig) ([]bool, error) {
@@ -158,7 +137,7 @@ func UpdateAlertConfigBindingHostAndVersion(alertConfigs *[]AlertConfig) ([]bool
 		sql := fmt.Sprintf("UPDATE alert_configs SET host_id='%s', version='%d', keep_alive_at='%v', updated_at='%v' WHERE alert_config_id='%s' AND version='%d' ",
 			ac.HostID, ac.Version, ac.KeepAliveAt, ac.UpdatedAt, ac.AlertConfigID, ac.Version-1)
 
-		if db.Debug().Exec(sql).RowsAffected == 0 {
+		if db.Exec(sql).RowsAffected == 0 {
 			b[i] = false
 		} else {
 			b[i] = true
@@ -188,16 +167,11 @@ func GetAlertConfigBindingHost(acID string) (string, error) {
 	return alertConfig.HostID, nil
 }
 
-func (r AlertConfig) Update(tx *gorm.DB, v interface{}) (interface{}, error) {
-	ac, ok := v.(*AlertConfig)
-
-	if !ok {
-		return nil, Error{Text: fmt.Sprintf("type %v assert error", ac), Code: AssertError}
-	}
+func (r *AlertConfig) Update(tx *gorm.DB) (interface{}, error) {
 
 	var alertConfig AlertConfig
 
-	if err := tx.Where("alert_config_id=?", ac.AlertConfigID).First(&alertConfig).Error; err != nil {
+	if err := tx.Where("alert_config_id=?", r.AlertConfigID).First(&alertConfig).Error; err != nil {
 		return nil, Error{Text: err.Error(), Code: DBError}
 	}
 
@@ -205,36 +179,36 @@ func (r AlertConfig) Update(tx *gorm.DB, v interface{}) (interface{}, error) {
 		return nil, Error{Text: "alert config id does not exist", Code: InvalidParam}
 	}
 
-	ac.AlertRuleGroup.AlertRuleGroupID = alertConfig.AlertRuleGroupID
-	ruleGroup, err := AlertRuleGroup{}.Update(tx, ac.AlertRuleGroup)
+	r.AlertRuleGroup.AlertRuleGroupID = alertConfig.AlertRuleGroupID
+	ruleGroup, err := r.AlertRuleGroup.Update(tx)
 
 	if err != nil {
 		return nil, err
 	}
 
-	ac.ResourceGroup.ResourceGroupID = alertConfig.ResourceGroupID
-	resGroup, err := ResourceGroup{}.Update(tx, ac.ResourceGroup)
+	r.ResourceGroup.ResourceGroupID = alertConfig.ResourceGroupID
+	resGroup, err := r.ResourceGroup.Update(tx)
 
 	if err != nil {
 		return nil, err
 	}
 
-	ac.ReceiverGroup.ReceiverGroupID = alertConfig.ReceiverGroupID
-	recvGroup, err := ReceiverGroup{}.Update(tx, ac.ReceiverGroup)
+	r.ReceiverGroup.ReceiverGroupID = alertConfig.ReceiverGroupID
+	recvGroup, err := r.ReceiverGroup.Update(tx)
 
 	if err != nil {
 		return nil, err
 	}
 
-	ac.AlertRuleGroupID = ruleGroup.(*AlertRuleGroup).AlertRuleGroupID
-	ac.ResourceGroupID = resGroup.(*ResourceGroup).ResourceGroupID
-	ac.ReceiverGroupID = recvGroup.(*ReceiverGroup).ReceiverGroupID
+	r.AlertRuleGroupID = ruleGroup.(*AlertRuleGroup).AlertRuleGroupID
+	r.ResourceGroupID = resGroup.(*ResourceGroup).ResourceGroupID
+	r.ReceiverGroupID = recvGroup.(*ReceiverGroup).ReceiverGroupID
 
-	if err := tx.Debug().Model(AlertConfig{}).Where("alert_config_id=?", ac.AlertConfigID).Update(ac).Error; err != nil {
+	if err := tx.Model(AlertConfig{}).Where("alert_config_id=?", r.AlertConfigID).Update(r).Error; err != nil {
 		return nil, Error{Text: err.Error(), Code: DBError}
 	}
 
-	return ac, nil
+	return r, nil
 }
 
 func GetAlertConfig(ac *AlertConfig) (*AlertConfig, error) {
@@ -243,7 +217,7 @@ func GetAlertConfig(ac *AlertConfig) (*AlertConfig, error) {
 		return nil, Error{Text: err.Error(), Code: DBError}
 	}
 
-	v, err := ac.Get(db, ac)
+	v, err := ac.Get(db)
 
 	if err != nil {
 		return nil, err
@@ -253,17 +227,11 @@ func GetAlertConfig(ac *AlertConfig) (*AlertConfig, error) {
 	return alertConfig, nil
 }
 
-func (r AlertConfig) Get(tx *gorm.DB, v interface{}) (interface{}, error) {
-
-	ac, ok := v.(*AlertConfig)
-
-	if !ok {
-		return nil, Error{Text: fmt.Sprintf("type %v assert error", ac), Code: AssertError}
-	}
+func (r *AlertConfig) Get(tx *gorm.DB) (interface{}, error) {
 
 	var alertConfig AlertConfig
 
-	if err := tx.Where("alert_config_id=?", ac.AlertConfigID).First(&alertConfig).Error; err != nil {
+	if err := tx.Where("alert_config_id=?", r.AlertConfigID).First(&alertConfig).Error; err != nil {
 		return nil, Error{Text: err.Error(), Code: DBError}
 	}
 
@@ -271,23 +239,22 @@ func (r AlertConfig) Get(tx *gorm.DB, v interface{}) (interface{}, error) {
 		return nil, Error{Text: "alert config id does not exist", Code: InvalidParam}
 	}
 
-	ruleGroup, err := AlertRuleGroup{}.Get(tx, &AlertRuleGroup{AlertRuleGroupID: alertConfig.AlertRuleGroupID})
+	ruleGroup, err := (&AlertRuleGroup{AlertRuleGroupID: alertConfig.AlertRuleGroupID}).Get(tx)
 
-	// TODO maybe need return this err?
 	if err != nil {
-		glog.Errorln(err.Error())
+		return nil, err
 	}
 
-	resGroup, err := ResourceGroup{}.Get(tx, &ResourceGroup{ResourceGroupID: alertConfig.ResourceGroupID})
+	resGroup, err := (&ResourceGroup{ResourceGroupID: alertConfig.ResourceGroupID}).Get(tx)
 
 	if err != nil {
-		glog.Errorln(err.Error())
+		return nil, err
 	}
 
-	recvGroup, err := ReceiverGroup{}.Get(tx, &ReceiverGroup{ReceiverGroupID: alertConfig.ReceiverGroupID})
+	recvGroup, err := (&ReceiverGroup{ReceiverGroupID: alertConfig.ReceiverGroupID}).Get(tx)
 
 	if err != nil {
-		glog.Errorln(err.Error())
+		return nil, err
 	}
 
 	alertConfig.AlertRuleGroup = ruleGroup.(*AlertRuleGroup)
@@ -297,21 +264,16 @@ func (r AlertConfig) Get(tx *gorm.DB, v interface{}) (interface{}, error) {
 	return &alertConfig, nil
 }
 
-func (r AlertConfig) Delete(tx *gorm.DB, v interface{}) (interface{}, error) {
-	ac, ok := v.(*AlertConfig)
+func (r *AlertConfig) Delete(tx *gorm.DB) (interface{}, error) {
 
-	if !ok {
-		return nil, Error{Text: fmt.Sprintf("type %v assert error", ac), Code: AssertError}
-	}
-
-	if ac.AlertConfigID == "" {
+	if r.AlertConfigID == "" {
 		return nil, Error{Text: "alert config id must be specified", Code: InvalidParam}
 	}
 
 	// firstly, get alert config
 	var alertConfig AlertConfig
 
-	if err := tx.Where("alert_config_id=?", ac.AlertConfigID).First(&alertConfig).Error; err != nil {
+	if err := tx.Where("alert_config_id=?", r.AlertConfigID).First(&alertConfig).Error; err != nil {
 		return nil, Error{Text: err.Error(), Code: DBError}
 	}
 
@@ -320,19 +282,19 @@ func (r AlertConfig) Delete(tx *gorm.DB, v interface{}) (interface{}, error) {
 	}
 
 	// secondly, delete three groups
-	_, err := AlertRuleGroup{}.Delete(tx, &AlertRuleGroup{AlertRuleGroupID: alertConfig.AlertRuleGroupID})
+	_, err := (&AlertRuleGroup{AlertRuleGroupID: alertConfig.AlertRuleGroupID}).Delete(tx)
 
 	if err != nil {
 		return nil, err
 	}
 
-	_, err = ResourceGroup{}.Delete(tx, &ResourceGroup{ResourceGroupID: alertConfig.ResourceGroupID})
+	_, err = (&ResourceGroup{ResourceGroupID: alertConfig.ResourceGroupID}).Delete(tx)
 
 	if err != nil {
 		return nil, err
 	}
 
-	_, err = ReceiverGroup{}.Delete(tx, &ReceiverGroup{ReceiverGroupID: alertConfig.ReceiverGroupID})
+	_, err = (&ReceiverGroup{ReceiverGroupID: alertConfig.ReceiverGroupID}).Delete(tx)
 
 	if err != nil {
 		return nil, err

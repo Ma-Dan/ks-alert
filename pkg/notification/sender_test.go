@@ -5,6 +5,7 @@ import (
 	"github.com/carmanzhang/ks-alert/pkg/executor/metric"
 	"github.com/carmanzhang/ks-alert/pkg/models"
 	"github.com/carmanzhang/ks-alert/pkg/utils/jsonutil"
+	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 	"time"
 )
@@ -13,10 +14,9 @@ func TestSender_Send(t *testing.T) {
 	Convey("test send info", t, func() {
 		Convey("test 01", func() {
 			notice := Notice{
-				TriggerTime:           time.Now(),
-				CurrentReSendInterval: 1,
-				CumulateReSendCount:   2,
-				ResourceName:          "node_cpu",
+				TriggerTime:         time.Now(),
+				CumulateReSendCount: 2,
+				ResourceName:        "node_cpu",
 				Metrics: &[]metric.TV{
 					metric.TV{
 						T: 1243465,
