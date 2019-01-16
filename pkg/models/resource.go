@@ -11,23 +11,23 @@ import (
 
 type Resource struct {
 	Action
-	ResourceID      string    `gorm:"primary_key" json:"-"`
-	ResourceName    string    `gorm:"type:varchar(50);" json:"resource_name"`
-	ResourceGroupID string    `gorm:"not null;" json:"-"`
-	CreatedAt       time.Time `gorm:"not null;" json:"-"`
-	UpdatedAt       time.Time `gorm:"not null;" json:"-"`
+	ResourceID      string    `gorm:"primary_key"`
+	ResourceName    string    `gorm:"type:varchar(50);"`
+	ResourceGroupID string    `gorm:"not null;"`
+	CreatedAt       time.Time `gorm:"not null;"`
+	UpdatedAt       time.Time `gorm:"not null;"`
 }
 
 type ResourceGroup struct {
 	Action
-	ResourceGroupID   string      `gorm:"primary_key" json:"-"`
-	ResourceGroupName string      `gorm:"type:varchar(50);not null;" json:"resource_group_name"`
-	ResourceTypeID    string      `gorm:"type:varchar(50);" json:"resource_type_id"`
-	Resources         []*Resource `gorm:"-" json:"resources"`
-	URIParams         string      `gorm:"type:text;not null;" json:"-"`
-	Description       string      `gorm:"type:text;" json:"desc"`
-	CreatedAt         time.Time   `gorm:"not null;" json:"-"`
-	UpdatedAt         time.Time   `gorm:"not null;" json:"-"`
+	ResourceGroupID   string      `gorm:"primary_key"`
+	ResourceGroupName string      `gorm:"type:varchar(50);not null;"`
+	ResourceTypeID    string      `gorm:"type:varchar(50);"`
+	Resources         []*Resource `gorm:"-"`
+	URIParams         string      `gorm:"type:text;not null;"`
+	Description       string      `gorm:"type:text;"`
+	CreatedAt         time.Time   `gorm:"not null;"`
+	UpdatedAt         time.Time   `gorm:"not null;"`
 }
 
 type ResourceType struct {
@@ -270,7 +270,7 @@ func (r *ResourceGroup) Delete(tx *gorm.DB) (interface{}, error) {
 		return nil, Error{Text: "resource group id must be specified", Code: InvalidParam}
 	}
 
-	sql := "DELETE r, r FROM resource_groups as r LEFT JOIN resources as r ON r.resource_group_id=r.resource_group_id WHERE r.resource_group_id=?"
+	sql := "DELETE rg, r FROM resource_groups as rg LEFT JOIN resources as r ON rg.resource_group_id=r.resource_group_id WHERE rg.resource_group_id=?"
 
 	if err := tx.Debug().Exec(sql, r.ResourceGroupID).Error; err != nil {
 		return nil, Error{Text: err.Error(), Code: DBError}

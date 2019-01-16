@@ -32,7 +32,6 @@ func TestCreateAlertRuleGroup(t *testing.T) {
 						ConsecutiveCount:       3,
 						InhibitRule:            false,
 						Enable:                 true,
-						SystemRule:             false,
 						RepeatSendType:         int32(pb.RepeatSendType_Fixed),
 						InitRepeatSendInterval: 60,
 						MaxRepeatSendCount:     4,
@@ -50,7 +49,6 @@ func TestCreateAlertRuleGroup(t *testing.T) {
 						ConsecutiveCount:       3,
 						InhibitRule:            false,
 						Enable:                 true,
-						SystemRule:             true,
 						RepeatSendType:         int32(pb.RepeatSendType_Exponential),
 						InitRepeatSendInterval: 15,
 						MaxRepeatSendCount:     10,
@@ -92,7 +90,6 @@ func TestUpdateAlertRuleGroup(t *testing.T) {
 						ConsecutiveCount:       3,
 						InhibitRule:            false,
 						Enable:                 true,
-						SystemRule:             false,
 						RepeatSendType:         int32(pb.RepeatSendType_Fixed),
 						InitRepeatSendInterval: 60,
 						MaxRepeatSendCount:     4,
@@ -109,7 +106,6 @@ func TestUpdateAlertRuleGroup(t *testing.T) {
 						ConsecutiveCount:       3,
 						InhibitRule:            false,
 						Enable:                 true,
-						SystemRule:             true,
 						RepeatSendType:         int32(pb.RepeatSendType_Exponential),
 						InitRepeatSendInterval: 15,
 						MaxRepeatSendCount:     10,
@@ -153,7 +149,7 @@ func TestAlertRuleGroup_Create(t *testing.T) {
 				SystemRule:         true,
 				UpdatedAt:          time.Now(),
 				CreatedAt:          time.Now(),
-				AlertRules:         []*AlertRule{&AlertRule{AlertRuleName: "workspace", MetricName: "workspace_memory", ConditionType: ">", PerferSeverity: true, Threshold: 0.6, Period: 20, Unit: "", ConsecutiveCount: 3, InhibitRule: false, Enable: true, SystemRule: true, RepeatSendType: int32(pb.RepeatSendType_Exponential), InitRepeatSendInterval: 15, MaxRepeatSendCount: 10, CreatedAt: time.Now(), UpdatedAt: time.Now()}},
+				AlertRules:         []*AlertRule{&AlertRule{AlertRuleName: "workspace", MetricName: "workspace_memory", ConditionType: ">", PerferSeverity: true, Threshold: 0.6, Period: 20, Unit: "", ConsecutiveCount: 3, InhibitRule: false, Enable: true, RepeatSendType: int32(pb.RepeatSendType_Exponential), InitRepeatSendInterval: 15, MaxRepeatSendCount: 10, CreatedAt: time.Now(), UpdatedAt: time.Now()}},
 			}
 			_, err := group.Create(db)
 
@@ -166,7 +162,7 @@ func TestAlertRuleGroup_Create(t *testing.T) {
 				SystemRule:         true,
 				UpdatedAt:          time.Now(),
 				CreatedAt:          time.Now(),
-				AlertRules:         []*AlertRule{&AlertRule{AlertRuleName: "workspace", MetricName: "workspace_memory", ConditionType: ">", PerferSeverity: true, Threshold: 0.6, Period: 20, Unit: "", ConsecutiveCount: 3, InhibitRule: false, Enable: true, SystemRule: true, RepeatSendType: int32(pb.RepeatSendType_Exponential), InitRepeatSendInterval: 15, MaxRepeatSendCount: 10, CreatedAt: time.Now(), UpdatedAt: time.Now()}},
+				AlertRules:         []*AlertRule{&AlertRule{AlertRuleName: "workspace", MetricName: "workspace_memory", ConditionType: ">", PerferSeverity: true, Threshold: 0.6, Period: 20, Unit: "", ConsecutiveCount: 3, InhibitRule: false, Enable: true, RepeatSendType: int32(pb.RepeatSendType_Exponential), InitRepeatSendInterval: 15, MaxRepeatSendCount: 10, CreatedAt: time.Now(), UpdatedAt: time.Now()}},
 			}
 			_, err = ruleGroup.Create(db)
 
@@ -178,7 +174,7 @@ func TestAlertRuleGroup_Create(t *testing.T) {
 				SystemRule:         true,
 				UpdatedAt:          time.Now(),
 				CreatedAt:          time.Now(),
-				AlertRules:         []*AlertRule{&AlertRule{AlertRuleName: "workspace", MetricName: "workspace_memory", ConditionType: ">", PerferSeverity: true, Threshold: 0.6, Period: 20, Unit: "", ConsecutiveCount: 3, InhibitRule: false, Enable: true, SystemRule: true, RepeatSendType: int32(pb.RepeatSendType_Exponential), InitRepeatSendInterval: 15, MaxRepeatSendCount: 10, CreatedAt: time.Now(), UpdatedAt: time.Now()}},
+				AlertRules:         []*AlertRule{&AlertRule{AlertRuleName: "workspace", MetricName: "workspace_memory", ConditionType: ">", PerferSeverity: true, Threshold: 0.6, Period: 20, Unit: "", ConsecutiveCount: 3, InhibitRule: false, Enable: true, RepeatSendType: int32(pb.RepeatSendType_Exponential), InitRepeatSendInterval: 15, MaxRepeatSendCount: 10, CreatedAt: time.Now(), UpdatedAt: time.Now()}},
 			}
 			_, err = alertRuleGroup.Create(db)
 
@@ -190,7 +186,7 @@ func TestAlertRuleGroup_Create(t *testing.T) {
 				SystemRule:         true,
 				UpdatedAt:          time.Now(),
 				CreatedAt:          time.Now(),
-				AlertRules:         []*AlertRule{&AlertRule{AlertRuleName: "workspace", MetricName: "workspace_memory", ConditionType: ">", PerferSeverity: true, Threshold: 0.6, Period: 20, Unit: "", ConsecutiveCount: 3, InhibitRule: false, Enable: true, SystemRule: true, RepeatSendType: int32(pb.RepeatSendType_Exponential), InitRepeatSendInterval: 15, MaxRepeatSendCount: 10, CreatedAt: time.Now(), UpdatedAt: time.Now()}},
+				AlertRules:         []*AlertRule{&AlertRule{AlertRuleName: "workspace", MetricName: "workspace_memory", ConditionType: ">", PerferSeverity: true, Threshold: 0.6, Period: 20, Unit: "", ConsecutiveCount: 3, InhibitRule: false, Enable: true, RepeatSendType: int32(pb.RepeatSendType_Exponential), InitRepeatSendInterval: 15, MaxRepeatSendCount: 10, CreatedAt: time.Now(), UpdatedAt: time.Now()}},
 			}
 			_, err = alertRuleGroup.Create(db)
 
@@ -203,7 +199,7 @@ func TestAlertRuleGroup_Create(t *testing.T) {
 				SystemRule:         true,
 				UpdatedAt:          time.Now(),
 				CreatedAt:          time.Now(),
-				AlertRules:         []*AlertRule{&AlertRule{AlertRuleName: "workspace", MetricName: "workspace_memory", ConditionType: ">", PerferSeverity: true, Threshold: 0.6, Period: 20, Unit: "", ConsecutiveCount: 3, InhibitRule: false, Enable: true, SystemRule: true, RepeatSendType: int32(pb.RepeatSendType_Exponential), InitRepeatSendInterval: 15, MaxRepeatSendCount: 10, CreatedAt: time.Now(), UpdatedAt: time.Now()}},
+				AlertRules:         []*AlertRule{&AlertRule{AlertRuleName: "workspace", MetricName: "workspace_memory", ConditionType: ">", PerferSeverity: true, Threshold: 0.6, Period: 20, Unit: "", ConsecutiveCount: 3, InhibitRule: false, Enable: true, RepeatSendType: int32(pb.RepeatSendType_Exponential), InitRepeatSendInterval: 15, MaxRepeatSendCount: 10, CreatedAt: time.Now(), UpdatedAt: time.Now()}},
 			}
 			_, err = alertRuleGroup.Create(db)
 
@@ -216,7 +212,7 @@ func TestAlertRuleGroup_Create(t *testing.T) {
 				SystemRule:         true,
 				UpdatedAt:          time.Now(),
 				CreatedAt:          time.Now(),
-				AlertRules:         []*AlertRule{&AlertRule{AlertRuleName: "workspace", MetricName: "workspace_memory", ConditionType: ">", PerferSeverity: true, Threshold: 0.6, Period: 20, Unit: "", ConsecutiveCount: 3, InhibitRule: false, Enable: true, SystemRule: true, RepeatSendType: int32(pb.RepeatSendType_Exponential), InitRepeatSendInterval: 15, MaxRepeatSendCount: 10, CreatedAt: time.Now(), UpdatedAt: time.Now()}},
+				AlertRules:         []*AlertRule{&AlertRule{AlertRuleName: "workspace", MetricName: "workspace_memory", ConditionType: ">", PerferSeverity: true, Threshold: 0.6, Period: 20, Unit: "", ConsecutiveCount: 3, InhibitRule: false, Enable: true, RepeatSendType: int32(pb.RepeatSendType_Exponential), InitRepeatSendInterval: 15, MaxRepeatSendCount: 10, CreatedAt: time.Now(), UpdatedAt: time.Now()}},
 			}
 			_, err = alertRuleGroup.Create(db)
 
@@ -229,7 +225,7 @@ func TestAlertRuleGroup_Create(t *testing.T) {
 				SystemRule:         true,
 				UpdatedAt:          time.Now(),
 				CreatedAt:          time.Now(),
-				AlertRules:         []*AlertRule{&AlertRule{AlertRuleName: "workspace", MetricName: "workspace_memory", ConditionType: ">", PerferSeverity: true, Threshold: 0.6, Period: 20, Unit: "", ConsecutiveCount: 3, InhibitRule: false, Enable: true, SystemRule: true, RepeatSendType: int32(pb.RepeatSendType_Exponential), InitRepeatSendInterval: 15, MaxRepeatSendCount: 10, CreatedAt: time.Now(), UpdatedAt: time.Now()}},
+				AlertRules:         []*AlertRule{&AlertRule{AlertRuleName: "workspace", MetricName: "workspace_memory", ConditionType: ">", PerferSeverity: true, Threshold: 0.6, Period: 20, Unit: "", ConsecutiveCount: 3, InhibitRule: false, Enable: true, RepeatSendType: int32(pb.RepeatSendType_Exponential), InitRepeatSendInterval: 15, MaxRepeatSendCount: 10, CreatedAt: time.Now(), UpdatedAt: time.Now()}},
 			}
 			_, err = alertRuleGroup.Create(db)
 

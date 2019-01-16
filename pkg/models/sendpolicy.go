@@ -13,9 +13,9 @@ type SendPolicy struct {
 	InitRepeatSendInterval  uint32    `gorm:"type:int unsigned;not null;"`
 	NextRepeatSendInterval  uint32    `gorm:"type:int unsigned;not null;"`
 	CumulateRepeatSendCount uint32    `gorm:"type:int unsigned;not null;"`
-	CurrentRepeatSendAt     time.Time `gorm:"not null;"`
 	SilenceStartAt          time.Time `gorm:""`
 	SilenceEndAt            time.Time `gorm:""`
+	CurrentRepeatSendAt     time.Time `gorm:"not null;"`
 	CreatedAt               time.Time `gorm:"not null;"`
 	UpdatedAt               time.Time `gorm:"not null;"`
 }
@@ -100,6 +100,7 @@ func UpdateSendPolicySilenceRule(sendPolicy *SendPolicy) error {
 	if err := db.Model(sendPolicy).Updates(map[string]interface{}{"silence_start_at": startAt, "silence_end_at": endAt}).Error; err != nil {
 		return Error{Text: err.Error(), Code: DBError}
 	}
+
 	return nil
 }
 

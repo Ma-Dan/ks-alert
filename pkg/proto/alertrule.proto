@@ -24,10 +24,7 @@ message AlertRule {
 
     bool inhibit_rule_enable = 11;
     bool enable = 12;
-
-    bool system_rule = 13;
-
-    RepeatSend repeat_send = 14;
+    RepeatSend repeat_send = 13;
 }
 
 message AlertRuleGroupSpec {
