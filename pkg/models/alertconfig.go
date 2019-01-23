@@ -44,7 +44,7 @@ type AlertConfig struct {
 
 func (r *AlertConfig) Create(tx *gorm.DB) (interface{}, error) {
 
-	r.AlertConfigID = idutil.GetUuid36("alert-config-")
+	r.AlertConfigID = idutil.GetUuid36("")
 
 	//sql := "INSERT INTO alert_configs (alert_config_id, alert_config_name, alert_rule_group_id, " +
 	//	"resource_group_id, receiver_group_id, severity_id, severity_ch, enable_start, enable_end, description, created_at, updated_at) VALUES " + item

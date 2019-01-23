@@ -88,7 +88,7 @@ func createAlertRules(tx *gorm.DB, alertRules []*AlertRule, ruleGroupID string) 
 		a := alertRules[i]
 
 		a.AlertRuleGroupID = ruleGroupID
-		a.AlertRuleID = idutil.GetUuid36("rule_id-")
+		a.AlertRuleID = idutil.GetUuid36("")
 
 		item := fmt.Sprintf("('%s','%s','%s','%s','%s','%v','%f','%s','%d','%d','%v','%v','%v','%d','%d','%d','%v','%v') ",
 			a.AlertRuleID, a.AlertRuleName, a.AlertRuleGroupID, a.MetricName, a.ConditionType, Bool2Int[a.PerferSeverity],
@@ -130,7 +130,7 @@ func (r *AlertRuleGroup) Create(tx *gorm.DB) (interface{}, error) {
 		}
 	}
 
-	r.AlertRuleGroupID = idutil.GetUuid36("rule_group-")
+	r.AlertRuleGroupID = idutil.GetUuid36("")
 
 	// do create
 	err := createAlertGroupAndRules(tx, r)
@@ -220,7 +220,7 @@ func (r *AlertRuleGroup) Get(tx *gorm.DB) (interface{}, error) {
 	// get alert rules
 	if rg.AlertRuleGroupID != "" {
 		var alertRules []AlertRule
-		err := tx.Debug().Find(&alertRules, "alert_rule_group_id=?", rg.AlertRuleGroupID).Error
+		err := tx.Find(&alertRules, "alert_rule_group_id=?", rg.AlertRuleGroupID).Error
 		//err := db.Where(&AlertRule{AlertRuleGroupID: r.AlertRuleGroupId}).Find(&alertRules).Error
 		//db.Exec("SELECT * FROM alert_rules WHERE alert_rule_group_id=?", r.AlertRuleGroupId).First(&alertRules)
 

@@ -36,7 +36,7 @@ func CreateSeverity(severity *Severity) (*Severity, error) {
 		return nil, Error{Text: "product not found", Code: InvalidParam}
 	}
 
-	severity.SeverityID = idutil.GetUuid36("severity-")
+	severity.SeverityID = idutil.GetUuid36("")
 
 	err = db.Model(&Severity{}).Create(severity).Error
 
@@ -122,7 +122,7 @@ func GetSeverity(sevSpec *pb.SeveritySpec) (*[]Severity, error) {
 	// get severity by product_id
 	if sevSpec.ProductId != "" {
 		var sevs []Severity
-		//err = db.Debug().Exec("SELECT * from severities WHERE (product_id = ?)", sevSpec.ProductId).Find(&sevs).Error
+		//err = db.Exec("SELECT * from severities WHERE (product_id = ?)", sevSpec.ProductId).Find(&sevs).Error
 		err = db.Find(&sevs, "product_id = ?", sevSpec.ProductId).Error
 
 		if err != nil {

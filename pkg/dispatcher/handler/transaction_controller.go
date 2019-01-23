@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"fmt"
 	"github.com/carmanzhang/ks-alert/pkg/utils/dbutil"
 	"github.com/pkg/errors"
 	"k8s.io/klog/glog"
@@ -67,7 +66,7 @@ func CallReflect(any interface{}, method string, args ...interface{}) (interface
 	for i, _ := range args {
 		inputs[i] = reflect.ValueOf(args[i])
 	}
-	fmt.Printf("%p\n", any)
+
 	v := reflect.ValueOf(any).MethodByName(method)
 
 	if v.String() == "<invalid Value>" {

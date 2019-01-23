@@ -17,7 +17,7 @@ func TestDBClient(t *testing.T) {
 		//	dbClient, err := DBClient()
 		//	So(err, ShouldBeNil)
 		//	var enterprise = models.Enterprise{
-		//		EnterpriseID:   idutil.GetUuid36("enterprise-"),
+		//		EnterpriseID:   idutil.GetUuid36(""),
 		//		EnterpriseName: "北京优帆科技有限公司武汉分公司",
 		//		HomePage:       "https://www.qingcloud.com/",
 		//		Address:        "北京优帆科技有限公司",
@@ -56,7 +56,7 @@ func TestDBClient(t *testing.T) {
 		//	dbClient.Model(&models.Enterprise{}).Where(&models.Enterprise{EnterpriseName:"北京优帆科技有限公司武汉分公司"}).First(&ent)
 		//	fmt.Println(ent.EnterpriseID)
 		//	var product = models.Product{
-		//		ProductID:         idutil.GetUuid36("product-"),
+		//		ProductID:         idutil.GetUuid36(""),
 		//		EnterpriseID:      ent.EnterpriseID,
 		//		MonitorCenterHost: "localhost",
 		//		MonitorCenterPort: 8080,
@@ -84,8 +84,8 @@ func TestDBClient(t *testing.T) {
 //			So(err, ShouldBeNil)
 //
 //			var product = models.Product{
-//				ProductID:         idutil.GetUuid36("product-"),
-//				EnterpriseID:      idutil.GetUuid36("enterprise-"),
+//				ProductID:         idutil.GetUuid36(""),
+//				EnterpriseID:      idutil.GetUuid36(""),
 //				MonitorCenterHost: "localhost",
 //				MonitorCenterPort: 8080,
 //				ProductName:       "kubesphere",

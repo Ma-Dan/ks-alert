@@ -78,7 +78,7 @@ func GetSuggestion(sugSpec *Suggestion) (*Suggestion, error) {
 	// get suggestion by alert_config_id and alert_rule_id and resource_id
 	var suggestion Suggestion
 
-	//err = db.Debug().Raw("SELECT * from suggestions WHERE alert_config_id=? AND alert_rule_id=? AND resource_id=?",
+	//err = db.Raw("SELECT * from suggestions WHERE alert_config_id=? AND alert_rule_id=? AND resource_id=?",
 	//	sugSpec.AlertConfigID, sugSpec.AlertRuleID, sugSpec.ResourceID).Scan(&suggestion).Error
 
 	b := db.Where("alert_config_id=? AND alert_rule_id=? AND resource_id=?",

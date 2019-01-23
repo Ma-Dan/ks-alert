@@ -35,7 +35,7 @@ func CreateSendPolicy(sendPolicy *SendPolicy) error {
 		return Error{Text: "resource id and rule id must be specified", Code: InvalidParam}
 	}
 
-	//sendPolicy.SendPolicyID = idutil.GetUuid36("send_policy-")
+	//sendPolicy.SendPolicyID = idutil.GetUuid36("")
 
 	err = db.Model(&SendPolicy{}).Create(sendPolicy).Error
 
