@@ -5,11 +5,9 @@
 package etcdutil
 
 import (
+	"github.com/golang/glog"
 	"go.etcd.io/etcd/clientv3"
-	"go.etcd.io/etcd/clientv3/concurrency"
 	"go.etcd.io/etcd/clientv3/namespace"
-	"go.etcd.io/etcd/contrib/recipes"
-	"openpitrix.io/logger"
 	"time"
 )
 
@@ -24,24 +22,11 @@ func Connect(endpoints []string, prefix string) (*Etcd, error) {
 		DialTimeout: 5 * time.Second,
 	})
 	if err != nil {
-		logger.Warnf(nil, "%+v", err)
+		glog.Errorln(err.Error())
 		return nil, err
 	}
 	cli.KV = namespace.NewKV(cli.KV, prefix)
 	cli.Watcher = namespace.NewWatcher(cli.Watcher, prefix)
 	cli.Lease = namespace.NewLease(cli.Lease, prefix)
 	return &Etcd{cli}, err
-}
-
-func (etcd *Etcd) NewQueue(topic string) *Queue {
-	return &Queue{recipe.NewQueue(etcd.Client, topic)}
-}
-
-func (etcd *Etcd) NewMutex(key string) (*Mutex, error) {
-	session, err := concurrency.NewSession(etcd.Client)
-	if err != nil {
-		logger.Warnf(nil, "%+v", err)
-		return nil, err
-	}
-	return &Mutex{concurrency.NewMutex(session, key)}, nil
 }

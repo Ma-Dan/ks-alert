@@ -158,7 +158,7 @@ func ListenHttpApi() {
 		writer.Write([]byte("ready"))
 	})
 
-	port := 8081
+	port := 80
 	log.Printf("executor probe service at localhost:%d", port)
 	http.ListenAndServe(fmt.Sprintf(":%d", port), mux)
 }

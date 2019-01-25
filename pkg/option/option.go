@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/carmanzhang/ks-alert/pkg/utils/idutil"
+	"github.com/golang/glog"
 	"github.com/shirou/gopsutil/net"
 	"os"
 	"strings"
@@ -67,10 +68,18 @@ func init() {
 		}
 	}
 
-	// TODO need uncomment
-	//if _, ok := addrs[*ServiceHost]; len(addrs) == 0 || !ok {
-	//	panic(errors.New("no up network interface or giving ip does not exist"))
-	//}
+	if len(addrs) == 0 {
+		panic("no up network interface or giving ip does not exist")
+	}
+
+	if _, ok := addrs[*ServiceHost]; !ok {
+		glog.Errorln("no up network interface or giving ip does not exist")
+
+		for k := range addrs {
+			*ServiceHost = k
+			break
+		}
+	}
 
 	HostID, err = os.Hostname()
 	if err != nil {
