@@ -69,11 +69,11 @@ func init() {
 	}
 
 	if len(addrs) == 0 {
-		panic("no up network interface or giving ip does not exist")
+		panic("no up network interface")
 	}
 
 	if _, ok := addrs[*ServiceHost]; !ok {
-		glog.Errorln("no up network interface or giving ip does not exist")
+		glog.Errorln("giving ip does not exist")
 
 		for k := range addrs {
 			*ServiceHost = k

@@ -32,12 +32,12 @@ spec:
       containers:
       - command:
         - /alerting/dispatcher
-        - --database=alert
-        - --etcd_addr=
-        - --mysql=127.0.0.1
-		- --mysql_port=3306
-        - --user=root
-        - --password=password
+        - -database=alert
+        - -etcd_addr=http://alerting-etcd.kubesphere-monitoring-system.svc:2379
+        - -mysql=alerting-db.kubesphere-monitoring-system.svc
+		- -mysql_port=3306
+        - -user=root
+        - -password=password
         image: carmanzhang/alerting-dev:latest
         imagePullPolicy: IfNotPresent
         name: alerting-dispatcher
