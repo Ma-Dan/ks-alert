@@ -34,7 +34,7 @@ func CreateProduct(product *Product) (*Product, error) {
 		return nil, Error{Text: err.Error(), Code: DBError}
 	}
 
-	product.ProductID = idutil.GetUuid36("product-")
+	product.ProductID = idutil.GetUuid36("")
 
 	err = db.Model(&Product{}).Create(product).Error
 

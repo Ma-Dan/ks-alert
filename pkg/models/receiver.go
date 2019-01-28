@@ -8,32 +8,26 @@ import (
 )
 
 type Receiver struct {
-	ReceiverID   string    `gorm:"type:varchar(50);primary_key" json:"receiver_id, omitempty"`
-	ReceiverName string    `gorm:"type:varchar(50);not null;" json:"receiver_name, omitempty"`
-	Email        string    `gorm:"type:varchar(50);not null;" json:"email, omitempty"`
-	Phone        string    `gorm:"type:varchar(50);" json:"phone, omitempty"`
-	Wechat       string    `gorm:"type:varchar(50);" json:"wechat, omitempty"`
-	CreatedAt    time.Time `gorm:"not null;" json:"-"`
-	UpdatedAt    time.Time `gorm:"not null;" json:"-"`
-}
-
-type ReceiverBindingGroup struct {
 	ReceiverID      string    `gorm:"type:varchar(50);primary_key"`
-	ReceiverGroupID string    `gorm:"type:varchar(50);primary_key" json:"-"`
+	ReceiverName    string    `gorm:"type:varchar(50);not null;"`
+	ReceiverGroupID string    `gorm:"type:varchar(50);not null"`
+	Email           string    `gorm:"type:varchar(50);not null;"`
+	Phone           string    `gorm:"type:varchar(50);"`
+	Wechat          string    `gorm:"type:varchar(50);"`
 	CreatedAt       time.Time `gorm:"not null;"`
 	UpdatedAt       time.Time `gorm:"not null;"`
 }
 
 type ReceiverGroup struct {
 	Action
-	ReceiverGroupID   string      `gorm:"type:varchar(50);primary_key" json:"-"`
-	ReceiverGroupName string      `gorm:"type:varchar(50);not null;" json:"receiver_group_name"`
-	Webhook           string      `gorm:"type:varchar(50);" json:"webhook, omitempty"`
-	WebhookEnable     bool        `gorm:"type:bool;" json:"webhook_enable, omitempty"`
-	Receivers         *[]Receiver `gorm:"-" json:"receivers"`
-	Description       string      `gorm:"type:text;" json:"desc"`
-	CreatedAt         time.Time   `gorm:"not null;" json:"-"`
-	UpdatedAt         time.Time   `gorm:"not null;" json:"-"`
+	ReceiverGroupID   string      `gorm:"type:varchar(50);primary_key"`
+	ReceiverGroupName string      `gorm:"type:varchar(50);not null;"`
+	Webhook           string      `gorm:"type:varchar(50);"`
+	WebhookEnable     bool        `gorm:"type:bool;"`
+	Receivers         *[]Receiver `gorm:"-"`
+	Description       string      `gorm:"type:text;"`
+	CreatedAt         time.Time   `gorm:"not null;"`
+	UpdatedAt         time.Time   `gorm:"not null;"`
 }
 
 func (r *ReceiverGroup) Create(tx *gorm.DB) (interface{}, error) {
@@ -45,7 +39,9 @@ func (r *ReceiverGroup) Create(tx *gorm.DB) (interface{}, error) {
 		return nil, Error{Text: "the receiver group must contain at least one receiver", Code: InvalidParam}
 	}
 
-	r.ReceiverGroupID = idutil.GetUuid36("receiver_group-")
+	if r.ReceiverGroupID == "" {
+		r.ReceiverGroupID = idutil.GetUuid36("")
+	}
 
 	// create group
 	item := fmt.Sprintf("('%s','%s','%s','%v','%s','%v','%v')", r.ReceiverGroupID, r.ReceiverGroupName,
@@ -59,53 +55,17 @@ func (r *ReceiverGroup) Create(tx *gorm.DB) (interface{}, error) {
 	}
 
 	// create item
-	sql = "INSERT INTO receivers (receiver_id, receiver_name, email, phone, wechat, created_at, updated_at) VALUES "
+	sql = "INSERT INTO receivers (receiver_id, receiver_group_id, receiver_name, email, phone, wechat, created_at, updated_at) VALUES "
 
 	receivers := *r.Receivers
 	l := len(receivers)
 
-	var recvIds []string
-	var createdRrecvIds []string
-
 	for i := 0; i < l; i++ {
 		receiver := receivers[i]
+		receiver.ReceiverID = idutil.GetUuid36("")
 
-		// TODO need to validate the receiver_id exist
-		//if receiver.ReceiverID != "" {
-		//	recvIds = append(recvIds, receiver.ReceiverID)
-		//	continue
-		//}
-
-		recvId := idutil.GetUuid36("rule_id-")
-		createdRrecvIds = append(createdRrecvIds, recvId)
-
-		receiver.ReceiverID = recvId
-
-		item := fmt.Sprintf("('%s','%s','%s','%s','%s','%v','%v') ",
-			receiver.ReceiverID, receiver.ReceiverName, receiver.Email, receiver.Phone, receiver.Wechat, receiver.CreatedAt, receiver.UpdatedAt)
-
-		sql = sql + item
-		if i != l-1 {
-			sql = sql + ","
-		}
-	}
-
-	if len(createdRrecvIds) > 0 {
-		fmt.Println(sql)
-
-		if err := tx.Exec(sql).Error; err != nil {
-			return nil, Error{Text: err.Error(), Code: DBError}
-		}
-	}
-
-	sql = "INSERT INTO receiver_binding_groups (receiver_id, receiver_group_id, created_at, updated_at) VALUES "
-
-	recvIds = append(recvIds, createdRrecvIds...)
-
-	for i := 0; i < len(recvIds); i++ {
-
-		item := fmt.Sprintf("('%s','%s','%v','%v') ",
-			recvIds[i], r.ReceiverGroupID, time.Now(), time.Now())
+		item := fmt.Sprintf("('%s','%s','%s','%s','%s','%s','%v','%v') ",
+			receiver.ReceiverID, r.ReceiverGroupID, receiver.ReceiverName, receiver.Email, receiver.Phone, receiver.Wechat, receiver.CreatedAt, receiver.UpdatedAt)
 
 		sql = sql + item
 		if i != l-1 {
@@ -120,24 +80,15 @@ func (r *ReceiverGroup) Create(tx *gorm.DB) (interface{}, error) {
 	return r, nil
 }
 
-// TODO this function is not feasible
 func (r *ReceiverGroup) Update(tx *gorm.DB) (interface{}, error) {
-
-	if r.ReceiverGroupID == "" {
-		return nil, Error{Text: "the receiver group id must be specified", Code: InvalidParam}
-	}
-
-	// 1. get group first
 	vget, err := r.Get(tx)
-
 	if err != nil {
 		return nil, err
 	}
 
 	rg := vget.(*ReceiverGroup)
-
-	if rg == nil || rg.ReceiverGroupID == "" {
-		return nil, Error{Text: fmt.Sprintf("resource group id: %s not exist", r.ReceiverGroupID), Code: InvalidParam}
+	if rg.ReceiverGroupID == "" {
+		return nil, Error{Text: "the receiver group id does not valid", Code: InvalidParam}
 	}
 
 	// 2. delete group
@@ -147,10 +98,8 @@ func (r *ReceiverGroup) Update(tx *gorm.DB) (interface{}, error) {
 		return nil, err
 	}
 
+	r.ReceiverGroupID = rg.ReceiverGroupID
 	// 3. create item
-	createDate := rg.CreatedAt
-	r.CreatedAt = createDate
-
 	return r.Create(tx)
 }
 
@@ -176,20 +125,13 @@ func (r *ReceiverGroup) Get(tx *gorm.DB) (interface{}, error) {
 	if rg.ReceiverGroupID != "" {
 		var receivers []Receiver
 		//
-		sql := "SELECT r.* FROM receiver_binding_groups as rb LEFT JOIN receivers as r ON rb.receiver_id=r.receiver_id WHERE rb.receiver_group_id=?"
+		sql := "SELECT r.* FROM receivers as r WHERE r.receiver_group_id=?"
 
-		if err := tx.Debug().Raw(sql, rg.ReceiverGroupID).Scan(&receivers).Error; err != nil {
+		if err := tx.Raw(sql, rg.ReceiverGroupID).Scan(&receivers).Error; err != nil {
 			return nil, Error{Text: err.Error(), Code: DBError}
 		}
 
-		//err := tx.Find(&receivers, "receiver_group_id=?", rg.ReceiverGroupID).Error
-		//
-		//if err != nil {
-		//	tx.Rollback()
-		//	return nil, err
-		//}
 		rg.Receivers = &receivers
-
 		return &rg, nil
 	}
 
@@ -201,18 +143,10 @@ func (r *ReceiverGroup) Delete(tx *gorm.DB) (interface{}, error) {
 		return nil, Error{Text: "receiver group id must be specified", Code: InvalidParam}
 	}
 
-	sql := "DELETE rg, rb FROM receiver_groups as rg LEFT JOIN receiver_binding_groups as rb ON rg.receiver_group_id=rb.receiver_group_id WHERE rg.receiver_group_id=?"
+	sql := "DELETE rg, r FROM receiver_groups as rg LEFT JOIN receivers as r ON rg.receiver_group_id=r.receiver_group_id WHERE rg.receiver_group_id=?"
 
 	if err := tx.Exec(sql, r.ReceiverGroupID).Error; err != nil {
 		return nil, Error{Text: err.Error(), Code: DBError}
 	}
-
-	// delete receiver which is not in any receiver group
-	sql = "DELETE r FROM receivers as r LEFT JOIN receiver_binding_groups as rb ON r.receiver_id=rb.receiver_id WHERE rb.receiver_group_id IS NULL;"
-
-	if err := tx.Exec(sql).Error; err != nil {
-		return nil, Error{Text: err.Error(), Code: DBError}
-	}
-
 	return nil, nil
 }

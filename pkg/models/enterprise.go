@@ -28,7 +28,7 @@ func CreateEnterprise(enterprise *Enterprise) (*Enterprise, error) {
 		return nil, Error{Text: err.Error(), Code: DBError}
 	}
 
-	enterprise.EnterpriseID = idutil.GetUuid36("enterprise-")
+	enterprise.EnterpriseID = idutil.GetUuid36("")
 
 	err = db.Model(&Enterprise{}).Create(enterprise).Error
 

@@ -10,36 +10,35 @@ import (
 var Bool2Int = map[bool]int8{true: 1, false: 0}
 
 type AlertRule struct {
-	AlertRuleID      string `gorm:"primary_key" json:"-"`
-	AlertRuleName    string `gorm:"type:varchar(50);not null;" json:"-"`
-	AlertRuleGroupID string `gorm:"type:varchar(50);not null;" json:"-"`
+	AlertRuleID      string `gorm:"primary_key"`
+	AlertRuleName    string `gorm:"type:varchar(50);not null;"`
+	AlertRuleGroupID string `gorm:"type:varchar(50);not null;"`
 
-	MetricName string `gorm:"type:varchar(50);" json:"metric_name"`
+	MetricName string `gorm:"type:varchar(50);"`
 
-	ConditionType string `gorm:"type:varchar(10);not null;" json:"condition_type"`
+	ConditionType string `gorm:"type:varchar(10);not null;"`
 	// a flag which use to indicate that relationship between Severity and Threshold
-	PerferSeverity bool `gorm:"type:boolean;" json:"perfer_severity"`
+	PerferSeverity bool `gorm:"type:boolean;"`
 
-	Threshold float32 `gorm:"type:float;not null;" json:"threshold"`
+	Threshold float32 `gorm:"type:float;not null;"`
 
 	//ThresholdSeverityString string              `gorm:"type:text;not null;" json:"-"`
 	//ThresholdSeverity       []ThresholdSeverity `gorm:"-" json:"threshold_severity"`
 
-	Unit string `gorm:"type:varchar(10);" json:"unit"`
+	Unit string `gorm:"type:varchar(10);"`
 
-	Period           int32 `gorm:"type:int;not null;" json:"period"`
-	ConsecutiveCount int32 `gorm:"type:int;not null;" json:"consecutive_count"`
+	Period           int32 `gorm:"type:int;not null;"`
+	ConsecutiveCount int32 `gorm:"type:int;not null;"`
 
-	InhibitRule bool `gorm:"type:boolean;" json:"inhibit_rule_enable"`
-	Enable      bool `gorm:"type:boolean;" json:"enable"`
-	SystemRule  bool `gorm:"type:boolean;" json:"enable"`
+	InhibitRule bool `gorm:"type:boolean;"`
+	Enable      bool `gorm:"type:boolean;"`
 	// repeat send
 	RepeatSendType         int32  `gorm:"type:varchar(10);not null;"`
 	InitRepeatSendInterval uint32 `gorm:"type:mediumint(11) unsigned;not null;"`
 	MaxRepeatSendCount     uint32 `gorm:"type:mediumint(11) unsigned;not null;"`
 
-	CreatedAt time.Time `gorm:"not null;" json:"-"`
-	UpdatedAt time.Time `gorm:"not null;" json:"-"`
+	CreatedAt time.Time `gorm:"not null;"`
+	UpdatedAt time.Time `gorm:"not null;"`
 }
 
 type AlertRuleGroup struct {
@@ -70,22 +69,30 @@ func createAlertGroupAndRules(tx *gorm.DB, ruleGroup *AlertRuleGroup) error {
 		return Error{Text: err.Error(), Code: DBError}
 	}
 
-	// create alert rules
-	sql = "INSERT INTO alert_rules (alert_rule_id, " +
-		"alert_rule_name, alert_rule_group_id, metric_name, condition_type, perfer_severity, " +
-		"threshold, unit, period, consecutive_count, inhibit_rule, enable, system_rule, repeat_send_type, " +
-		"init_repeat_send_interval, max_repeat_send_count, created_at, updated_at) VALUES "
+	err := createAlertRules(tx, alertRules, ruleGroup.AlertRuleGroupID)
+	if err != nil {
+		return Error{Text: err.Error(), Code: DBError}
+	}
 
+	return nil
+}
+
+func createAlertRules(tx *gorm.DB, alertRules []*AlertRule, ruleGroupID string) error {
+	// create alert rules
+	sql := "INSERT INTO alert_rules (alert_rule_id, " +
+		"alert_rule_name, alert_rule_group_id, metric_name, condition_type, perfer_severity, " +
+		"threshold, unit, period, consecutive_count, inhibit_rule, enable, repeat_send_type, " +
+		"init_repeat_send_interval, max_repeat_send_count, created_at, updated_at) VALUES "
 	l := len(alertRules)
 	for i := 0; i < l; i++ {
 		a := alertRules[i]
 
-		a.AlertRuleGroupID = ruleGroup.AlertRuleGroupID
-		a.AlertRuleID = idutil.GetUuid36("rule_id-")
+		a.AlertRuleGroupID = ruleGroupID
+		a.AlertRuleID = idutil.GetUuid36("")
 
 		item := fmt.Sprintf("('%s','%s','%s','%s','%s','%v','%f','%s','%d','%d','%v','%v','%v','%d','%d','%d','%v','%v') ",
 			a.AlertRuleID, a.AlertRuleName, a.AlertRuleGroupID, a.MetricName, a.ConditionType, Bool2Int[a.PerferSeverity],
-			a.Threshold, a.Unit, a.Period, a.ConsecutiveCount, Bool2Int[a.InhibitRule], Bool2Int[a.Enable], Bool2Int[systemRule],
+			a.Threshold, a.Unit, a.Period, a.ConsecutiveCount, Bool2Int[a.InhibitRule], Bool2Int[a.Enable],
 			a.RepeatSendType, a.InitRepeatSendInterval, a.MaxRepeatSendCount, a.CreatedAt, a.UpdatedAt)
 
 		sql = sql + item
@@ -94,12 +101,7 @@ func createAlertGroupAndRules(tx *gorm.DB, ruleGroup *AlertRuleGroup) error {
 		}
 	}
 
-	fmt.Println(sql)
-
-	if err := tx.Exec(sql).Error; err != nil {
-		return Error{Text: err.Error(), Code: DBError}
-	}
-	return nil
+	return tx.Exec(sql).Error
 }
 
 func (r *AlertRuleGroup) Create(tx *gorm.DB) (interface{}, error) {
@@ -128,7 +130,7 @@ func (r *AlertRuleGroup) Create(tx *gorm.DB) (interface{}, error) {
 		}
 	}
 
-	r.AlertRuleGroupID = idutil.GetUuid36("rule_group-")
+	r.AlertRuleGroupID = idutil.GetUuid36("")
 
 	// do create
 	err := createAlertGroupAndRules(tx, r)
@@ -154,35 +156,38 @@ func (r *AlertRuleGroup) Update(tx *gorm.DB) (interface{}, error) {
 		Bool2Int[r.SystemRule],
 		r.UpdatedAt, r.AlertRuleGroupID)
 
-	fmt.Println(sql)
-
 	if err := tx.Exec(sql).Error; err != nil {
 		return nil, Error{Text: err.Error(), Code: DBError}
 	}
 
+	var needCreatedAlertRule []*AlertRule
 	// update alert rules
 	l := len(alertRules)
 	for i := 0; i < l; i++ {
 		a := alertRules[i]
 
 		if a.AlertRuleID == "" {
+			needCreatedAlertRule = append(needCreatedAlertRule, a)
 			continue
 		}
 
 		sql = fmt.Sprintf("UPDATE alert_rules SET "+
 			"alert_rule_name='%s', metric_name='%s', condition_type='%s', perfer_severity='%v', "+
-			"threshold='%f', unit='%s', period='%d', consecutive_count='%d', inhibit_rule='%v', enable='%v', system_rule='%v', repeat_send_type='%d', "+
+			"threshold='%f', unit='%s', period='%d', consecutive_count='%d', inhibit_rule='%v', enable='%v', repeat_send_type='%d', "+
 			"init_repeat_send_interval='%d', max_repeat_send_count='%d', updated_at='%v' WHERE alert_rule_group_id='%s' AND alert_rule_id='%s'",
 			a.AlertRuleName, a.MetricName, a.ConditionType, Bool2Int[a.PerferSeverity],
 			a.Threshold, a.Unit, a.Period, a.ConsecutiveCount, Bool2Int[a.InhibitRule],
-			Bool2Int[a.Enable], Bool2Int[r.SystemRule],
-			a.RepeatSendType, a.InitRepeatSendInterval, a.MaxRepeatSendCount, time.Now(),
-			r.AlertRuleGroupID, a.AlertRuleID)
+			Bool2Int[a.Enable], a.RepeatSendType, a.InitRepeatSendInterval,
+			a.MaxRepeatSendCount, time.Now(), r.AlertRuleGroupID, a.AlertRuleID)
 
-		fmt.Println(sql)
 		if err := tx.Exec(sql).Error; err != nil {
 			return nil, Error{Text: err.Error(), Code: DBError}
 		}
+	}
+
+	if len(needCreatedAlertRule) > 0 {
+		err := createAlertRules(tx, needCreatedAlertRule, r.AlertRuleGroupID)
+		return nil, Error{Text: err.Error(), Code: DBError}
 	}
 
 	return r, nil
@@ -215,7 +220,7 @@ func (r *AlertRuleGroup) Get(tx *gorm.DB) (interface{}, error) {
 	// get alert rules
 	if rg.AlertRuleGroupID != "" {
 		var alertRules []AlertRule
-		err := tx.Debug().Find(&alertRules, "alert_rule_group_id=?", rg.AlertRuleGroupID).Error
+		err := tx.Find(&alertRules, "alert_rule_group_id=?", rg.AlertRuleGroupID).Error
 		//err := db.Where(&AlertRule{AlertRuleGroupID: r.AlertRuleGroupId}).Find(&alertRules).Error
 		//db.Exec("SELECT * FROM alert_rules WHERE alert_rule_group_id=?", r.AlertRuleGroupId).First(&alertRules)
 
@@ -239,11 +244,28 @@ func (r *AlertRuleGroup) Delete(tx *gorm.DB) (interface{}, error) {
 	typeID := r.ResourceTypeID
 	//systemRule := alertRuleSpec.SystemRule
 
-	if groupID == "" && typeID == "" {
-		return nil, Error{Text: "rsource type id or rule group id must be specified", Code: InvalidParam}
+	// only can remove one alert rule once
+	var ruleID string
+	l := len(r.AlertRules)
+	for i := 0; i < l; i++ {
+		id := r.AlertRules[i].AlertRuleID
+		if id != "" {
+			ruleID = id
+			break
+		}
 	}
 
-	if groupID != "" {
+	if groupID == "" && typeID == "" && ruleID != "" {
+		return nil, Error{Text: "resource type id or rule group id or rule id must be specified", Code: InvalidParam}
+	}
+
+	if ruleID != "" {
+		sql := "DELETE ar FROM alert_rules as ar WHERE ar.alert_rule_id=?"
+
+		if err := tx.Exec(sql, ruleID).Error; err != nil {
+			return nil, Error{Text: err.Error(), Code: DBError}
+		}
+	} else if groupID != "" {
 		sql := "DELETE arg, ar FROM alert_rule_groups as arg LEFT JOIN alert_rules as ar ON arg.alert_rule_group_id=ar.alert_rule_group_id WHERE arg.alert_rule_group_id=?"
 
 		if err := tx.Exec(sql, groupID).Error; err != nil {

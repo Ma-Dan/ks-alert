@@ -1,0 +1,17 @@
+syntax = "proto3";
+package pb;
+option go_package = "pb";
+
+message Empty {
+}
+
+message Content {
+    string text = 1;
+}
+
+service Echo {
+    rpc Ping (Empty) returns (Content) {
+    }
+    rpc Reverse (Content) returns (Content) {
+    }
+}

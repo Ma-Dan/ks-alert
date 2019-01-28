@@ -3,8 +3,8 @@ package registry
 import (
 	"fmt"
 	"github.com/carmanzhang/ks-alert/pkg/utils/jsonutil"
+	"github.com/golang/glog"
 	etcd3 "go.etcd.io/etcd/clientv3"
-	"go.etcd.io/etcd/etcdserver/api/v3rpc/rpctypes"
 	"golang.org/x/net/context"
 	"log"
 	"strings"
@@ -20,13 +20,14 @@ var stopSignal = make(chan bool, 1)
 func Register(svcName string, host string, port int, target string, interval time.Duration, ttl int) error {
 	svcAddr := fmt.Sprintf("%s:%d", host, port)
 	svcKey = fmt.Sprintf("/%s/%s", svcName, svcAddr)
-
+	fmt.Println(svcAddr, svcKey)
 	// get endpoints for register dial address
 	var err error
 	client, err = etcd3.New(etcd3.Config{
 		Endpoints: strings.Split(target, ","),
 	})
 	if err != nil {
+		fmt.Println(err.Error())
 		return fmt.Errorf("create etcd3 client failed: %v", err)
 	}
 	go func() {
@@ -38,24 +39,14 @@ func Register(svcName string, host string, port int, target string, interval tim
 				return
 			case <-ticker.C:
 				// minimum lease TTL is ttl-second
-				resp, _ := client.Grant(context.TODO(), int64(ttl))
-				// should get first, if not exist, set it
-				_, err := client.Get(context.Background(), svcKey)
+				resp, err := client.Grant(context.TODO(), int64(ttl))
 				if err != nil {
-					if err == rpctypes.ErrKeyNotFound {
-						if _, err := client.Put(context.TODO(), svcKey, svcAddr, etcd3.WithLease(resp.ID)); err != nil {
-							log.Printf("set service '%s' with ttl to etcd3 failed: %s", svcName, err.Error())
-						}
-					} else {
-						log.Printf("service '%s' connect to etcd3 failed: %s", svcName, err.Error())
-					}
-				} else {
-					// refresh set to true for not notifying the watcher
-					// TODO this calling is time consuming
-					value := jsonutil.Marshal(&ServiceInfo{ServiceAddress: svcAddr, SysStatus: GetHardwareData()})
-					if _, err := client.Put(context.Background(), svcKey, value, etcd3.WithLease(resp.ID)); err != nil {
-						log.Printf("refresh service '%s' with ttl to etcd3 failed: %s", svcName, err.Error())
-					}
+					glog.Errorln(err.Error())
+				}
+
+				value := jsonutil.Marshal(&ServiceInfo{ServiceAddress: svcAddr, SysStatus: GetHardwareData()})
+				if _, err := client.Put(context.Background(), svcKey, value, etcd3.WithLease(resp.ID)); err != nil {
+					log.Printf("refresh service '%s' with ttl to etcd3 failed: %s", svcName, err.Error())
 				}
 			}
 		}

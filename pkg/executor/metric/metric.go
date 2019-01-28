@@ -107,7 +107,7 @@ func GetResourceTimeSeriesMetric(metricStr string, metricName string, startTime 
 			var timeRangeMetrics []TimeSeriesMetric
 			err := json.Unmarshal(r, &timeRangeMetrics)
 			if err != nil {
-				fmt.Printf(err.Error())
+				glog.Errorln(err.Error())
 			}
 
 			item := make(map[string][]TV)

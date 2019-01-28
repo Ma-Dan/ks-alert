@@ -58,7 +58,7 @@ func CreateAlertHistory(ah *AlertHistory) (*AlertHistory, error) {
 		return nil, Error{Text: err.Error(), Code: DBError}
 	}
 
-	ah.AlertHistoryID = idutil.GetUuid36("alert_history_")
+	ah.AlertHistoryID = idutil.GetUuid36("")
 	err = db.Model(&AlertHistory{}).Create(ah).Error
 
 	if err != nil {

@@ -25,7 +25,18 @@ func CreateSeverity(severity *Severity) (*Severity, error) {
 		return nil, Error{Text: err.Error(), Code: DBError}
 	}
 
-	severity.SeverityID = idutil.GetUuid36("severity-")
+	// check product exists
+	product, err := GetProduct(&Product{ProductID: severity.ProductID})
+
+	if err != nil {
+		return nil, err
+	}
+
+	if product.ProductID == "" {
+		return nil, Error{Text: "product not found", Code: InvalidParam}
+	}
+
+	severity.SeverityID = idutil.GetUuid36("")
 
 	err = db.Model(&Severity{}).Create(severity).Error
 
@@ -49,8 +60,6 @@ func UpdateSeverity(severity *Severity) (*Severity, error) {
 		severity.SeverityEn, severity.SeverityCh,
 		time.Now(), severity.SeverityID)
 
-	fmt.Println(sql)
-
 	if err := db.Exec(sql).Error; err != nil {
 		if db.RecordNotFound() {
 			return nil, Error{Text: "record not found", Code: DBError}
@@ -69,7 +78,13 @@ func DeleteSeverity(sevSpec *pb.SeveritySpec) (*Severity, error) {
 		return nil, Error{Text: err.Error(), Code: DBError}
 	}
 
-	err = db.Raw("DELETE from severities WHERE severity_id=?", sevSpec.SeverityId).Error
+	sID := sevSpec.SeverityId
+
+	if sID == "" {
+		return nil, Error{Text: "severity id must be specified", Code: InvalidParam}
+	}
+
+	err = db.Exec("DELETE from severities WHERE severity_id=?", sID).Error
 
 	if err != nil {
 		return nil, Error{Text: err.Error(), Code: DBError}
@@ -100,11 +115,14 @@ func GetSeverity(sevSpec *pb.SeveritySpec) (*[]Severity, error) {
 		if sev.SeverityID != "" {
 			severities = &[]Severity{sev}
 		}
+
+		return severities, nil
 	}
+
 	// get severity by product_id
 	if sevSpec.ProductId != "" {
 		var sevs []Severity
-		//err = db.Debug().Exec("SELECT * from severities WHERE (product_id = ?)", sevSpec.ProductId).Find(&sevs).Error
+		//err = db.Exec("SELECT * from severities WHERE (product_id = ?)", sevSpec.ProductId).Find(&sevs).Error
 		err = db.Find(&sevs, "product_id = ?", sevSpec.ProductId).Error
 
 		if err != nil {

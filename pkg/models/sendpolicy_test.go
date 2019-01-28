@@ -25,11 +25,14 @@ func TestGetSendPolicy(t *testing.T) {
 func TestUpdateSendPolicy(t *testing.T) {
 	Convey("test get fired alert", t, func() {
 		Convey("test01", func() {
-			err := CreateOrUpdateSendPolicy(&SendPolicy{
-				AlertRuleID:             "zzzz",
-				ResourceID:              "errrrrrrr",
-				CumulateRepeatSendCount: 99,
+			err := UpdateSendPolicySilenceRule(&SendPolicy{
+				AlertRuleID:             "rule_id-yyyyy",
+				ResourceID:              "rule_id-yyyyy",
+				CumulateRepeatSendCount: 100,
 				NextRepeatSendInterval:  88,
+				SilenceStartAt:          time.Now(),
+				SilenceEndAt:            time.Now().Add(time.Minute * 5),
+				UpdatedAt:               time.Now(),
 			})
 			fmt.Println(err)
 		})
@@ -45,8 +48,8 @@ func TestCreateSendPolicy(t *testing.T) {
 			fmt.Println(ti, err)
 
 			e := CreateSendPolicy(&SendPolicy{
-				AlertRuleID: "xxxxx",
-				ResourceID:  "errrrrrrr",
+				AlertRuleID: "rule_id-yyyyy",
+				ResourceID:  "rule_id-yyyyy",
 				//SendPolicyID:              "tttttttt",
 				NextRepeatSendInterval:  1,
 				CumulateRepeatSendCount: 0,

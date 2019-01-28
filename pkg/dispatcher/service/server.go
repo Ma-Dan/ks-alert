@@ -56,6 +56,7 @@ func Run() {
 	pb.RegisterSilenceHandlerServer(s, &handler.SilenceHandler{})
 	pb.RegisterSuggestionHandlerServer(s, &handler.SuggestionHandler{})
 	pb.RegisterSeverityHandlerServer(s, &handler.SeverityHandler{})
+	pb.RegisterEchoServer(s, &handler.TestGrpc{})
 
 	s.Serve(lis)
 }

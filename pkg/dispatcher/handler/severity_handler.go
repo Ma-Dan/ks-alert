@@ -12,10 +12,10 @@ type SeverityHandler struct{}
 // Severity
 func (server SeverityHandler) CreateSeverity(ctx context.Context, pbSev *pb.Severity) (*pb.SeverityResponse, error) {
 
-	if pbSev.SeverityEn == "" || pbSev.SeverityCh == "" || pbSev.ProductId == "" {
+	if pbSev.SeverityEn == "" || pbSev.SeverityCh == "" || (pbSev.ProductId == "" && pbSev.SeverityId == "") {
 		return getSeverityResponse(nil, models.Error{
 			Code: models.InvalidParam,
-			Text: "severity name or product id must be specified",
+			Text: "severity name or product id or severity id must be specified",
 		}), nil
 	}
 
@@ -90,20 +90,20 @@ func (server SeverityHandler) GetSeverity(ctx context.Context, sevSpec *pb.Sever
 	}
 
 	// get Severities by product_id
-	if sevSpec.ProductId == "" && sevSpec.ProductName != "" {
+	var prodID = sevSpec.ProductId
+	if prodID == "" && sevSpec.ProductName != "" {
 
 		product, err := models.GetProduct(&models.Product{ProductName: sevSpec.ProductName})
 		if err != nil {
 			return getSeveritiesResponse(nil, err), nil
 		}
 
-		sevSpec.ProductId = product.ProductID
-
-		severity, err := models.GetSeverity(sevSpec)
-		return getSeveritiesResponse(severity, err), nil
+		prodID = product.ProductID
 	}
 
-	return getSeveritiesResponse(nil, nil), nil
+	sevSpec.ProductId = prodID
+	severity, err := models.GetSeverity(sevSpec)
+	return getSeveritiesResponse(severity, err), nil
 }
 
 func ConvertSeverity2PB(sev *models.Severity) *pb.Severity {

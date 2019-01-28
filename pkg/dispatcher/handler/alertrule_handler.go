@@ -111,7 +111,6 @@ func ConvertAlertRules2PB(alertRules []*models.AlertRule) []*pb.AlertRule {
 				Unit:             ptr.Unit,
 				ConsecutiveCount: ptr.ConsecutiveCount,
 				Enable:           ptr.Enable,
-				SystemRule:       ptr.SystemRule,
 				RepeatSend: &pb.RepeatSend{
 					InitRepeatSendInterval: ptr.InitRepeatSendInterval,
 					RepeatSendType:         pb.RepeatSendType(ptr.RepeatSendType),
@@ -147,7 +146,6 @@ func ConvertPB2AlertRules(pbAlertRules []*pb.AlertRule) []*models.AlertRule {
 				ConsecutiveCount:       ptr.ConsecutiveCount,
 				InhibitRule:            ptr.InhibitRuleEnable,
 				Enable:                 ptr.Enable,
-				SystemRule:             ptr.SystemRule,
 				RepeatSendType:         int32(ptr.RepeatSend.RepeatSendType),
 				InitRepeatSendInterval: ptr.RepeatSend.InitRepeatSendInterval,
 				MaxRepeatSendCount:     ptr.RepeatSend.MaxRepeatSendCount,
