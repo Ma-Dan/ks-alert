@@ -32,11 +32,11 @@ type ReceiverGroup struct {
 
 func (r *ReceiverGroup) Create(tx *gorm.DB) (interface{}, error) {
 	if r.ReceiverGroupName == "" {
-		return nil, Error{Text: "the receiver group name must be specified", Code: InvalidParam}
+		return nil, Error{Text: "the receiver group name must be specified", Code: InvalidParam, Where: Caller(1, true)}
 	}
 
 	if r.Receivers == nil || len(*r.Receivers) == 0 {
-		return nil, Error{Text: "the receiver group must contain at least one receiver", Code: InvalidParam}
+		return nil, Error{Text: "the receiver group must contain at least one receiver", Code: InvalidParam, Where: Caller(1, true)}
 	}
 
 	if r.ReceiverGroupID == "" {
@@ -51,7 +51,7 @@ func (r *ReceiverGroup) Create(tx *gorm.DB) (interface{}, error) {
 		"webhook_enable, description, created_at, updated_at) VALUES " + item
 
 	if err := tx.Exec(sql).Error; err != nil {
-		return nil, Error{Text: err.Error(), Code: DBError}
+		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
 	}
 
 	// create item
@@ -74,7 +74,7 @@ func (r *ReceiverGroup) Create(tx *gorm.DB) (interface{}, error) {
 	}
 
 	if err := tx.Exec(sql).Error; err != nil {
-		return nil, Error{Text: err.Error(), Code: DBError}
+		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
 	}
 
 	return r, nil
@@ -88,7 +88,7 @@ func (r *ReceiverGroup) Update(tx *gorm.DB) (interface{}, error) {
 
 	rg := vget.(*ReceiverGroup)
 	if rg.ReceiverGroupID == "" {
-		return nil, Error{Text: "the receiver group id does not valid", Code: InvalidParam}
+		return nil, Error{Text: "the receiver group id does not valid", Code: InvalidParam, Where: Caller(1, true)}
 	}
 
 	// 2. delete group
@@ -105,7 +105,7 @@ func (r *ReceiverGroup) Update(tx *gorm.DB) (interface{}, error) {
 
 func (r *ReceiverGroup) Get(tx *gorm.DB) (interface{}, error) {
 	if r.ReceiverGroupID == "" {
-		return nil, Error{Text: "receiver group id must be specified", Code: InvalidParam}
+		return nil, Error{Text: "receiver group id must be specified", Code: InvalidParam, Where: Caller(1, true)}
 	}
 
 	var rg ReceiverGroup
@@ -113,13 +113,13 @@ func (r *ReceiverGroup) Get(tx *gorm.DB) (interface{}, error) {
 	err := tx.Model(&ReceiverGroup{}).Where("receiver_group_id=?", r.ReceiverGroupID).First(&rg).Error
 
 	if err != nil {
-		return nil, Error{Text: err.Error(), Code: DBError}
+		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
 	}
 
 	exist := tx.RecordNotFound()
 
 	if exist {
-		return nil, Error{Text: "record not found", Code: DBError}
+		return nil, Error{Text: "record not found", Code: DBError, Where: Caller(1, true)}
 	}
 
 	if rg.ReceiverGroupID != "" {
@@ -128,7 +128,7 @@ func (r *ReceiverGroup) Get(tx *gorm.DB) (interface{}, error) {
 		sql := "SELECT r.* FROM receivers as r WHERE r.receiver_group_id=?"
 
 		if err := tx.Raw(sql, rg.ReceiverGroupID).Scan(&receivers).Error; err != nil {
-			return nil, Error{Text: err.Error(), Code: DBError}
+			return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
 		}
 
 		rg.Receivers = &receivers
@@ -140,13 +140,13 @@ func (r *ReceiverGroup) Get(tx *gorm.DB) (interface{}, error) {
 
 func (r *ReceiverGroup) Delete(tx *gorm.DB) (interface{}, error) {
 	if r.ReceiverGroupID == "" {
-		return nil, Error{Text: "receiver group id must be specified", Code: InvalidParam}
+		return nil, Error{Text: "receiver group id must be specified", Code: InvalidParam, Where: Caller(1, true)}
 	}
 
 	sql := "DELETE rg, r FROM receiver_groups as rg LEFT JOIN receivers as r ON rg.receiver_group_id=r.receiver_group_id WHERE rg.receiver_group_id=?"
 
 	if err := tx.Exec(sql, r.ReceiverGroupID).Error; err != nil {
-		return nil, Error{Text: err.Error(), Code: DBError}
+		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
 	}
 	return nil, nil
 }

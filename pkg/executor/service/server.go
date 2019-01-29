@@ -75,7 +75,7 @@ func Run() {
 				resp, _ := e.Get(context.Background(), prefix, clientv3.WithPrefix())
 				ss := registry.GetAllExecutorServiceInfo(resp)
 				addrMap := ss.ExtractServiceAddrs()
-				svcAddr := fmt.Sprintf("%s:%d", *option.ServiceHost, *option.ExecutorServicePort)
+				svcAddr := option.HostInfo
 				if _, ok := addrMap[svcAddr]; !ok {
 					counter = counter + 1
 				} else {
@@ -94,13 +94,12 @@ func Run() {
 	go func() {
 		//timer := time.NewTicker(time.Minute * 1)
 		timer := time.NewTicker(time.Second * 15)
-		hostID := fmt.Sprintf("%s:%d", *option.ServiceHost, *option.ExecutorServicePort)
 		recordLimit := 3
 		for {
 			select {
 			case <-timer.C:
 				latestReportTime := time.Now().Add(-time.Minute * runtime.MaxKeepAliveReportInterval)
-				alertConfigs, err := models.GetAbnormalExecutedAlertConfig(hostID, latestReportTime, recordLimit)
+				alertConfigs, err := models.GetAbnormalExecutedAlertConfig(option.HostInfo, latestReportTime, recordLimit)
 
 				if err != nil {
 					glog.Errorln(err.Error())
@@ -108,8 +107,8 @@ func Run() {
 
 				for i := range *alertConfigs {
 					ac := &(*alertConfigs)[i]
-					if ac.HostID != hostID {
-						ac.HostID = hostID
+					if ac.HostID != option.HostInfo {
+						ac.HostID = option.HostInfo
 					}
 					ac.KeepAliveAt = time.Now()
 					ac.Version += 1

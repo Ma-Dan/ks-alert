@@ -18,13 +18,16 @@ type GrpcStatusError interface {
 func ErrorWrapper(vErr interface{}, extMsg ...string) *pb.Error {
 	var txt string
 	var code int32
+	var where string
 	switch v := vErr.(type) {
 	case *pb.Error:
 		txt = v.Text
 		code = v.Code
+		where = v.Where
 	case models.Error:
 		txt = v.Text
 		code = v.Code
+		where = v.Where
 	case GrpcStatusError:
 		s := v.GRPCStatus()
 		if s.Code() == codes.Unknown {
@@ -45,5 +48,5 @@ func ErrorWrapper(vErr interface{}, extMsg ...string) *pb.Error {
 		txt = strings.Join(extMsg, " : ") + " : " + txt
 	}
 
-	return &pb.Error{Text: txt, Code: code}
+	return &pb.Error{Text: txt, Code: code, Where: where}
 }

@@ -72,7 +72,7 @@ func (r *AlertConfig) Create(tx *gorm.DB) (interface{}, error) {
 	r.ReceiverGroupID = recvGroup.(*ReceiverGroup).ReceiverGroupID
 
 	if err := tx.Create(r).Error; err != nil {
-		return nil, Error{Text: err.Error(), Code: DBError}
+		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
 	}
 
 	return r, nil
@@ -82,7 +82,7 @@ func UpdateAlertConfigKeepAliveTime(acID string) error {
 	db, err := dbutil.DBClient()
 
 	if err != nil {
-		return Error{Text: err.Error(), Code: DBError}
+		return Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
 	}
 
 	now := time.Now()
@@ -90,7 +90,7 @@ func UpdateAlertConfigKeepAliveTime(acID string) error {
 	sql := fmt.Sprintf("UPDATE alert_configs SET keep_alive_at='%v', updated_at='%v' WHERE alert_config_id='%s'", now, now, acID)
 
 	if err := db.Exec(sql).Error; err != nil {
-		return Error{Text: err.Error(), Code: DBError}
+		return Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
 	}
 
 	return nil
@@ -100,7 +100,7 @@ func GetAbnormalExecutedAlertConfig(hostID string, latestReportTime time.Time, l
 	db, err := dbutil.DBClient()
 
 	if err != nil {
-		return nil, Error{Text: err.Error(), Code: DBError}
+		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
 	}
 
 	//sql := fmt.Sprintf(`SELECT * FROM alert_configs WHERE host_id='%s' AND keep_alive_at<'%v' UNION
@@ -115,7 +115,7 @@ func GetAbnormalExecutedAlertConfig(hostID string, latestReportTime time.Time, l
 	err = db.Raw(sql, hostID, latestReportTime, hostID, latestReportTime).Limit(limit).Scan(&alertConfigs).Error
 
 	if err != nil {
-		return nil, Error{Text: err.Error(), Code: DBError}
+		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
 	}
 
 	return &alertConfigs, nil
@@ -125,7 +125,7 @@ func UpdateAlertConfigBindingHostAndVersion(alertConfigs *[]AlertConfig) ([]bool
 	db, err := dbutil.DBClient()
 
 	if err != nil {
-		return nil, Error{Text: err.Error(), Code: DBError}
+		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
 	}
 
 	l := len(*alertConfigs)
@@ -151,17 +151,17 @@ func GetAlertConfigBindingHost(acID string) (string, error) {
 	db, err := dbutil.DBClient()
 
 	if err != nil {
-		return "", Error{Text: err.Error(), Code: DBError}
+		return "", Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
 	}
 
 	var alertConfig AlertConfig
 
 	if err := db.Where("alert_config_id=?", acID).First(&alertConfig).Error; err != nil {
-		return "", Error{Text: err.Error(), Code: DBError}
+		return "", Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
 	}
 
 	if alertConfig.AlertConfigID == "" {
-		return "", Error{Text: "alert config id does not exist", Code: InvalidParam}
+		return "", Error{Text: "alert config id does not exist", Code: InvalidParam, Where: Caller(1, true)}
 	}
 
 	return alertConfig.HostID, nil
@@ -172,11 +172,11 @@ func (r *AlertConfig) Update(tx *gorm.DB) (interface{}, error) {
 	var alertConfig AlertConfig
 
 	if err := tx.Where("alert_config_id=?", r.AlertConfigID).First(&alertConfig).Error; err != nil {
-		return nil, Error{Text: err.Error(), Code: DBError}
+		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
 	}
 
 	if alertConfig.AlertConfigID == "" {
-		return nil, Error{Text: "alert config id does not exist", Code: InvalidParam}
+		return nil, Error{Text: "alert config id does not exist", Code: InvalidParam, Where: Caller(1, true)}
 	}
 
 	r.AlertRuleGroup.AlertRuleGroupID = alertConfig.AlertRuleGroupID
@@ -205,7 +205,7 @@ func (r *AlertConfig) Update(tx *gorm.DB) (interface{}, error) {
 	r.ReceiverGroupID = recvGroup.(*ReceiverGroup).ReceiverGroupID
 
 	if err := tx.Model(AlertConfig{}).Where("alert_config_id=?", r.AlertConfigID).Update(r).Error; err != nil {
-		return nil, Error{Text: err.Error(), Code: DBError}
+		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
 	}
 
 	return r, nil
@@ -214,7 +214,7 @@ func (r *AlertConfig) Update(tx *gorm.DB) (interface{}, error) {
 func GetAlertConfig(ac *AlertConfig) (*AlertConfig, error) {
 	db, err := dbutil.DBClient()
 	if err != nil {
-		return nil, Error{Text: err.Error(), Code: DBError}
+		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
 	}
 
 	v, err := ac.Get(db)
@@ -232,11 +232,11 @@ func (r *AlertConfig) Get(tx *gorm.DB) (interface{}, error) {
 	var alertConfig AlertConfig
 
 	if err := tx.Where("alert_config_id=?", r.AlertConfigID).First(&alertConfig).Error; err != nil {
-		return nil, Error{Text: err.Error(), Code: DBError}
+		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
 	}
 
 	if alertConfig.AlertConfigID == "" {
-		return nil, Error{Text: "alert config id does not exist", Code: InvalidParam}
+		return nil, Error{Text: "alert config id does not exist", Code: InvalidParam, Where: Caller(1, true)}
 	}
 
 	ruleGroup, err := (&AlertRuleGroup{AlertRuleGroupID: alertConfig.AlertRuleGroupID}).Get(tx)
@@ -267,18 +267,18 @@ func (r *AlertConfig) Get(tx *gorm.DB) (interface{}, error) {
 func (r *AlertConfig) Delete(tx *gorm.DB) (interface{}, error) {
 
 	if r.AlertConfigID == "" {
-		return nil, Error{Text: "alert config id must be specified", Code: InvalidParam}
+		return nil, Error{Text: "alert config id must be specified", Code: InvalidParam, Where: Caller(1, true)}
 	}
 
 	// firstly, get alert config
 	var alertConfig AlertConfig
 
 	if err := tx.Where("alert_config_id=?", r.AlertConfigID).First(&alertConfig).Error; err != nil {
-		return nil, Error{Text: err.Error(), Code: DBError}
+		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
 	}
 
 	if alertConfig.AlertConfigID == "" {
-		return nil, Error{Text: "alert config id does not exist", Code: InvalidParam}
+		return nil, Error{Text: "alert config id does not exist", Code: InvalidParam, Where: Caller(1, true)}
 	}
 
 	// secondly, delete three groups
@@ -301,7 +301,7 @@ func (r *AlertConfig) Delete(tx *gorm.DB) (interface{}, error) {
 	}
 
 	if err := tx.Delete(&AlertConfig{AlertConfigID: alertConfig.AlertConfigID}).Error; err != nil {
-		return nil, Error{Text: err.Error(), Code: DBError}
+		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
 	}
 
 	return nil, nil
@@ -312,12 +312,10 @@ func GetAlertConfigRows() (map[string]string, error) {
 
 	db, err := dbutil.DBClient()
 	if err != nil {
-		return alertConfigIDMap, Error{Text: err.Error(), Code: DBError}
+		return alertConfigIDMap, Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
 	}
 
-	hostID := fmt.Sprintf("%s:%d", *option.ServiceHost, *option.ExecutorServicePort)
-
-	rows, err := db.Raw("select alert_config_id from alert_configs where host_id = ?", hostID).Rows()
+	rows, err := db.Raw("select alert_config_id from alert_configs where host_id = ?", option.HostInfo).Rows()
 
 	defer rows.Close()
 

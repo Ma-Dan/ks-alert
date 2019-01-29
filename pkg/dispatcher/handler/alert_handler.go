@@ -37,7 +37,7 @@ func (h AlertHandler) CreateAlertConfig(ctx context.Context, pbac *pb.AlertConfi
 		return respon, nil
 	}
 
-	//option.HostID
+	//option.HostInfo
 	pbErr := ExecuteAlertConfig(svcAddr, respon.AlertConfig.AlertConfigId, pb.Informer_CREATE)
 	respon.Error = pbErr
 	return respon, nil
@@ -77,17 +77,14 @@ func getAlertConfigResponse(v interface{}) *pb.AlertConfigResponse {
 
 func (h AlertHandler) DeleteAlertConfig(ctx context.Context, alertConfigSpec *pb.AlertConfigSpec) (*pb.AlertConfigResponse, error) {
 	acID := alertConfigSpec.AlertConfigId
-	hostID, err := models.GetAlertConfigBindingHost(acID)
+	hostInfo, err := models.GetAlertConfigBindingHost(acID)
 	if err != nil {
 		respon := getAlertConfigResponse(nil)
 		respon.Error = ErrorWrapper(err)
 		return respon, nil
 	}
 
-	hostInfo := strings.Split(hostID, "-")
-	svcAddress := fmt.Sprintf("%s:%d", hostInfo[1], *option.ExecutorServicePort)
-
-	pbErr := ExecuteAlertConfig(svcAddress, acID, pb.Informer_TERMINATE)
+	pbErr := ExecuteAlertConfig(hostInfo, acID, pb.Informer_TERMINATE)
 
 	if pbErr != nil {
 		respon := getAlertConfigResponse(nil)
