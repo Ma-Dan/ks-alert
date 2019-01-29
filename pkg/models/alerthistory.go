@@ -55,14 +55,14 @@ func CreateAlertHistory(ah *AlertHistory) (*AlertHistory, error) {
 	db, err := dbutil.DBClient()
 
 	if err != nil {
-		return nil, Error{Text: err.Error(), Code: DBError}
+		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
 	}
 
 	ah.AlertHistoryID = idutil.GetUuid36("")
 	err = db.Model(&AlertHistory{}).Create(ah).Error
 
 	if err != nil {
-		return nil, Error{Text: err.Error(), Code: DBError}
+		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
 	}
 
 	return ah, err
@@ -72,7 +72,7 @@ func CreateAlertHistory(ah *AlertHistory) (*AlertHistory, error) {
 func GetAlertHistory(ah *AlertHistory) ([]*AlertHistory, error) {
 	db, err := dbutil.DBClient()
 	if err != nil {
-		return nil, Error{Text: err.Error(), Code: DBError}
+		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
 	}
 
 	var alertHistories []AlertHistory
@@ -90,14 +90,14 @@ func UpdateAlertHistory(ah *AlertHistory) error {
 
 	db, err := dbutil.DBClient()
 	if err != nil {
-		return Error{Text: err.Error(), Code: DBError}
+		return Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
 	}
 
 	//err = db.Model(ah).Where("alert_history_id = ?", ah.AlertHistoryID).Update("request_notification_status", sendStatus).Error
 	err = db.Save(ah).Error
 
 	if err != nil {
-		return Error{Text: err.Error(), Code: DBError}
+		return Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
 	}
 
 	return nil

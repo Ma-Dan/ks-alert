@@ -16,4 +16,5 @@ message Error {
     //    ErrorCode code = 1;
     int32 code = 1;
     string text = 2; // optional
+    string where = 3;
 }

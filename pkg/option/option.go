@@ -4,10 +4,8 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/carmanzhang/ks-alert/pkg/utils/idutil"
 	"github.com/golang/glog"
 	"github.com/shirou/gopsutil/net"
-	"os"
 	"strings"
 )
 
@@ -24,12 +22,16 @@ var (
 
 	MysqlHost = flag.String("mysql", "127.0.0.1", "")
 	MysqlPort = flag.String("mysql_port", "3306", "")
-	Database  = flag.String("database", "alert", "")
-	User      = flag.String("user", "root", "")
-	Password  = flag.String("password", "password", "")
+
+	//MysqlHost = flag.String("mysql", "139.198.120.226", "")
+	//MysqlPort = flag.String("mysql_port", "33306", "")
+
+	Database = flag.String("database", "alert", "")
+	User     = flag.String("user", "root", "")
+	Password = flag.String("password", "password", "")
 )
 
-var HostID string
+var HostInfo string
 
 func init() {
 	flag.Parse()
@@ -81,12 +83,8 @@ func init() {
 		}
 	}
 
-	HostID, err = os.Hostname()
-	if err != nil {
-		panic(err)
-	}
-
 	// a unique name in whole scope, mainly for distinguishing executors
-	HostID = HostID + "-" + *ServiceHost + "-" + idutil.GetUuid36("")
-	fmt.Println(HostID)
+	HostInfo = fmt.Sprintf("%s:%d", *ServiceHost, *ExecutorServicePort)
+
+	fmt.Println(HostInfo)
 }

@@ -2,6 +2,8 @@ package models
 
 import (
 	"fmt"
+	"path/filepath"
+	"runtime"
 )
 
 const (
@@ -17,10 +19,23 @@ const (
 )
 
 type Error struct {
-	Code int32
-	Text string
+	Code  int32
+	Text  string
+	Where string
 }
 
 func (e Error) Error() string {
-	return fmt.Sprintf("code: %d, msg is: %s", e.Code, e.Text)
+	return fmt.Sprintf("code: %d, msg: %s, where: %s", e.Code, e.Text, e.Where)
+}
+
+func Caller(calldepth int, short bool) string {
+	_, file, line, ok := runtime.Caller(calldepth + 1)
+	if !ok {
+		file = "???"
+		line = 0
+	} else if short {
+		file = filepath.Base(file)
+	}
+
+	return fmt.Sprintf("%s:%d", file, line)
 }

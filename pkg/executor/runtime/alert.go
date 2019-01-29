@@ -186,7 +186,7 @@ func (rtAlert *RuntimeAlertConfig) runAlert() {
 				glog.Errorln(err.Error())
 			}
 
-			if hostID != fmt.Sprintf("%s:%d", *option.ServiceHost, *option.ExecutorServicePort) {
+			if hostID != option.HostInfo {
 				return
 			}
 
@@ -534,8 +534,7 @@ func (rtAlert *RuntimeAlertConfig) getResourceMetrics(evaluatedRuleIndx []int, c
 
 	rules := rtAlert.alertConfig.AlertRuleGroup.AlertRules
 
-	l := len(resourceNames)
-	var resNameArray = make([]string, l)
+	var resNameArray []string
 	for n := range resourceNames {
 		resNameArray = append(resNameArray, n)
 	}

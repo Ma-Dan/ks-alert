@@ -88,6 +88,10 @@ func ConvertPB2Product(pbPrd *pb.Product) *models.Product {
 }
 
 func ConvertProduct2PB(prod *models.Product) *pb.Product {
+	if prod == nil {
+		return nil
+	}
+
 	pbEnt := pb.Product{
 		ProductId:         prod.ProductID,
 		ProductName:       prod.ProductName,

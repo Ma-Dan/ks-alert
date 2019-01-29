@@ -11,19 +11,19 @@ import (
 
 func TestCreateAlertRuleGroup(t *testing.T) {
 	Convey("test create alert rule group", t, func() {
-		Convey("test create", func() {
+		Convey("test create cluster rule group", func() {
 			db, _ := dbutil.DBClient()
 			group := &AlertRuleGroup{
-				AlertRuleGroupName: "xxx",
+				AlertRuleGroupName: "ks_cluster_rules",
 				SystemRule:         true,
 				UpdatedAt:          time.Now(),
 				CreatedAt:          time.Now(),
-				Description:        "desc",
-				ResourceTypeID:     "xxxxxxxxxxxxxxx",
+				Description:        "",
+				ResourceTypeID:     "lvzkj25vol1zk5",
 				AlertRules: []*AlertRule{
 					&AlertRule{
-						AlertRuleName:          "namespace",
-						MetricName:             "namespace_cpu",
+						AlertRuleName:          "cluster_cpu_utilisation",
+						MetricName:             "cluster_cpu_utilisation",
 						ConditionType:          ">",
 						PerferSeverity:         true,
 						Threshold:              80,
@@ -32,25 +32,281 @@ func TestCreateAlertRuleGroup(t *testing.T) {
 						ConsecutiveCount:       3,
 						InhibitRule:            false,
 						Enable:                 true,
-						RepeatSendType:         int32(pb.RepeatSendType_Fixed),
+						RepeatSendType:         int32(pb.RepeatSendType_Exponential),
 						InitRepeatSendInterval: 60,
-						MaxRepeatSendCount:     4,
+						MaxRepeatSendCount:     10,
 						CreatedAt:              time.Now(),
 						UpdatedAt:              time.Now(),
 					},
+
 					&AlertRule{
-						AlertRuleName:          "namespace",
-						MetricName:             "namespace_memory",
+						AlertRuleName:          "cluster_memory_utilisation",
+						MetricName:             "cluster_memory_utilisation",
 						ConditionType:          ">",
 						PerferSeverity:         true,
-						Threshold:              0.6,
-						Period:                 20,
+						Threshold:              80,
+						Period:                 3,
+						Unit:                   "%",
+						ConsecutiveCount:       3,
+						InhibitRule:            false,
+						Enable:                 true,
+						RepeatSendType:         int32(pb.RepeatSendType_Exponential),
+						InitRepeatSendInterval: 60,
+						MaxRepeatSendCount:     10,
+						CreatedAt:              time.Now(),
+						UpdatedAt:              time.Now(),
+					},
+
+					&AlertRule{
+						AlertRuleName:          "cluster_net_utilisation",
+						MetricName:             "cluster_net_utilisation",
+						ConditionType:          ">",
+						PerferSeverity:         true,
+						Threshold:              200,
+						Period:                 3,
+						Unit:                   "bps",
+						ConsecutiveCount:       3,
+						InhibitRule:            false,
+						Enable:                 true,
+						RepeatSendType:         int32(pb.RepeatSendType_Exponential),
+						InitRepeatSendInterval: 60,
+						MaxRepeatSendCount:     10,
+						CreatedAt:              time.Now(),
+						UpdatedAt:              time.Now(),
+					},
+
+					&AlertRule{
+						AlertRuleName:          "cluster_node_offline",
+						MetricName:             "cluster_node_offline",
+						ConditionType:          ">",
+						PerferSeverity:         true,
+						Threshold:              1,
+						Period:                 3,
 						Unit:                   "",
 						ConsecutiveCount:       3,
 						InhibitRule:            false,
 						Enable:                 true,
 						RepeatSendType:         int32(pb.RepeatSendType_Exponential),
-						InitRepeatSendInterval: 15,
+						InitRepeatSendInterval: 60,
+						MaxRepeatSendCount:     10,
+						CreatedAt:              time.Now(),
+						UpdatedAt:              time.Now(),
+					},
+
+					&AlertRule{
+						AlertRuleName:          "cluster_namespace_count",
+						MetricName:             "cluster_namespace_count",
+						ConditionType:          ">",
+						PerferSeverity:         true,
+						Threshold:              25,
+						Period:                 3,
+						Unit:                   "",
+						ConsecutiveCount:       3,
+						InhibitRule:            false,
+						Enable:                 true,
+						RepeatSendType:         int32(pb.RepeatSendType_Exponential),
+						InitRepeatSendInterval: 60,
+						MaxRepeatSendCount:     10,
+						CreatedAt:              time.Now(),
+						UpdatedAt:              time.Now(),
+					},
+				},
+			}
+			v, err := group.Create(db)
+			if err != nil {
+				fmt.Println(err)
+			}
+			fmt.Println(v)
+		})
+
+		// node
+		Convey("test create node rule group", func() {
+			db, _ := dbutil.DBClient()
+			group := &AlertRuleGroup{
+				AlertRuleGroupName: "ks_node_rules",
+				SystemRule:         true,
+				UpdatedAt:          time.Now(),
+				CreatedAt:          time.Now(),
+				Description:        "",
+				ResourceTypeID:     "l07941wpjzvyll",
+				AlertRules: []*AlertRule{
+					&AlertRule{
+						AlertRuleName:          "node_cpu_utilisation",
+						MetricName:             "node_cpu_utilisation",
+						ConditionType:          ">",
+						PerferSeverity:         true,
+						Threshold:              60,
+						Period:                 4,
+						Unit:                   "%",
+						ConsecutiveCount:       3,
+						InhibitRule:            false,
+						Enable:                 true,
+						RepeatSendType:         int32(pb.RepeatSendType_Fixed),
+						InitRepeatSendInterval: 120,
+						MaxRepeatSendCount:     10,
+						CreatedAt:              time.Now(),
+						UpdatedAt:              time.Now(),
+					},
+
+					&AlertRule{
+						AlertRuleName:          "node_memory_utilisation",
+						MetricName:             "node_memory_utilisation",
+						ConditionType:          ">",
+						PerferSeverity:         true,
+						Threshold:              85,
+						Period:                 3,
+						Unit:                   "%",
+						ConsecutiveCount:       3,
+						InhibitRule:            false,
+						Enable:                 true,
+						RepeatSendType:         int32(pb.RepeatSendType_Exponential),
+						InitRepeatSendInterval: 100,
+						MaxRepeatSendCount:     10,
+						CreatedAt:              time.Now(),
+						UpdatedAt:              time.Now(),
+					},
+
+					&AlertRule{
+						AlertRuleName:          "node_disk_inode_utilisation",
+						MetricName:             "node_disk_inode_utilisation",
+						ConditionType:          ">",
+						PerferSeverity:         true,
+						Threshold:              90,
+						Period:                 3,
+						Unit:                   "%",
+						ConsecutiveCount:       3,
+						InhibitRule:            false,
+						Enable:                 true,
+						RepeatSendType:         int32(pb.RepeatSendType_Exponential),
+						InitRepeatSendInterval: 60,
+						MaxRepeatSendCount:     10,
+						CreatedAt:              time.Now(),
+						UpdatedAt:              time.Now(),
+					},
+				},
+			}
+			v, err := group.Create(db)
+			if err != nil {
+				fmt.Println(err)
+			}
+			fmt.Println(v)
+		})
+
+		// namespace
+		Convey("test create namespace rule group", func() {
+			db, _ := dbutil.DBClient()
+			group := &AlertRuleGroup{
+				AlertRuleGroupName: "ks_namespace_rules",
+				SystemRule:         true,
+				UpdatedAt:          time.Now(),
+				CreatedAt:          time.Now(),
+				Description:        "",
+				ResourceTypeID:     "q0lw3n1pn04yjp",
+				AlertRules: []*AlertRule{
+					&AlertRule{
+						AlertRuleName:          "namespace_cpu_usage",
+						MetricName:             "namespace_cpu_usage",
+						ConditionType:          ">",
+						PerferSeverity:         true,
+						Threshold:              120,
+						Period:                 4,
+						Unit:                   "m",
+						ConsecutiveCount:       3,
+						InhibitRule:            false,
+						Enable:                 true,
+						RepeatSendType:         int32(pb.RepeatSendType_Fixed),
+						InitRepeatSendInterval: 360,
+						MaxRepeatSendCount:     10,
+						CreatedAt:              time.Now(),
+						UpdatedAt:              time.Now(),
+					},
+
+					&AlertRule{
+						AlertRuleName:          "namespace_memory_usage_wo_cache",
+						MetricName:             "namespace_memory_usage_wo_cache",
+						ConditionType:          ">",
+						PerferSeverity:         true,
+						Threshold:              500,
+						Period:                 3,
+						Unit:                   "m",
+						ConsecutiveCount:       3,
+						InhibitRule:            false,
+						Enable:                 true,
+						RepeatSendType:         int32(pb.RepeatSendType_Exponential),
+						InitRepeatSendInterval: 60,
+						MaxRepeatSendCount:     10,
+						CreatedAt:              time.Now(),
+						UpdatedAt:              time.Now(),
+					},
+
+					&AlertRule{
+						AlertRuleName:          "namespace_pod_count",
+						MetricName:             "namespace_pod_count",
+						ConditionType:          ">",
+						PerferSeverity:         true,
+						Threshold:              70,
+						Period:                 3,
+						Unit:                   "",
+						ConsecutiveCount:       3,
+						InhibitRule:            false,
+						Enable:                 true,
+						RepeatSendType:         int32(pb.RepeatSendType_Exponential),
+						InitRepeatSendInterval: 100,
+						MaxRepeatSendCount:     10,
+						CreatedAt:              time.Now(),
+						UpdatedAt:              time.Now(),
+					},
+				},
+			}
+			v, err := group.Create(db)
+			if err != nil {
+				fmt.Println(err)
+			}
+			fmt.Println(v)
+		})
+
+		// workload
+		Convey("test create workload rule group", func() {
+			db, _ := dbutil.DBClient()
+			group := &AlertRuleGroup{
+				AlertRuleGroupName: "ks_workload_rules",
+				SystemRule:         true,
+				UpdatedAt:          time.Now(),
+				CreatedAt:          time.Now(),
+				Description:        "",
+				ResourceTypeID:     "k744yo5vol1zk5",
+				AlertRules: []*AlertRule{
+					&AlertRule{
+						AlertRuleName:          "workload_pod_cpu_usage",
+						MetricName:             "workload_pod_cpu_usage",
+						ConditionType:          ">",
+						PerferSeverity:         true,
+						Threshold:              600,
+						Period:                 4,
+						Unit:                   "m",
+						ConsecutiveCount:       3,
+						InhibitRule:            false,
+						Enable:                 true,
+						RepeatSendType:         int32(pb.RepeatSendType_Fixed),
+						InitRepeatSendInterval: 120,
+						MaxRepeatSendCount:     10,
+						CreatedAt:              time.Now(),
+						UpdatedAt:              time.Now(),
+					},
+
+					&AlertRule{
+						AlertRuleName:          "workload_pod_memory_usage_wo_cache",
+						MetricName:             "workload_pod_memory_usage_wo_cache",
+						ConditionType:          ">",
+						PerferSeverity:         true,
+						Threshold:              600,
+						Period:                 3,
+						Unit:                   "m",
+						ConsecutiveCount:       3,
+						InhibitRule:            false,
+						Enable:                 true,
+						RepeatSendType:         int32(pb.RepeatSendType_Exponential),
+						InitRepeatSendInterval: 100,
 						MaxRepeatSendCount:     10,
 						CreatedAt:              time.Now(),
 						UpdatedAt:              time.Now(),

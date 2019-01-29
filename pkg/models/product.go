@@ -31,7 +31,7 @@ func CreateProduct(product *Product) (*Product, error) {
 	db, err := dbutil.DBClient()
 
 	if err != nil {
-		return nil, Error{Text: err.Error(), Code: DBError}
+		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
 	}
 
 	product.ProductID = idutil.GetUuid36("")
@@ -39,7 +39,7 @@ func CreateProduct(product *Product) (*Product, error) {
 	err = db.Model(&Product{}).Create(product).Error
 
 	if err != nil {
-		return nil, Error{Text: err.Error(), Code: DBError}
+		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
 	}
 
 	return product, err
@@ -50,14 +50,14 @@ func GetProduct(product *Product) (*Product, error) {
 	db, err := dbutil.DBClient()
 
 	if err != nil {
-		return nil, Error{Text: err.Error(), Code: DBError}
+		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
 	}
 
 	var products Product
 	err = db.Model(&Product{}).Where(product).First(&products).Error
 
 	if err != nil {
-		return nil, Error{Text: err.Error(), Code: DBError}
+		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
 	}
 
 	return &products, err
@@ -68,13 +68,13 @@ func DeleteProduct(prod *Product) error {
 	prodName := prod.ProductName
 
 	if _, err := GetProduct(prod); err != nil {
-		return Error{Text: err.Error(), Code: DBError}
+		return Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
 	}
 
 	db, err := dbutil.DBClient()
 
 	if err != nil {
-		return Error{Text: err.Error(), Code: DBError}
+		return Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
 	}
 
 	if prodID != "" {
@@ -84,7 +84,7 @@ func DeleteProduct(prod *Product) error {
 	}
 
 	if err != nil {
-		return Error{Text: err.Error(), Code: DBError}
+		return Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
 	}
 
 	// TODO need to delete related items in table `resource type` `alert rule` ...
@@ -95,7 +95,7 @@ func UpdateProduct(prod *Product) error {
 	db, err := dbutil.DBClient()
 
 	if err != nil {
-		return Error{Text: err.Error(), Code: DBError}
+		return Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
 	}
 
 	if prod.ProductID != "" {
@@ -105,7 +105,7 @@ func UpdateProduct(prod *Product) error {
 	}
 
 	if err != nil {
-		return Error{Text: err.Error(), Code: DBError}
+		return Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
 	}
 
 	return err
