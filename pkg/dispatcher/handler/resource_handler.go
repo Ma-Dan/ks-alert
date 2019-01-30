@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/carmanzhang/ks-alert/pkg/models"
 	"github.com/carmanzhang/ks-alert/pkg/pb"
+	"github.com/carmanzhang/ks-alert/pkg/stderr"
 	"github.com/carmanzhang/ks-alert/pkg/utils/jsonutil"
 	"time"
 )
@@ -11,7 +12,7 @@ import (
 type ResourceHandler struct{}
 
 func (server ResourceHandler) CreateResource(ctx context.Context, rg *pb.ResourceGroup) (*pb.ResourceGroupResponse, error) {
-	v, err := DoTransactionAction(ConvertPB2ResourceGroup(rg), ResourceGroup, MethodCreate)
+	v, err := DoTransactionAction(ConvertPB2ResourceGroup(rg), MethodCreate)
 	respon := getResourceGroupResponse(v, err)
 	return respon, nil
 }
@@ -25,24 +26,24 @@ func getResourceGroupResponse(v interface{}, err error) *pb.ResourceGroupRespons
 	rg := ConvertResourceGroup2PB(resGroup)
 
 	var respon = pb.ResourceGroupResponse{ResourceGroup: rg}
-	respon.Error = ErrorWrapper(err)
+	respon.Error = stderr.ErrorWrapper(err)
 	return &respon
 }
 
 func (server ResourceHandler) UpdateResource(ctx context.Context, rgSpec *pb.ResourceGroup) (*pb.ResourceGroupResponse, error) {
-	v, err := DoTransactionAction(ConvertPB2ResourceGroup(rgSpec), ResourceGroup, MethodUpdate)
+	v, err := DoTransactionAction(ConvertPB2ResourceGroup(rgSpec), MethodUpdate)
 	respon := getResourceGroupResponse(v, err)
 	return respon, nil
 }
 
 func (server ResourceHandler) GetResource(ctx context.Context, rgSpec *pb.ResourceGroupSpec) (*pb.ResourceGroupResponse, error) {
-	v, err := DoTransactionAction(&models.ResourceGroup{ResourceGroupID: rgSpec.ResourceGroupId}, ResourceGroup, MethodGet)
+	v, err := DoTransactionAction(&models.ResourceGroup{ResourceGroupID: rgSpec.ResourceGroupId}, MethodGet)
 	respon := getResourceGroupResponse(v, err)
 	return respon, nil
 }
 
 func (server ResourceHandler) DeleteResource(ctx context.Context, rg *pb.ResourceGroupSpec) (*pb.ResourceGroupResponse, error) {
-	v, err := DoTransactionAction(&models.ResourceGroup{ResourceGroupID: rg.ResourceGroupId}, ResourceGroup, MethodDelete)
+	v, err := DoTransactionAction(&models.ResourceGroup{ResourceGroupID: rg.ResourceGroupId}, MethodDelete)
 	respon := getResourceGroupResponse(v, err)
 	return respon, nil
 }

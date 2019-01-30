@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/carmanzhang/ks-alert/pkg/models"
 	"github.com/carmanzhang/ks-alert/pkg/pb"
+	"github.com/carmanzhang/ks-alert/pkg/stderr"
 	"github.com/carmanzhang/ks-alert/pkg/utils/jsonutil"
 	"time"
 )
@@ -14,8 +15,8 @@ type ResourceTypeHandler struct{}
 func (server ResourceTypeHandler) CreateResourceType(ctx context.Context, resourceType *pb.ResourceType) (*pb.ResourceTypeResponse, error) {
 
 	if resourceType.ProductId == "" {
-		return getResourceTypeResponse(nil, models.Error{
-			Code: models.InvalidParam,
+		return getResourceTypeResponse(nil, stderr.Error{
+			Code: stderr.InvalidParam,
 			Text: "product_id must be specified"}), nil
 	}
 
@@ -26,15 +27,15 @@ func (server ResourceTypeHandler) CreateResourceType(ctx context.Context, resour
 func getResourceTypeResponse(resourceType *models.ResourceType, err error) *pb.ResourceTypeResponse {
 	arg := ConvertResourceType2PB(resourceType)
 	var respon = pb.ResourceTypeResponse{ResourceType: arg}
-	respon.Error = ErrorWrapper(err)
+	respon.Error = stderr.ErrorWrapper(err)
 
 	return &respon
 }
 
 func (server ResourceTypeHandler) UpdateResourceType(ctx context.Context, resourceType *pb.ResourceType) (*pb.ResourceTypeResponse, error) {
 	if resourceType.ProductId == "" {
-		return getResourceTypeResponse(nil, models.Error{
-			Code: models.InvalidParam,
+		return getResourceTypeResponse(nil, stderr.Error{
+			Code: stderr.InvalidParam,
 			Text: "product_id must be specified"}), nil
 	}
 
@@ -56,8 +57,8 @@ func (server ResourceTypeHandler) GetResourceType(ctx context.Context, resourceT
 		tp, err := models.GetResourceType(&models.ResourceType{ProductID: prodID, ResourceTypeName: typeName})
 		return getResourceTypeResponse(tp, err), nil
 	} else {
-		return getResourceTypeResponse(nil, models.Error{
-			Code: models.InvalidParam,
+		return getResourceTypeResponse(nil, stderr.Error{
+			Code: stderr.InvalidParam,
 			Text: "invalid params"}), nil
 	}
 }
@@ -75,8 +76,8 @@ func (server ResourceTypeHandler) DeleteResourceType(ctx context.Context, resour
 	} else if prodID != "" && typeName != "" {
 		err = models.DeleteResourceType(&models.ResourceType{ProductID: prodID, ResourceTypeName: typeName})
 	} else {
-		err = models.Error{
-			Code: models.InvalidParam,
+		err = stderr.Error{
+			Code: stderr.InvalidParam,
 			Text: "invalid params"}
 	}
 	return getResourceTypeResponse(nil, err), nil

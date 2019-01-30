@@ -10,6 +10,7 @@ import (
 	"github.com/carmanzhang/ks-alert/pkg/notification"
 	"github.com/carmanzhang/ks-alert/pkg/option"
 	"github.com/carmanzhang/ks-alert/pkg/pb"
+	. "github.com/carmanzhang/ks-alert/pkg/stderr"
 	"github.com/carmanzhang/ks-alert/pkg/utils/jsonutil"
 	"github.com/golang/glog"
 	"regexp"
@@ -70,12 +71,12 @@ var CachedRuntimeAlert = &RuntimeAlertStatus{
 	Map: make(map[string]*RuntimeAlertConfig),
 }
 
-func Action(ctx context.Context, msg *pb.Informer) error {
+func ExecuteAlertConfig(ctx context.Context, msg *pb.Informer) Error {
 
 	switch msg.Signal {
 	case pb.Informer_CREATE:
 		if _, ok := CachedRuntimeAlert.Map[msg.AlertConfigId]; ok {
-			return nil
+			return Error{Text: "the alert config is under executing", Code: RuntimeError, Where: Caller(1, true)}
 		}
 		// create alert by specifig alert config id within one goroutine
 		var rtAlert = &RuntimeAlertConfig{
@@ -86,7 +87,7 @@ func Action(ctx context.Context, msg *pb.Informer) error {
 		err := rtAlert.reload(msg.AlertConfigId)
 
 		if err != nil {
-			return err
+			return Error{Text: err.Error(), Code: RuntimeError, Where: Caller(1, true)}
 		}
 
 		CachedRuntimeAlert.Lock()
@@ -98,7 +99,7 @@ func Action(ctx context.Context, msg *pb.Informer) error {
 	case pb.Informer_TERMINATE:
 		runtimeAlert, ok := CachedRuntimeAlert.Map[msg.AlertConfigId]
 		if !ok {
-			return errors.New("alert config was not executor by executor")
+			return Error{Text: "alert config was not executor by executor", Code: RuntimeError, Where: Caller(1, true)}
 		}
 
 		runtimeAlert.SigCh <- pb.Informer_TERMINATE
@@ -110,7 +111,7 @@ func Action(ctx context.Context, msg *pb.Informer) error {
 	case pb.Informer_RELOAD:
 		runtimeAlert, ok := CachedRuntimeAlert.Map[msg.AlertConfigId]
 		if !ok {
-			return errors.New("alert config was not executor by executor")
+			return Error{Text: "alert config was not executor by executor", Code: RuntimeError, Where: Caller(1, true)}
 		}
 
 		runtimeAlert.SigCh <- pb.Informer_RELOAD
@@ -118,14 +119,14 @@ func Action(ctx context.Context, msg *pb.Informer) error {
 	default:
 		runtimeAlert, ok := CachedRuntimeAlert.Map[msg.AlertConfigId]
 		if !ok {
-			return errors.New("alert config was not executor by executor")
+			return Error{Text: "alert config was not executor by executor", Code: RuntimeError, Where: Caller(1, true)}
 		}
 		runtimeAlert.StatusCh <- Alive
 		status := <-runtimeAlert.StatusCh
 		glog.Infof("%s,%s", msg.AlertConfigId, status)
 	}
 
-	return nil
+	return Error{Text: "success", Code: Success, Where: Caller(1, true)}
 }
 
 func (rtAlert *RuntimeAlertConfig) runAlert() {

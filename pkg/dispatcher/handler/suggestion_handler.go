@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/carmanzhang/ks-alert/pkg/models"
 	"github.com/carmanzhang/ks-alert/pkg/pb"
+	"github.com/carmanzhang/ks-alert/pkg/stderr"
 	"github.com/carmanzhang/ks-alert/pkg/utils/jsonutil"
 	"time"
 )
@@ -15,8 +16,8 @@ type SuggestionHandler struct{}
 
 func (server SuggestionHandler) UpdateSuggestion(ctx context.Context, suggestion *pb.Suggestion) (*pb.SuggestionResponse, error) {
 	if suggestion.AlertConfigId == "" || suggestion.AlertRuleId == "" || suggestion.ResourceId == "" {
-		return getSuggestionResponse(nil, models.Error{
-			Code: models.InvalidParam,
+		return getSuggestionResponse(nil, stderr.Error{
+			Code: stderr.InvalidParam,
 			Text: "alert config id and alert rule id and resource id must be specified",
 		}), nil
 	}
@@ -29,15 +30,15 @@ func (server SuggestionHandler) UpdateSuggestion(ctx context.Context, suggestion
 func getSuggestionResponse(suggestion *models.Suggestion, err error) *pb.SuggestionResponse {
 	arg := ConvertSuggestion2PB(suggestion)
 	var respon = pb.SuggestionResponse{Suggestion: arg}
-	respon.Error = ErrorWrapper(err)
+	respon.Error = stderr.ErrorWrapper(err)
 
 	return &respon
 }
 
 func (server SuggestionHandler) GetSuggestion(ctx context.Context, suggestion *pb.Suggestion) (*pb.SuggestionResponse, error) {
 	if suggestion.AlertConfigId == "" || suggestion.AlertRuleId == "" || suggestion.ResourceId == "" {
-		return getSuggestionResponse(nil, models.Error{
-			Code: models.InvalidParam,
+		return getSuggestionResponse(nil, stderr.Error{
+			Code: stderr.InvalidParam,
 			Text: "alert config id and alert rule id and resource id must be specified",
 		}), nil
 	}

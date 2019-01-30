@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/carmanzhang/ks-alert/pkg/models"
 	"github.com/carmanzhang/ks-alert/pkg/pb"
+	"github.com/carmanzhang/ks-alert/pkg/stderr"
 	"time"
 )
 
@@ -27,7 +28,7 @@ func getProductResponse(product *models.Product, err error) *pb.ProductResponse 
 	arg := ConvertProduct2PB(product)
 
 	var respon = pb.ProductResponse{Product: arg}
-	respon.Error = ErrorWrapper(err)
+	respon.Error = stderr.ErrorWrapper(err)
 
 	return &respon
 }
@@ -37,8 +38,8 @@ func (h ProductHandler) DeleteProduct(ctx context.Context, prodSpec *pb.ProductS
 	prodName := prodSpec.GetProductName()
 
 	if prodID == "" && prodName == "" {
-		return getProductResponse(nil, models.Error{
-			Code: models.InvalidParam,
+		return getProductResponse(nil, stderr.Error{
+			Code: stderr.InvalidParam,
 			Text: "product id and product name must be specified"}), nil
 	}
 
@@ -58,8 +59,8 @@ func (h ProductHandler) GetProduct(ctx context.Context, prodSpec *pb.ProductSpec
 	prodName := prodSpec.GetProductName()
 
 	if prodID == "" && prodName == "" {
-		return getProductResponse(nil, models.Error{
-			Code: models.InvalidParam,
+		return getProductResponse(nil, stderr.Error{
+			Code: stderr.InvalidParam,
 			Text: "product id and product name must be specified"}), nil
 	}
 
