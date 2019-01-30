@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/carmanzhang/ks-alert/pkg/models"
 	"github.com/carmanzhang/ks-alert/pkg/pb"
+	"github.com/carmanzhang/ks-alert/pkg/stderr"
 	"time"
 )
 
@@ -14,7 +15,7 @@ func (server ReceiverHandler) CreateReceiver(ctx context.Context, pbRecvGroup *p
 
 	recvGroup := ConvertPB2ReceiverGroup(pbRecvGroup)
 
-	v, err := DoTransactionAction(recvGroup, ReceiverGroup, MethodCreate)
+	v, err := DoTransactionAction(recvGroup, MethodCreate)
 	respon := getReceiverGroupResponse(v, err)
 	return respon, nil
 }
@@ -28,7 +29,7 @@ func getReceiverGroupResponse(v interface{}, err error) *pb.ReceiverGroupRespons
 	rg := ConvertReceiverGroup2PB(resGroup)
 
 	var respon = pb.ReceiverGroupResponse{ReceiverGroup: rg}
-	respon.Error = ErrorWrapper(err)
+	respon.Error = stderr.ErrorWrapper(err)
 	return &respon
 }
 
@@ -40,7 +41,7 @@ func (server ReceiverHandler) DeleteReceiver(ctx context.Context, receiverSpec *
 		//Receivers:       &[]models.Receiver{{ReceiverID: recvID}},
 	}
 
-	v, err := DoTransactionAction(recvGroup, ReceiverGroup, MethodDelete)
+	v, err := DoTransactionAction(recvGroup, MethodDelete)
 
 	respon := getReceiverGroupResponse(v, err)
 	return respon, nil
@@ -50,7 +51,7 @@ func (server ReceiverHandler) UpdateReceiver(ctx context.Context, pbRecvGroup *p
 
 	recvGroup := ConvertPB2ReceiverGroup(pbRecvGroup)
 
-	v, err := DoTransactionAction(recvGroup, ReceiverGroup, MethodUpdate)
+	v, err := DoTransactionAction(recvGroup, MethodUpdate)
 
 	respon := getReceiverGroupResponse(v, err)
 	return respon, nil
@@ -65,7 +66,7 @@ func (server ReceiverHandler) GetReceiver(ctx context.Context, receiverSpec *pb.
 		//Receivers:       &[]models.Receiver{{ReceiverID: recvID}},
 	}
 
-	v, err := DoTransactionAction(recvGroup, ReceiverGroup, MethodGet)
+	v, err := DoTransactionAction(recvGroup, MethodGet)
 	respon := getReceiverGroupResponse(v, err)
 	return respon, nil
 

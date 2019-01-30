@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/carmanzhang/ks-alert/pkg/models"
 	"github.com/carmanzhang/ks-alert/pkg/pb"
+	"github.com/carmanzhang/ks-alert/pkg/stderr"
 	"time"
 )
 
@@ -11,7 +12,7 @@ type AlertRuleHandler struct{}
 
 // alert rule
 func (h AlertRuleHandler) CreateAlertRule(ctx context.Context, ruleGroup *pb.AlertRuleGroup) (*pb.AlertRuleGroupResponse, error) {
-	v, err := DoTransactionAction(ConvertPB2AlertRuleGroup(ruleGroup), RuleGroup, MethodCreate)
+	v, err := DoTransactionAction(ConvertPB2AlertRuleGroup(ruleGroup), MethodCreate)
 	respon := getAlertRuleGroupResponse(v, err)
 	return respon, nil
 }
@@ -25,13 +26,13 @@ func getAlertRuleGroupResponse(v interface{}, err error) *pb.AlertRuleGroupRespo
 	arg := ConvertAlertRuleGroup2PB(ruleGroup)
 
 	var respon = pb.AlertRuleGroupResponse{AlertRuleGroup: arg}
-	respon.Error = ErrorWrapper(err)
+	respon.Error = stderr.ErrorWrapper(err)
 
 	return &respon
 }
 
 func (h AlertRuleHandler) UpdateAlertRule(ctx context.Context, ruleGroup *pb.AlertRuleGroup) (*pb.AlertRuleGroupResponse, error) {
-	v, err := DoTransactionAction(ConvertPB2AlertRuleGroup(ruleGroup), RuleGroup, MethodUpdate)
+	v, err := DoTransactionAction(ConvertPB2AlertRuleGroup(ruleGroup), MethodUpdate)
 
 	respon := getAlertRuleGroupResponse(v, err)
 	return respon, nil
@@ -45,7 +46,7 @@ func (h AlertRuleHandler) GetAlertRule(ctx context.Context, alertRuleSpec *pb.Al
 		SystemRule:       alertRuleSpec.SystemRule,
 	}
 
-	v, err := DoTransactionAction(&ruleGroup, RuleGroup, MethodGet)
+	v, err := DoTransactionAction(&ruleGroup, MethodGet)
 
 	respon := getAlertRuleGroupResponse(v, err)
 	return respon, nil
@@ -58,7 +59,7 @@ func (h AlertRuleHandler) DeleteAlertRule(ctx context.Context, alertRuleSpec *pb
 		SystemRule:       alertRuleSpec.SystemRule,
 	}
 
-	v, err := DoTransactionAction(&ruleGroup, RuleGroup, MethodDelete)
+	v, err := DoTransactionAction(&ruleGroup, MethodDelete)
 	respon := getAlertRuleGroupResponse(v, err)
 	return respon, nil
 }

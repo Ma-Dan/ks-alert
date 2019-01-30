@@ -4,13 +4,12 @@ import (
 	"context"
 	"github.com/carmanzhang/ks-alert/pkg/executor/runtime"
 	"github.com/carmanzhang/ks-alert/pkg/pb"
+	"github.com/carmanzhang/ks-alert/pkg/stderr"
 )
 
 type Executor struct{}
 
-// Executor is used to implement ExecuteAlertConfig.
-// ExecuteAlertConfig(context.Context, *AlertConfig) (*Error, error)
-func (s *Executor) Execute(ctx context.Context, alertConfig *pb.Informer) (*pb.Error, error) {
-	//id := alertConfig.AlertConfigId
-	return nil, runtime.Action(ctx, alertConfig)
+func (s *Executor) Execute(ctx context.Context, informer *pb.Informer) (*pb.Error, error) {
+	err := runtime.ExecuteAlertConfig(ctx, informer)
+	return stderr.ErrorWrapper(err), nil
 }

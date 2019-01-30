@@ -9,6 +9,7 @@ import (
 	"github.com/carmanzhang/ks-alert/pkg/option"
 	"github.com/carmanzhang/ks-alert/pkg/pb"
 	"github.com/carmanzhang/ks-alert/pkg/registry"
+	"github.com/carmanzhang/ks-alert/pkg/stderr"
 	"github.com/carmanzhang/ks-alert/pkg/utils/etcdutil"
 	"github.com/golang/glog"
 	"go.etcd.io/etcd/clientv3"
@@ -124,8 +125,8 @@ func Run() {
 					if b {
 						acID := (*alertConfigs)[i].AlertConfigID
 						fmt.Println("executing", acID)
-						err := runtime.Action(context.Background(), &pb.Informer{Signal: pb.Informer_CREATE, AlertConfigId: acID})
-						if err != nil {
+						err := runtime.ExecuteAlertConfig(context.Background(), &pb.Informer{Signal: pb.Informer_CREATE, AlertConfigId: acID})
+						if err.Code != stderr.Success {
 							glog.Errorln(err.Error())
 						}
 					}

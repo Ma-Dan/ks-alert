@@ -7,15 +7,6 @@ import (
 	"reflect"
 )
 
-type TP string
-
-const (
-	AlertConfig   TP = "AlertConfig"
-	RuleGroup     TP = "RuleGroup"
-	ReceiverGroup TP = "ReceiverGroup"
-	ResourceGroup TP = "ResourceGroup"
-)
-
 const (
 	MethodCreate = "Create"
 	MethodUpdate = "Update"
@@ -23,7 +14,7 @@ const (
 	MethodDelete = "Delete"
 )
 
-func DoTransactionAction(v interface{}, tp TP, method string) (interface{}, error) {
+func DoTransactionAction(v interface{}, method string) (interface{}, error) {
 
 	// transaction begin
 	db, e := dbutil.DBClient()
@@ -36,18 +27,6 @@ func DoTransactionAction(v interface{}, tp TP, method string) (interface{}, erro
 	var res interface{}
 	var err error
 	res, err = CallReflect(v, method, tx)
-
-	//switch tp {
-	//case AlertConfig:
-	//	res, err = CallReflect(v, method, tx)
-	//case RuleGroup:
-	//	res, err = CallReflect(v, method, tx)
-	//case ReceiverGroup:
-	//	res, err = CallReflect(v, method, tx)
-	//case ResourceGroup:
-	//	res, err = CallReflect(v, method, tx)
-	//}
-
 	if err != nil {
 		tx.Rollback()
 		glog.Errorln(err.Error())

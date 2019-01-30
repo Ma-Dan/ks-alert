@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/carmanzhang/ks-alert/pkg/models"
 	"github.com/carmanzhang/ks-alert/pkg/pb"
+	"github.com/carmanzhang/ks-alert/pkg/stderr"
 	"time"
 )
 
@@ -19,7 +20,7 @@ func getEnterpriseResponse(enterprise *models.Enterprise, err error) *pb.Enterpr
 	arg := ConvertEnterprise2PB(enterprise)
 
 	var respon = pb.EnterpriseResponse{Enterprise: arg}
-	respon.Error = ErrorWrapper(err)
+	respon.Error = stderr.ErrorWrapper(err)
 
 	return &respon
 }

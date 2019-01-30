@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/carmanzhang/ks-alert/pkg/models"
 	"github.com/carmanzhang/ks-alert/pkg/pb"
+	"github.com/carmanzhang/ks-alert/pkg/stderr"
 	"time"
 )
 
@@ -18,7 +19,7 @@ func (h SilenceHandler) CreateSilence(ctx context.Context, silence *pb.Silence) 
 func getSilenceResponse(severity *models.SendPolicy, err error) *pb.SilenceResponse {
 	arg := ConvertSendPolicy2Silence(severity)
 	var respon = pb.SilenceResponse{Silence: arg}
-	respon.Error = ErrorWrapper(err)
+	respon.Error = stderr.ErrorWrapper(err)
 
 	return &respon
 }

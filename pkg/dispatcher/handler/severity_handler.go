@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/carmanzhang/ks-alert/pkg/models"
 	"github.com/carmanzhang/ks-alert/pkg/pb"
+	"github.com/carmanzhang/ks-alert/pkg/stderr"
 	"time"
 )
 
@@ -13,8 +14,8 @@ type SeverityHandler struct{}
 func (server SeverityHandler) CreateSeverity(ctx context.Context, pbSev *pb.Severity) (*pb.SeverityResponse, error) {
 
 	if pbSev.SeverityEn == "" || pbSev.SeverityCh == "" || (pbSev.ProductId == "" && pbSev.SeverityId == "") {
-		return getSeverityResponse(nil, models.Error{
-			Code: models.InvalidParam,
+		return getSeverityResponse(nil, stderr.Error{
+			Code: stderr.InvalidParam,
 			Text: "severity name or product id or severity id must be specified",
 		}), nil
 	}
@@ -27,7 +28,7 @@ func (server SeverityHandler) CreateSeverity(ctx context.Context, pbSev *pb.Seve
 func getSeverityResponse(severity *models.Severity, err error) *pb.SeverityResponse {
 	arg := ConvertSeverity2PB(severity)
 	var respon = pb.SeverityResponse{Severity: arg}
-	respon.Error = ErrorWrapper(err)
+	respon.Error = stderr.ErrorWrapper(err)
 
 	return &respon
 }
@@ -45,14 +46,14 @@ func getSeveritiesResponse(severity *[]models.Severity, err error) *pb.Severitie
 	}
 
 	var respon = pb.SeveritiesResponse{Severity: pbSeverity}
-	respon.Error = ErrorWrapper(err)
+	respon.Error = stderr.ErrorWrapper(err)
 	return &respon
 }
 
 func (server SeverityHandler) DeleteSeverity(ctx context.Context, sevSpec *pb.SeveritySpec) (*pb.SeverityResponse, error) {
 	if sevSpec.SeverityId == "" {
-		return getSeverityResponse(nil, models.Error{
-			Code: models.InvalidParam,
+		return getSeverityResponse(nil, stderr.Error{
+			Code: stderr.InvalidParam,
 			Text: "severity id must be specified",
 		}), nil
 	}
@@ -64,8 +65,8 @@ func (server SeverityHandler) DeleteSeverity(ctx context.Context, sevSpec *pb.Se
 func (server SeverityHandler) UpdateSeverity(ctx context.Context, pbSev *pb.Severity) (*pb.SeverityResponse, error) {
 
 	if pbSev.SeverityEn == "" || pbSev.SeverityCh == "" || pbSev.SeverityId == "" {
-		return getSeverityResponse(nil, models.Error{
-			Code: models.InvalidParam,
+		return getSeverityResponse(nil, stderr.Error{
+			Code: stderr.InvalidParam,
 			Text: "severity name or product id must be specified",
 		}), nil
 	}
@@ -77,8 +78,8 @@ func (server SeverityHandler) UpdateSeverity(ctx context.Context, pbSev *pb.Seve
 func (server SeverityHandler) GetSeverity(ctx context.Context, sevSpec *pb.SeveritySpec) (*pb.SeveritiesResponse, error) {
 
 	if sevSpec.SeverityId == "" && sevSpec.ProductId == "" && sevSpec.ProductName == "" {
-		return getSeveritiesResponse(nil, models.Error{
-			Code: models.InvalidParam,
+		return getSeveritiesResponse(nil, stderr.Error{
+			Code: stderr.InvalidParam,
 			Text: "severity id or product id or product name must be specified",
 		}), nil
 	}

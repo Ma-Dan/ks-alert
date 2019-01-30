@@ -1,6 +1,7 @@
 package models
 
 import (
+	. "github.com/carmanzhang/ks-alert/pkg/stderr"
 	"github.com/carmanzhang/ks-alert/pkg/utils/dbutil"
 	"time"
 )

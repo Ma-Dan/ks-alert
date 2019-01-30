@@ -2,6 +2,7 @@ package models
 
 import (
 	"fmt"
+	. "github.com/carmanzhang/ks-alert/pkg/stderr"
 	"github.com/carmanzhang/ks-alert/pkg/utils/dbutil"
 	"strings"
 	"time"
