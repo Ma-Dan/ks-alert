@@ -1,4 +1,6 @@
 # !/bin/bash
+
+rm -f dispatcher executor
 echo "build binary..."
 CGO_ENABLED=0 go build -o dispatcher ../../cmd/alert-dispatcher/main.go
 CGO_ENABLED=0 go build -o executor ../../cmd/alert-executor/main.go

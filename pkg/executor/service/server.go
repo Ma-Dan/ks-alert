@@ -95,7 +95,7 @@ func Run() {
 	go func() {
 		//timer := time.NewTicker(time.Minute * 1)
 		timer := time.NewTicker(time.Second * 15)
-		recordLimit := 3
+		recordLimit := 10
 		for {
 			select {
 			case <-timer.C:
