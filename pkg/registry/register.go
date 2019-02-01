@@ -20,14 +20,14 @@ var stopSignal = make(chan bool, 1)
 func Register(svcName string, host string, port int, target string, interval time.Duration, ttl int) error {
 	svcAddr := fmt.Sprintf("%s:%d", host, port)
 	svcKey = fmt.Sprintf("/%s/%s", svcName, svcAddr)
-	fmt.Println(svcAddr, svcKey)
+	glog.Infoln(svcAddr, svcKey)
 	// get endpoints for register dial address
 	var err error
 	client, err = etcd3.New(etcd3.Config{
 		Endpoints: strings.Split(target, ","),
 	})
 	if err != nil {
-		fmt.Println(err.Error())
+		glog.Infoln(err.Error())
 		return fmt.Errorf("create etcd3 client failed: %v", err)
 	}
 	go func() {

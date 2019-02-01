@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/carmanzhang/ks-alert/pkg/executor/client"
+	"github.com/carmanzhang/ks-alert/pkg/client"
 	"github.com/carmanzhang/ks-alert/pkg/executor/metric"
 	"github.com/carmanzhang/ks-alert/pkg/models"
 	"github.com/carmanzhang/ks-alert/pkg/notification"
@@ -13,6 +13,7 @@ import (
 	. "github.com/carmanzhang/ks-alert/pkg/stderr"
 	"github.com/carmanzhang/ks-alert/pkg/utils/jsonutil"
 	"github.com/golang/glog"
+	log "log"
 	"regexp"
 	"runtime"
 	"strconv"
@@ -76,7 +77,8 @@ func ExecuteAlertConfig(ctx context.Context, msg *pb.Informer) Error {
 	switch msg.Signal {
 	case pb.Informer_CREATE:
 		if _, ok := CachedRuntimeAlert.Map[msg.AlertConfigId]; ok {
-			return Error{Text: "the alert config is under executing", Code: RuntimeError, Where: Caller(1, true)}
+
+			return Error{Text: "the alert config is under executing", Code: RuntimeError, Where: Caller(0, true)}
 		}
 		// create alert by specifig alert config id within one goroutine
 		var rtAlert = &RuntimeAlertConfig{
@@ -87,7 +89,7 @@ func ExecuteAlertConfig(ctx context.Context, msg *pb.Informer) Error {
 		err := rtAlert.reload(msg.AlertConfigId)
 
 		if err != nil {
-			return Error{Text: err.Error(), Code: RuntimeError, Where: Caller(1, true)}
+			return Error{Text: err.Error(), Code: RuntimeError, Where: Caller(0, true)}
 		}
 
 		CachedRuntimeAlert.Lock()
@@ -99,7 +101,7 @@ func ExecuteAlertConfig(ctx context.Context, msg *pb.Informer) Error {
 	case pb.Informer_TERMINATE:
 		runtimeAlert, ok := CachedRuntimeAlert.Map[msg.AlertConfigId]
 		if !ok {
-			return Error{Text: "alert config was not executor by executor", Code: RuntimeError, Where: Caller(1, true)}
+			return Error{Text: "alert config was not executor by executor", Code: RuntimeError, Where: Caller(0, true)}
 		}
 
 		runtimeAlert.SigCh <- pb.Informer_TERMINATE
@@ -111,7 +113,7 @@ func ExecuteAlertConfig(ctx context.Context, msg *pb.Informer) Error {
 	case pb.Informer_RELOAD:
 		runtimeAlert, ok := CachedRuntimeAlert.Map[msg.AlertConfigId]
 		if !ok {
-			return Error{Text: "alert config was not executor by executor", Code: RuntimeError, Where: Caller(1, true)}
+			return Error{Text: "alert config was not executor by executor", Code: RuntimeError, Where: Caller(0, true)}
 		}
 
 		runtimeAlert.SigCh <- pb.Informer_RELOAD
@@ -119,14 +121,14 @@ func ExecuteAlertConfig(ctx context.Context, msg *pb.Informer) Error {
 	default:
 		runtimeAlert, ok := CachedRuntimeAlert.Map[msg.AlertConfigId]
 		if !ok {
-			return Error{Text: "alert config was not executor by executor", Code: RuntimeError, Where: Caller(1, true)}
+			return Error{Text: "alert config was not executor by executor", Code: RuntimeError, Where: Caller(0, true)}
 		}
 		runtimeAlert.StatusCh <- Alive
 		status := <-runtimeAlert.StatusCh
-		glog.Infof("%s,%s", msg.AlertConfigId, status)
+		log.Printf("%s,%s", msg.AlertConfigId, status)
 	}
 
-	return Error{Text: "success", Code: Success, Where: Caller(1, true)}
+	return Error{Text: "success", Code: Success, Where: Caller(0, true)}
 }
 
 func (rtAlert *RuntimeAlertConfig) runAlert() {
@@ -144,7 +146,7 @@ func (rtAlert *RuntimeAlertConfig) runAlert() {
 		case sig := <-sigCh:
 			if sig == pb.Informer_RELOAD {
 				acID := rtAlert.alertConfig.AlertConfigID
-				fmt.Println("runtime rtAlert was reload, alert_config_id is: ", acID)
+				log.Println("runtime rtAlert was reload, alert_config_id is: ", acID)
 				var err error
 				err = rtAlert.reload(acID)
 
@@ -155,7 +157,7 @@ func (rtAlert *RuntimeAlertConfig) runAlert() {
 				}
 
 			} else if sig == pb.Informer_TERMINATE {
-				fmt.Println("runtime rtAlert was terminated, alert_config_id is: ", rtAlert.alertConfig.AlertConfigID)
+				log.Println("runtime rtAlert was terminated, alert_config_id is: ", rtAlert.alertConfig.AlertConfigID)
 				return
 			}
 
@@ -174,8 +176,8 @@ func (rtAlert *RuntimeAlertConfig) runAlert() {
 			}
 
 			// TODO need to add exception catcher function
-			fmt.Println("new evalted period: ", len(CachedRuntimeAlert.Map), runtime.NumGoroutine(), counter)
-			fmt.Println("fired alert: ", jsonutil.Marshal(rtAlert.firedAlerts))
+			log.Println("new evalted period: ", len(CachedRuntimeAlert.Map), runtime.NumGoroutine(), counter)
+			log.Println("fired alert: ", jsonutil.Marshal(rtAlert.firedAlerts))
 			alertConfig := rtAlert.alertConfig
 
 			// 0. check this alert_config's hostid, whether is consistency with this node or not
@@ -311,16 +313,9 @@ func (rtAlert *RuntimeAlertConfig) evaluteAlertInPipeline(metricByRule *metric.R
 			noticeStr := notice.MakeNotice(false)
 
 			// 7. send notice
-			sendStatusMap := notification.Sender{}.Send(rtAlert.alertConfig.ReceiverGroup.Receivers, noticeStr)
+			sendStatus := notification.Sender{}.Send(rtAlert.alertConfig.ReceiverGroup.Receivers, noticeStr)
 
 			// 8. update send status and send policy in `alert_history`
-			var sendStatus string
-			if sendStatusMap == nil {
-				sendStatus = ""
-			} else {
-				sendStatus = jsonutil.Marshal(sendStatusMap)
-			}
-
 			ah.RequestNotificationStatus = sendStatus
 			ah.NextRepeatSendInterval = nextRepeatSendInterval
 			ah.CumulateRepeatSendCount = cumulateRepeatSendCount
@@ -369,7 +364,7 @@ func (rtAlert *RuntimeAlertConfig) updateAlertFiredStatus(resName string, ruleID
 			if _, ok := firedRules[ruleID]; ok {
 				delete(firedRules, ruleID)
 				isRecovery = true
-				//fmt.Println("recovery alert", rules[indx].MetricName, resName)
+				//log.Printlnln("recovery alert", rules[indx].MetricName, resName)
 			}
 
 			if len(firedRules) == 0 {
@@ -445,16 +440,16 @@ func checkSendSatisfied(sendPolicy *models.SendPolicy, rule *models.AlertRule) (
 					needResend = true
 				} else {
 					// dees not reach next repeat send interval
-					fmt.Println("dees not reach next repeat send interval", now, nextReSendTime, nextReSendTime.Sub(now))
+					log.Println("dees not reach next repeat send interval", now, nextReSendTime, nextReSendTime.Sub(now))
 				}
 			}
 		} else {
 			// exceed maximum repeat send count, this fired alert will be inhibited
-			fmt.Println("exceed maximum repeat send count, this fired alert will be inhibited")
+			log.Println("exceed maximum repeat send count, this fired alert will be inhibited")
 		}
 	} else {
 		// still in silence period
-		fmt.Println("still in silence period", sendPolicy.SilenceStartAt, sendPolicy.SilenceEndAt)
+		log.Println("still in silence period", sendPolicy.SilenceStartAt, sendPolicy.SilenceEndAt)
 	}
 
 	return needResend, isResendIntervalChanged
@@ -519,7 +514,7 @@ func getExecutingRuleIndx(freq, currentFreq []int32, ruleEnable []bool) []int {
 			evaluatedRuleIndx = append(evaluatedRuleIndx, i)
 		}
 	}
-	fmt.Println("freq: ", currentFreq, freq)
+	log.Println("freq: ", currentFreq, freq)
 	return evaluatedRuleIndx
 }
 
@@ -568,7 +563,7 @@ func (rtAlert *RuntimeAlertConfig) getResourceMetrics(evaluatedRuleIndx []int, c
 					resourceMetrics := metric.GetResourceTimeSeriesMetric(metricStr, metricName, startTime, endTime)
 					if resourceMetrics != nil {
 						resourceMetrics.RuleIndx = j
-						fmt.Println("pull metrics: ", resourceMetrics)
+						log.Println("pull metrics: ", resourceMetrics)
 						ch <- resourceMetrics
 					}
 					wg.Done()

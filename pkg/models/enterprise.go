@@ -19,14 +19,13 @@ type Enterprise struct {
 	Description    string    `gorm:"type:text;"`
 	CreatedAt      time.Time `gorm:"not null;"`
 	UpdatedAt      time.Time `gorm:"not null;"`
-	Products       []Product `gorm:"ForeignKey:EnterpriseID;AssociationForeignKey:ProductID"`
 }
 
 func CreateEnterprise(enterprise *Enterprise) (*Enterprise, error) {
 	db, err := dbutil.DBClient()
 
 	if err != nil {
-		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
+		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(0, true)}
 	}
 
 	enterprise.EnterpriseID = idutil.GetUuid36("")
@@ -34,7 +33,7 @@ func CreateEnterprise(enterprise *Enterprise) (*Enterprise, error) {
 	err = db.Model(&Enterprise{}).Create(enterprise).Error
 
 	if err != nil {
-		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
+		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(0, true)}
 	}
 
 	return enterprise, nil
@@ -47,7 +46,7 @@ func GetEnterprise(enterprise *Enterprise) (*Enterprise, error) {
 	db, err := dbutil.DBClient()
 
 	if err != nil {
-		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
+		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(0, true)}
 	}
 
 	var ent Enterprise
@@ -62,7 +61,7 @@ func GetEnterprise(enterprise *Enterprise) (*Enterprise, error) {
 
 	if ent.EnterpriseID == "" {
 		errStr := fmt.Sprintf("can not find the enterprise with enterprise_id: %s or enterprise_name: %s", entID, entName)
-		return nil, Error{Text: errStr, Code: DBError, Where: Caller(1, true)}
+		return nil, Error{Text: errStr, Code: DBError, Where: Caller(0, true)}
 	}
 	return &ent, nil
 }
@@ -78,7 +77,7 @@ func DeleteEnterprise(enterprise *Enterprise) error {
 	db, err := dbutil.DBClient()
 
 	if err != nil {
-		return Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
+		return Error{Text: err.Error(), Code: DBError, Where: Caller(0, true)}
 	}
 
 	if entID != "" {
@@ -88,7 +87,7 @@ func DeleteEnterprise(enterprise *Enterprise) error {
 	}
 
 	if err != nil {
-		return Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
+		return Error{Text: err.Error(), Code: DBError, Where: Caller(0, true)}
 	}
 
 	return nil
@@ -98,7 +97,7 @@ func UpdateEnterprise(ent *Enterprise) error {
 	db, err := dbutil.DBClient()
 
 	if err != nil {
-		return Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
+		return Error{Text: err.Error(), Code: DBError, Where: Caller(0, true)}
 	}
 
 	if ent.EnterpriseID != "" {
@@ -109,7 +108,7 @@ func UpdateEnterprise(ent *Enterprise) error {
 	}
 
 	if err != nil {
-		return Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
+		return Error{Text: err.Error(), Code: DBError, Where: Caller(0, true)}
 	}
 
 	return nil

@@ -20,15 +20,15 @@ var (
 
 	EtcdAddress = flag.String("etcd_addr", "http://127.0.0.1:2379", "register etcd address")
 
-	//MysqlHost = flag.String("mysql", "127.0.0.1", "")
-	//MysqlPort = flag.String("mysql_port", "3306", "")
-
-	MysqlHost = flag.String("mysql", "139.198.120.226", "")
-	MysqlPort = flag.String("mysql_port", "33306", "")
+	MysqlHost = flag.String("mysql", "127.0.0.1", "")
+	MysqlPort = flag.String("mysql_port", "3306", "")
 
 	Database = flag.String("database", "alert", "")
 	User     = flag.String("user", "root", "")
 	Password = flag.String("password", "password", "")
+
+	NotificationHost = flag.String("nf_host", "alerting-notification-server.kubesphere-monitoring-system.svc", "")
+	NotificationPort = flag.String("nf_port", "9201", "")
 )
 
 var HostInfo string
@@ -86,5 +86,5 @@ func init() {
 	// a unique name in whole scope, mainly for distinguishing executors
 	HostInfo = fmt.Sprintf("%s:%d", *ServiceHost, *ExecutorServicePort)
 
-	fmt.Println(HostInfo)
+	glog.Infoln(HostInfo)
 }

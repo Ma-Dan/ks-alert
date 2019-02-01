@@ -2,8 +2,7 @@ package metric
 
 import (
 	"encoding/json"
-	"fmt"
-	"k8s.io/klog/glog"
+	"github.com/golang/glog"
 )
 
 const (
@@ -57,8 +56,8 @@ const (
 
 // a single metric for many resources
 func GetResourceTimeSeriesMetric(metricStr string, metricName string, startTime int64, endTime int64) *ResourceMetrics {
-	//fmt.Println(metricStr)
-	fmt.Println(startTime, endTime)
+	//glog.Infoln(metricStr)
+	glog.Infoln(startTime, endTime)
 	var metrics Metrics
 	err := json.Unmarshal([]byte(metricStr), &metrics)
 	if err != nil {
@@ -79,7 +78,7 @@ func GetResourceTimeSeriesMetric(metricStr string, metricName string, startTime 
 			var instantMetrics []InstantMetric
 			err := json.Unmarshal(r, &instantMetrics)
 			if err != nil {
-				fmt.Println(err.Error())
+				glog.Infoln(err.Error())
 			}
 
 			item := make(map[string][]TV)

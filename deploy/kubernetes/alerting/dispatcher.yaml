@@ -20,7 +20,7 @@ metadata:
   name: alerting-dispatcher
   namespace: kubesphere-monitoring-system
 spec:
-  replicas: 3
+  replicas: 2
   selector:
     matchLabels:
       app: alerting-dispatcher
@@ -35,11 +35,11 @@ spec:
         - -database=alert
         - -etcd_addr=http://alerting-etcd.kubesphere-monitoring-system.svc:2379
         - -mysql=alerting-db.kubesphere-monitoring-system.svc
-		- -mysql_port=3306
+        - -mysql_port=3306
         - -user=root
         - -password=password
         image: carmanzhang/alerting-dev:latest
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
         name: alerting-dispatcher
         ports:
         - containerPort: 50000

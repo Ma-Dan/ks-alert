@@ -62,7 +62,7 @@ func GetResourceType(resourceType *ResourceType) (*ResourceType, error) {
 	db, err := dbutil.DBClient()
 
 	if err != nil {
-		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
+		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(0, true)}
 	}
 
 	var tp ResourceType
@@ -73,7 +73,7 @@ func GetResourceType(resourceType *ResourceType) (*ResourceType, error) {
 	}
 
 	if db.Error != nil {
-		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
+		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(0, true)}
 	}
 
 	return &tp, nil
@@ -83,7 +83,7 @@ func CreateResourceType(resourceType *ResourceType) (*ResourceType, error) {
 	db, err := dbutil.DBClient()
 
 	if err != nil {
-		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
+		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(0, true)}
 	}
 
 	resourceType.ResourceTypeID = idutil.GetUuid36("")
@@ -91,7 +91,7 @@ func CreateResourceType(resourceType *ResourceType) (*ResourceType, error) {
 	err = db.Model(&ResourceType{}).Create(resourceType).Error
 
 	if err != nil {
-		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
+		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(0, true)}
 	}
 
 	return resourceType, nil
@@ -102,7 +102,7 @@ func UpdateResourceType(resourceType *ResourceType) error {
 	db, err := dbutil.DBClient()
 
 	if err != nil {
-		return Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
+		return Error{Text: err.Error(), Code: DBError, Where: Caller(0, true)}
 	}
 
 	if resourceType.ResourceTypeID != "" {
@@ -112,7 +112,7 @@ func UpdateResourceType(resourceType *ResourceType) error {
 	}
 
 	if err != nil {
-		return Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
+		return Error{Text: err.Error(), Code: DBError, Where: Caller(0, true)}
 	}
 
 	return nil
@@ -122,13 +122,13 @@ func DeleteResourceType(resourceType *ResourceType) error {
 	db, err := dbutil.DBClient()
 
 	if err != nil {
-		return Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
+		return Error{Text: err.Error(), Code: DBError, Where: Caller(0, true)}
 	}
 
 	err = db.Delete(resourceType).Error
 
 	if err != nil {
-		return Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
+		return Error{Text: err.Error(), Code: DBError, Where: Caller(0, true)}
 	}
 
 	return nil
@@ -136,11 +136,11 @@ func DeleteResourceType(resourceType *ResourceType) error {
 
 func (r *ResourceGroup) Create(tx *gorm.DB) (interface{}, error) {
 	if r.ResourceGroupName == "" || r.ResourceTypeID == "" {
-		return nil, Error{Text: "resource group name and resource type id must be specified", Code: InvalidParam, Where: Caller(1, true)}
+		return nil, Error{Text: "resource group name and resource type id must be specified", Code: InvalidParam, Where: Caller(0, true)}
 	}
 
 	if r.Resources == nil || len(r.Resources) == 0 {
-		return nil, Error{Text: "resources must be specified", Code: InvalidParam, Where: Caller(1, true)}
+		return nil, Error{Text: "resources must be specified", Code: InvalidParam, Where: Caller(0, true)}
 	}
 
 	var resourceWithName []*Resource
@@ -153,7 +153,7 @@ func (r *ResourceGroup) Create(tx *gorm.DB) (interface{}, error) {
 	}
 
 	if len(resourceWithName) == 0 {
-		return nil, Error{Text: "at least one resource name must be specified", Code: InvalidParam, Where: Caller(1, true)}
+		return nil, Error{Text: "at least one resource name must be specified", Code: InvalidParam, Where: Caller(0, true)}
 	}
 
 	r.ResourceGroupID = idutil.GetUuid36("")
@@ -166,7 +166,7 @@ func (r *ResourceGroup) Create(tx *gorm.DB) (interface{}, error) {
 		"description, uri_params, created_at, updated_at) VALUES " + item
 
 	if err := tx.Exec(sql).Error; err != nil {
-		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
+		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(0, true)}
 	}
 
 	// create item
@@ -186,7 +186,7 @@ func (r *ResourceGroup) Create(tx *gorm.DB) (interface{}, error) {
 
 func (r *ResourceGroup) Update(tx *gorm.DB) (interface{}, error) {
 	if r.ResourceGroupID == "" || r.ResourceGroupName == "" {
-		return nil, Error{Text: "resource group id or name must be specified", Code: InvalidParam, Where: Caller(1, true)}
+		return nil, Error{Text: "resource group id or name must be specified", Code: InvalidParam, Where: Caller(0, true)}
 	}
 
 	// 1. get resource group first
@@ -199,7 +199,7 @@ func (r *ResourceGroup) Update(tx *gorm.DB) (interface{}, error) {
 	rg := vget.(*ResourceGroup)
 
 	if rg == nil || rg.ResourceGroupID == "" {
-		return nil, Error{Text: fmt.Sprintf("resource group id: %s not exist", r.ResourceGroupID), Code: InvalidParam, Where: Caller(1, true)}
+		return nil, Error{Text: fmt.Sprintf("resource group id: %s not exist", r.ResourceGroupID), Code: InvalidParam, Where: Caller(0, true)}
 	}
 
 	// 2. update resource group
@@ -209,7 +209,7 @@ func (r *ResourceGroup) Update(tx *gorm.DB) (interface{}, error) {
 		r.URIParams, time.Now(), r.ResourceGroupID)
 
 	if err := tx.Exec(sql).Error; err != nil {
-		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
+		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(0, true)}
 	}
 
 	// 3. delete resources or update resource
@@ -241,7 +241,7 @@ func (r *ResourceGroup) Get(tx *gorm.DB) (interface{}, error) {
 	rgID := r.ResourceGroupID
 
 	if rgID == "" {
-		return nil, Error{Text: "resource group id must be specified", Code: InvalidParam, Where: Caller(1, true)}
+		return nil, Error{Text: "resource group id must be specified", Code: InvalidParam, Where: Caller(0, true)}
 	}
 
 	var rg ResourceGroup
@@ -249,13 +249,13 @@ func (r *ResourceGroup) Get(tx *gorm.DB) (interface{}, error) {
 	err := tx.Model(&ResourceGroup{}).Where("resource_group_id=?", rgID).First(&rg).Error
 
 	if err != nil {
-		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
+		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(0, true)}
 	}
 
 	exist := tx.RecordNotFound()
 
 	if exist {
-		return nil, Error{Text: "record not found", Code: DBError, Where: Caller(1, true)}
+		return nil, Error{Text: "record not found", Code: DBError, Where: Caller(0, true)}
 	}
 
 	if rg.ResourceGroupID != "" {
@@ -275,13 +275,13 @@ func (r *ResourceGroup) Delete(tx *gorm.DB) (interface{}, error) {
 	rgID := r.ResourceGroupID
 
 	if rgID == "" {
-		return nil, Error{Text: "resource group id must be specified", Code: InvalidParam, Where: Caller(1, true)}
+		return nil, Error{Text: "resource group id must be specified", Code: InvalidParam, Where: Caller(0, true)}
 	}
 
 	sql := "DELETE rg, r FROM resource_groups as rg LEFT JOIN resources as r ON rg.resource_group_id=r.resource_group_id WHERE rg.resource_group_id=?"
 
 	if err := tx.Exec(sql, r.ResourceGroupID).Error; err != nil {
-		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
+		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(0, true)}
 	}
 
 	return nil, nil
@@ -315,7 +315,7 @@ func CreateOrUpdateResources(tx *gorm.DB, resources []*Resource) error {
 	sql = sql + "on duplicate key update resource_name=values(resource_name),updated_at=values(updated_at)"
 
 	if err := tx.Exec(sql).Error; err != nil {
-		return Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
+		return Error{Text: err.Error(), Code: DBError, Where: Caller(0, true)}
 	}
 
 	return nil
@@ -326,7 +326,7 @@ func GetResources(tx *gorm.DB, rgID string) ([]*Resource, error) {
 	sql := "SELECT r.* FROM resources as r WHERE r.resource_group_id=?"
 
 	if err := tx.Raw(sql, rgID).Scan(&resources).Error; err != nil {
-		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
+		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(0, true)}
 	}
 
 	l := len(resources)
@@ -378,7 +378,7 @@ func DeleteResources(tx *gorm.DB, resources []*Resource) error {
 	}
 
 	if err := tx.Exec("DELETE r FROM resources as r WHERE r.resource_id IN (?)", ids).Error; err != nil {
-		return Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
+		return Error{Text: err.Error(), Code: DBError, Where: Caller(0, true)}
 	}
 
 	return nil

@@ -2,6 +2,7 @@ package client
 
 import (
 	"fmt"
+	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 )
 

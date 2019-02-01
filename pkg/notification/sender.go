@@ -1,97 +1,58 @@
 package notification
 
 import (
+	"context"
 	"fmt"
+	"github.com/carmanzhang/ks-alert/pkg/client"
 	"github.com/carmanzhang/ks-alert/pkg/models"
-	"io/ioutil"
-	"net/http"
-	"net/url"
-	"sync"
-	"time"
-)
-
-const (
-	Success = "Success"
-	Failure = "Failure"
-	Unknow  = "Unknow"
+	"github.com/carmanzhang/ks-alert/pkg/option"
+	"github.com/carmanzhang/ks-alert/pkg/utils/jsonutil"
+	"github.com/golang/glog"
+	"github.com/golang/protobuf/ptypes/wrappers"
+	"openpitrix.io/notification/pkg/pb"
+	"strings"
 )
 
 type Sender struct{}
 
-type SendStatus struct {
-	ReceiverID string
-	Status     string
-	Message    string
-	Timestamp  int64
-}
+func (s Sender) Send(receivers *[]models.Receiver, noticeStr string) string {
+	emails := extractEmails(receivers)
 
-type SendStatusMap map[string]SendStatus
+	// TODO make it more elegant
+	noticeWithReceivers := &pb.CreateNotificationRequest{
+		Content:      &wrappers.StringValue{Value: noticeStr},
+		AddressInfo:  &wrappers.StringValue{Value: jsonutil.Marshal(map[string][]string{"email": emails})},
+		ContentType:  &wrappers.StringValue{Value: "email"},
+		ExpiredDays:  &wrappers.UInt32Value{Value: 0},
+		Owner:        &wrappers.StringValue{Value: "huojiao"},
+		Title:        &wrappers.StringValue{Value: "here comes an alert"},
+		ShortContent: &wrappers.StringValue{Value: ""},
+	}
 
-var senderClient = &http.Client{}
-
-//
-var notificationAddress = "http://139.198.190.141:8082/notice"
-
-func sendRequest(epurl string, email string, noticeStr string) (string, error) {
-	response, err := senderClient.PostForm(epurl, url.Values{"email": {email}, "notice": {noticeStr}})
+	svcAddress := fmt.Sprintf("%s:%s", *option.NotificationHost, *option.NotificationPort)
+	conn, err := client.GetNotificationConn(svcAddress)
 	if err != nil {
-		return "", err
-	} else {
-		defer response.Body.Close()
-
-		contents, err := ioutil.ReadAll(response.Body)
-
-		if err != nil {
-			return string(contents), err
-		}
-
-		return string(contents), nil
+		glog.Errorln(err.Error())
+		return ""
 	}
+
+	nfClient := pb.NewNotificationClient(conn)
+	response, err := nfClient.CreateNotification(context.Background(), noticeWithReceivers)
+	if err != nil {
+		glog.Errorln(err.Error())
+	}
+	return jsonutil.Marshal(response)
 }
 
-func (s Sender) Send(receivers *[]models.Receiver, noticeStr string) *SendStatusMap {
-	l := len(*receivers)
+func extractEmails(receiver *[]models.Receiver) []string {
+	var emails []string
+	l := len(*receiver)
 
-	var ch = make(chan *SendStatus, l)
-	wg := sync.WaitGroup{}
-	for i, _ := range *receivers {
-		wg.Add(1)
-		go func(ch chan *SendStatus, i int) {
-			r := (*receivers)[i]
-			recvID := r.ReceiverID
-			email := r.Email
-			fmt.Println(email)
-			_, err := sendRequest(notificationAddress, email, noticeStr)
-			var status *SendStatus
-			if err == nil {
-				status = &SendStatus{
-					Timestamp:  time.Now().Unix(),
-					Status:     Success,
-					ReceiverID: recvID,
-				}
-			} else {
-				status = &SendStatus{
-					Timestamp:  time.Now().Unix(),
-					Status:     Failure,
-					Message:    err.Error(),
-					ReceiverID: recvID,
-				}
-			}
-
-			ch <- status
-			wg.Done()
-		}(ch, i)
-
+	for i := 0; i < l; i++ {
+		e := strings.Trim((*receiver)[i].Email, " ")
+		if e != "" {
+			emails = append(emails, e)
+		}
 	}
-
-	wg.Wait()
-	close(ch)
-
-	statusMap := make(SendStatusMap, l)
-
-	for c := range ch {
-		statusMap[c.ReceiverID] = *c
-	}
-
-	return &statusMap
+	return emails
 }

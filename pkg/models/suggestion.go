@@ -23,7 +23,7 @@ func UpdateSuggestion(suggestion *Suggestion) (*Suggestion, error) {
 	db, err := dbutil.DBClient()
 
 	if err != nil {
-		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
+		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(0, true)}
 	}
 
 	// may be there is no suggestions
@@ -57,12 +57,10 @@ func UpdateSuggestion(suggestion *Suggestion) (*Suggestion, error) {
 			suggestion.Message, time.Now(), time.Now())
 	}
 
-	fmt.Println(sql)
-
 	err = db.Exec(sql).Error
 
 	if err != nil {
-		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
+		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(0, true)}
 	}
 
 	return suggestion, nil
@@ -73,7 +71,7 @@ func GetSuggestion(sugSpec *Suggestion) (*Suggestion, error) {
 	db, err := dbutil.DBClient()
 
 	if err != nil {
-		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
+		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(0, true)}
 	}
 
 	// get suggestion by alert_config_id and alert_rule_id and resource_id
@@ -91,7 +89,7 @@ func GetSuggestion(sugSpec *Suggestion) (*Suggestion, error) {
 
 	err = db.Error
 	if err != nil {
-		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
+		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(0, true)}
 	}
 
 	return &suggestion, nil

@@ -25,7 +25,7 @@ func CreateSendPolicy(sendPolicy *SendPolicy) error {
 	db, err := dbutil.DBClient()
 
 	if err != nil {
-		return Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
+		return Error{Text: err.Error(), Code: DBError, Where: Caller(0, true)}
 	}
 
 	// get fired sendPolicy by
@@ -33,7 +33,7 @@ func CreateSendPolicy(sendPolicy *SendPolicy) error {
 	ruleID := sendPolicy.AlertRuleID
 
 	if resID == "" || ruleID == "" {
-		return Error{Text: "resource id and rule id must be specified", Code: InvalidParam, Where: Caller(1, true)}
+		return Error{Text: "resource id and rule id must be specified", Code: InvalidParam, Where: Caller(0, true)}
 	}
 
 	//sendPolicy.SendPolicyID = idutil.GetUuid36("")
@@ -41,7 +41,7 @@ func CreateSendPolicy(sendPolicy *SendPolicy) error {
 	err = db.Model(&SendPolicy{}).Create(sendPolicy).Error
 
 	if err != nil {
-		return Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
+		return Error{Text: err.Error(), Code: DBError, Where: Caller(0, true)}
 	} else {
 		return nil
 	}
@@ -51,11 +51,11 @@ func CreateOrUpdateSendPolicy(sendPolicy *SendPolicy) error {
 	db, err := dbutil.DBClient()
 
 	if err != nil {
-		return Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
+		return Error{Text: err.Error(), Code: DBError, Where: Caller(0, true)}
 	}
 
 	if err := db.Save(&sendPolicy).Error; err != nil {
-		return Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
+		return Error{Text: err.Error(), Code: DBError, Where: Caller(0, true)}
 	}
 
 	return err
@@ -65,14 +65,14 @@ func GetSendPolicy(sendPolicy *SendPolicy) (*SendPolicy, error) {
 	db, err := dbutil.DBClient()
 
 	if err != nil {
-		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
+		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(0, true)}
 	}
 
 	resID := sendPolicy.ResourceID
 	ruleID := sendPolicy.AlertRuleID
 
 	if resID == "" || ruleID == "" {
-		return nil, Error{Text: "resource id and rule id must be specified", Code: DBError, Where: Caller(1, true)}
+		return nil, Error{Text: "resource id and rule id must be specified", Code: DBError, Where: Caller(0, true)}
 	}
 
 	var policy SendPolicy
@@ -82,7 +82,7 @@ func GetSendPolicy(sendPolicy *SendPolicy) (*SendPolicy, error) {
 
 	err = db.Error
 	if err != nil {
-		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
+		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(0, true)}
 	}
 
 	return &policy, nil
@@ -92,14 +92,14 @@ func UpdateSendPolicySilenceRule(sendPolicy *SendPolicy) error {
 	db, err := dbutil.DBClient()
 
 	if err != nil {
-		return Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
+		return Error{Text: err.Error(), Code: DBError, Where: Caller(0, true)}
 	}
 
 	startAt := sendPolicy.SilenceStartAt
 	endAt := sendPolicy.SilenceEndAt
 
 	if err := db.Model(sendPolicy).Updates(map[string]interface{}{"silence_start_at": startAt, "silence_end_at": endAt}).Error; err != nil {
-		return Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
+		return Error{Text: err.Error(), Code: DBError, Where: Caller(0, true)}
 	}
 
 	return nil

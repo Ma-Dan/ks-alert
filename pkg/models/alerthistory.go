@@ -8,7 +8,6 @@ import (
 )
 
 type AlertHistory struct {
-	//AlertHistoryID string `gorm:"primary_key"`
 	// this ID is used for Paging
 	ID                 uint64 `gorm:"primary_key;type:int(11) unsigned auto_increment;"`
 	AlertHistoryID     string `gorm:"type:varchar(50);not null;"`
@@ -32,7 +31,6 @@ type AlertHistory struct {
 
 	MetricData string `gorm:"type:text;"`
 
-	//SilenceEnable  bool      `gorm:"type:boolean;not null;default:false;"`
 	SilenceStartAt time.Time `gorm:""`
 	SilenceEndAt   time.Time `gorm:""`
 
@@ -56,14 +54,14 @@ func CreateAlertHistory(ah *AlertHistory) (*AlertHistory, error) {
 	db, err := dbutil.DBClient()
 
 	if err != nil {
-		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
+		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(0, true)}
 	}
 
 	ah.AlertHistoryID = idutil.GetUuid36("")
 	err = db.Model(&AlertHistory{}).Create(ah).Error
 
 	if err != nil {
-		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
+		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(0, true)}
 	}
 
 	return ah, err
@@ -73,7 +71,7 @@ func CreateAlertHistory(ah *AlertHistory) (*AlertHistory, error) {
 func GetAlertHistory(ah *AlertHistory) ([]*AlertHistory, error) {
 	db, err := dbutil.DBClient()
 	if err != nil {
-		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
+		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(0, true)}
 	}
 
 	var alertHistories []AlertHistory
@@ -91,14 +89,14 @@ func UpdateAlertHistory(ah *AlertHistory) error {
 
 	db, err := dbutil.DBClient()
 	if err != nil {
-		return Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
+		return Error{Text: err.Error(), Code: DBError, Where: Caller(0, true)}
 	}
 
 	//err = db.Model(ah).Where("alert_history_id = ?", ah.AlertHistoryID).Update("request_notification_status", sendStatus).Error
 	err = db.Save(ah).Error
 
 	if err != nil {
-		return Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
+		return Error{Text: err.Error(), Code: DBError, Where: Caller(0, true)}
 	}
 
 	return nil
