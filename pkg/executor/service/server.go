@@ -124,7 +124,7 @@ func Run() {
 				for i, b := range bools {
 					if b {
 						acID := (*alertConfigs)[i].AlertConfigID
-						fmt.Println("executing", acID)
+						log.Println("executing", acID)
 						err := runtime.ExecuteAlertConfig(context.Background(), &pb.Informer{Signal: pb.Informer_CREATE, AlertConfigId: acID})
 						if err.Code != stderr.Success {
 							glog.Errorln(err.Error())

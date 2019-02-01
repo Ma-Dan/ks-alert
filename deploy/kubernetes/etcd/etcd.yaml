@@ -42,6 +42,7 @@ metadata:
     tier: etcd
     version: v1.0.0
 spec:
+  replicas: 1
   selector:
     matchLabels:
       app: alerting
@@ -57,7 +58,7 @@ spec:
     spec:
       containers:
       - name: alerting-etcd
-        image: quay.io/coreos/etcd:v3.2.18
+        image: quay.io/coreos/etcd:v3.3.10
         imagePullPolicy: IfNotPresent
         command: ["etcd", "--data-dir=/data", "--listen-client-urls=http://0.0.0.0:2379", "--advertise-client-urls=http://alerting-etcd.kubesphere-monitoring-system.svc:2379", "--max-snapshots=5", "--max-wals=5", "--auto-compaction-retention=168"]
         ports:

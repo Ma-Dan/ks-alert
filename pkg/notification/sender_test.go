@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/carmanzhang/ks-alert/pkg/executor/metric"
 	"github.com/carmanzhang/ks-alert/pkg/models"
-	"github.com/carmanzhang/ks-alert/pkg/utils/jsonutil"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 	"time"
@@ -42,7 +41,6 @@ func TestSender_Send(t *testing.T) {
 					ConsecutiveCount:       3,
 					InhibitRule:            false,
 					Enable:                 true,
-					SystemRule:             false,
 					RepeatSendType:         1,
 					InitRepeatSendInterval: 60,
 					MaxRepeatSendCount:     4,
@@ -54,7 +52,7 @@ func TestSender_Send(t *testing.T) {
 			noticeStr := notice.MakeNotice(false)
 			fmt.Println(noticeStr)
 			sender := Sender{}
-			sendStatusMap := sender.Send(&[]models.Receiver{
+			sendStatus := sender.Send(&[]models.Receiver{
 				{
 					ReceiverName: "bbbbbbbbbbb",
 					Email:        "zlahu@foxmail.com",
@@ -75,7 +73,7 @@ func TestSender_Send(t *testing.T) {
 				},
 			}, noticeStr)
 
-			fmt.Println(jsonutil.Marshal(sendStatusMap))
+			fmt.Println(sendStatus)
 		})
 	})
 }

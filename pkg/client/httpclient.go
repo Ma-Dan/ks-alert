@@ -44,7 +44,7 @@ func SendMonitoringRequest(uriPath, extraQueryParams string, resources []string,
 		urlStr = DefaultScheme + "://" + uriPath + "?" + queryParams
 	}
 
-	//fmt.Println(urlStr)
+	//glog.Infoln(urlStr)
 
 	response, err := client.Get(urlStr)
 	if err != nil {

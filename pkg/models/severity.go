@@ -23,7 +23,7 @@ func CreateSeverity(severity *Severity) (*Severity, error) {
 	db, err := dbutil.DBClient()
 
 	if err != nil {
-		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
+		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(0, true)}
 	}
 
 	// check product exists
@@ -34,7 +34,7 @@ func CreateSeverity(severity *Severity) (*Severity, error) {
 	}
 
 	if product.ProductID == "" {
-		return nil, Error{Text: "product not found", Code: InvalidParam, Where: Caller(1, true)}
+		return nil, Error{Text: "product not found", Code: InvalidParam, Where: Caller(0, true)}
 	}
 
 	severity.SeverityID = idutil.GetUuid36("")
@@ -42,7 +42,7 @@ func CreateSeverity(severity *Severity) (*Severity, error) {
 	err = db.Model(&Severity{}).Create(severity).Error
 
 	if err != nil {
-		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
+		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(0, true)}
 	}
 
 	return severity, nil
@@ -53,7 +53,7 @@ func UpdateSeverity(severity *Severity) (*Severity, error) {
 	db, err := dbutil.DBClient()
 
 	if err != nil {
-		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
+		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(0, true)}
 	}
 
 	sql := fmt.Sprintf("UPDATE severities SET severity_en='%s',severity_ch='%s',"+
@@ -63,9 +63,9 @@ func UpdateSeverity(severity *Severity) (*Severity, error) {
 
 	if err := db.Exec(sql).Error; err != nil {
 		if db.RecordNotFound() {
-			return nil, Error{Text: "record not found", Code: DBError, Where: Caller(1, true)}
+			return nil, Error{Text: "record not found", Code: DBError, Where: Caller(0, true)}
 		}
-		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
+		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(0, true)}
 	}
 
 	return severity, nil
@@ -76,19 +76,19 @@ func DeleteSeverity(sevSpec *pb.SeveritySpec) (*Severity, error) {
 	db, err := dbutil.DBClient()
 
 	if err != nil {
-		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
+		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(0, true)}
 	}
 
 	sID := sevSpec.SeverityId
 
 	if sID == "" {
-		return nil, Error{Text: "severity id must be specified", Code: InvalidParam, Where: Caller(1, true)}
+		return nil, Error{Text: "severity id must be specified", Code: InvalidParam, Where: Caller(0, true)}
 	}
 
 	err = db.Exec("DELETE from severities WHERE severity_id=?", sID).Error
 
 	if err != nil {
-		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
+		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(0, true)}
 	}
 
 	return nil, nil
@@ -99,7 +99,7 @@ func GetSeverity(sevSpec *pb.SeveritySpec) (*[]Severity, error) {
 	db, err := dbutil.DBClient()
 
 	if err != nil {
-		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
+		return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(0, true)}
 	}
 
 	// get severity by severity_id
@@ -110,7 +110,7 @@ func GetSeverity(sevSpec *pb.SeveritySpec) (*[]Severity, error) {
 		err = db.Raw("SELECT * from severities WHERE severity_id=?", sevSpec.SeverityId).Scan(&sev).Error
 
 		if err != nil {
-			return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
+			return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(0, true)}
 		}
 
 		if sev.SeverityID != "" {
@@ -127,7 +127,7 @@ func GetSeverity(sevSpec *pb.SeveritySpec) (*[]Severity, error) {
 		err = db.Find(&sevs, "product_id = ?", sevSpec.ProductId).Error
 
 		if err != nil {
-			return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(1, true)}
+			return nil, Error{Text: err.Error(), Code: DBError, Where: Caller(0, true)}
 		}
 
 		severities = &sevs
