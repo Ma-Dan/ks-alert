@@ -1,8 +1,8 @@
 package models
 
 import (
-	. "github.com/carmanzhang/ks-alert/pkg/stderr"
-	"github.com/carmanzhang/ks-alert/pkg/utils/dbutil"
+	. "kubesphere.io/ks-alert/pkg/stderr"
+	"kubesphere.io/ks-alert/pkg/utils/dbutil"
 	"time"
 )
 

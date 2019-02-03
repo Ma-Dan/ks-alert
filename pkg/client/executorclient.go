@@ -1,7 +1,7 @@
 package client
 
 import (
-	. "github.com/carmanzhang/ks-alert/pkg/stderr"
+	. "kubesphere.io/ks-alert/pkg/stderr"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"time"

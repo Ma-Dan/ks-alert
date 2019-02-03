@@ -2,7 +2,7 @@ package handler
 
 import (
 	"context"
-	"github.com/carmanzhang/ks-alert/pkg/pb"
+	"kubesphere.io/ks-alert/pkg/pb"
 )
 
 type AlertHistoryHandler struct{}

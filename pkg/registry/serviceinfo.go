@@ -3,8 +3,8 @@ package registry
 import (
 	"context"
 	"encoding/json"
-	"github.com/carmanzhang/ks-alert/pkg/option"
-	"github.com/carmanzhang/ks-alert/pkg/utils/etcdutil"
+	"kubesphere.io/ks-alert/pkg/option"
+	"kubesphere.io/ks-alert/pkg/utils/etcdutil"
 	"github.com/pkg/errors"
 	etcd3 "go.etcd.io/etcd/clientv3"
 	"k8s.io/klog/glog"

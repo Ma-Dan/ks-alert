@@ -2,8 +2,8 @@ package handler
 
 import (
 	"fmt"
-	"github.com/carmanzhang/ks-alert/pkg/models"
-	"github.com/carmanzhang/ks-alert/pkg/utils/dbutil"
+	"kubesphere.io/ks-alert/pkg/models"
+	"kubesphere.io/ks-alert/pkg/utils/dbutil"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 )

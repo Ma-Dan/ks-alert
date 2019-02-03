@@ -3,9 +3,9 @@ package registry
 import (
 	"context"
 	"fmt"
-	"github.com/carmanzhang/ks-alert/pkg/option"
-	"github.com/carmanzhang/ks-alert/pkg/utils/etcdutil"
-	"github.com/carmanzhang/ks-alert/pkg/utils/jsonutil"
+	"kubesphere.io/ks-alert/pkg/option"
+	"kubesphere.io/ks-alert/pkg/utils/etcdutil"
+	"kubesphere.io/ks-alert/pkg/utils/jsonutil"
 	etcd3 "go.etcd.io/etcd/clientv3"
 	"testing"
 )

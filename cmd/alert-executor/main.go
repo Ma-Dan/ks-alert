@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/carmanzhang/ks-alert/pkg/executor/service"
+	"kubesphere.io/ks-alert/pkg/executor/service"
 	"github.com/golang/glog"
 )
 

@@ -1,9 +1,9 @@
 package notification
 
 import (
-	"github.com/carmanzhang/ks-alert/pkg/executor/metric"
-	"github.com/carmanzhang/ks-alert/pkg/models"
-	"github.com/carmanzhang/ks-alert/pkg/utils/jsonutil"
+	"kubesphere.io/ks-alert/pkg/executor/metric"
+	"kubesphere.io/ks-alert/pkg/models"
+	"kubesphere.io/ks-alert/pkg/utils/jsonutil"
 	"time"
 )
 

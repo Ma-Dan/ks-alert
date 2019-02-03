@@ -1,7 +1,7 @@
 package handler
 
 import (
-	"github.com/carmanzhang/ks-alert/pkg/utils/dbutil"
+	"kubesphere.io/ks-alert/pkg/utils/dbutil"
 	"github.com/pkg/errors"
 	"k8s.io/klog/glog"
 	"reflect"

@@ -2,10 +2,10 @@ package handler
 
 import (
 	"context"
-	"github.com/carmanzhang/ks-alert/pkg/models"
-	"github.com/carmanzhang/ks-alert/pkg/pb"
-	"github.com/carmanzhang/ks-alert/pkg/stderr"
-	"github.com/carmanzhang/ks-alert/pkg/utils/jsonutil"
+	"kubesphere.io/ks-alert/pkg/models"
+	"kubesphere.io/ks-alert/pkg/pb"
+	"kubesphere.io/ks-alert/pkg/stderr"
+	"kubesphere.io/ks-alert/pkg/utils/jsonutil"
 	"time"
 )
 

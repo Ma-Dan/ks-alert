@@ -2,10 +2,10 @@ package service
 
 import (
 	"fmt"
-	"github.com/carmanzhang/ks-alert/pkg/dispatcher/handler"
-	"github.com/carmanzhang/ks-alert/pkg/option"
-	"github.com/carmanzhang/ks-alert/pkg/pb"
-	"github.com/carmanzhang/ks-alert/pkg/registry"
+	"kubesphere.io/ks-alert/pkg/dispatcher/handler"
+	"kubesphere.io/ks-alert/pkg/option"
+	"kubesphere.io/ks-alert/pkg/pb"
+	"kubesphere.io/ks-alert/pkg/registry"
 	"google.golang.org/grpc"
 	"log"
 	"net"

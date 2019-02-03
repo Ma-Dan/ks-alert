@@ -1,4 +1,4 @@
-FROM carmanzhang/alerting-base
+FROM alerting-base
 RUN mkdir /alerting
 WORKDIR /alerting
 COPY dispatcher .

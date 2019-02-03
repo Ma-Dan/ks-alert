@@ -2,7 +2,7 @@ package jsonutil
 
 import (
 	"fmt"
-	"github.com/carmanzhang/ks-alert/pkg/pb"
+	"kubesphere.io/ks-alert/pkg/pb"
 	"testing"
 )
 

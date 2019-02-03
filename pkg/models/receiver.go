@@ -2,8 +2,8 @@ package models
 
 import (
 	"fmt"
-	. "github.com/carmanzhang/ks-alert/pkg/stderr"
-	"github.com/carmanzhang/ks-alert/pkg/utils/idutil"
+	. "kubesphere.io/ks-alert/pkg/stderr"
+	"kubesphere.io/ks-alert/pkg/utils/idutil"
 	"github.com/jinzhu/gorm"
 	"time"
 )

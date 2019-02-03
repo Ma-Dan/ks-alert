@@ -2,8 +2,8 @@ package notification
 
 import (
 	"fmt"
-	"github.com/carmanzhang/ks-alert/pkg/executor/metric"
-	"github.com/carmanzhang/ks-alert/pkg/models"
+	"kubesphere.io/ks-alert/pkg/executor/metric"
+	"kubesphere.io/ks-alert/pkg/models"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 	"time"

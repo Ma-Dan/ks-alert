@@ -2,10 +2,10 @@ package models
 
 import (
 	"fmt"
-	"github.com/carmanzhang/ks-alert/pkg/pb"
-	. "github.com/carmanzhang/ks-alert/pkg/stderr"
-	"github.com/carmanzhang/ks-alert/pkg/utils/dbutil"
-	"github.com/carmanzhang/ks-alert/pkg/utils/idutil"
+	"kubesphere.io/ks-alert/pkg/pb"
+	. "kubesphere.io/ks-alert/pkg/stderr"
+	"kubesphere.io/ks-alert/pkg/utils/dbutil"
+	"kubesphere.io/ks-alert/pkg/utils/idutil"
 	"time"
 )
 

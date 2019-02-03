@@ -2,7 +2,7 @@ package registry
 
 import (
 	"fmt"
-	"github.com/carmanzhang/ks-alert/pkg/utils/jsonutil"
+	"kubesphere.io/ks-alert/pkg/utils/jsonutil"
 	"github.com/golang/glog"
 	etcd3 "go.etcd.io/etcd/clientv3"
 	"golang.org/x/net/context"

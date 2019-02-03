@@ -2,7 +2,7 @@ package models
 
 import (
 	"fmt"
-	"github.com/carmanzhang/ks-alert/pkg/utils/dbutil"
+	"kubesphere.io/ks-alert/pkg/utils/dbutil"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 )

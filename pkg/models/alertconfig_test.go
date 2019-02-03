@@ -2,7 +2,7 @@ package models
 
 import (
 	"fmt"
-	"github.com/carmanzhang/ks-alert/pkg/utils/jsonutil"
+	"kubesphere.io/ks-alert/pkg/utils/jsonutil"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 	"time"
