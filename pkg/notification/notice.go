@@ -8,16 +8,15 @@ import (
 )
 
 type Notice struct {
-	ResourceName          string               `json:"resource_name"`
-	TriggerTime           time.Time            `json:"trigger_time"`
-	Rule                  *models.AlertRule    `json:"alert_rule"`
-	Metrics               *[]metric.TV         `json:"time_series_metrics"`
-	CumulateReSendCount   uint32               `json:"current_resend_count"`
-	MaxReSendCount        uint32               `json:"max_resend_count"`
-	CurrentReSendInterval uint32               `json:"current_resend_interval"`
-	NextReSendInterval    uint32               `json:"next_resend_interval"`
-	SendNoticeAt          time.Time            `json:"send_notice_at"`
-	FiredAlertDurations   *FiredAlertDurations `json:"fired_alert_durations"`
+	ResourceName          string            `json:"resource_name"`
+	TriggerTime           time.Time         `json:"trigger_time"`
+	Rule                  *models.AlertRule `json:"alert_rule"`
+	Metrics               *[]metric.TV      `json:"time_series_metrics"`
+	CumulateReSendCount   uint32            `json:"current_resend_count"`
+	MaxReSendCount        uint32            `json:"max_resend_count"`
+	CurrentReSendInterval uint32            `json:"current_resend_interval"`
+	NextReSendInterval    uint32            `json:"next_resend_interval"`
+	SendNoticeAt          time.Time         `json:"send_notice_at"`
 }
 
 type FiredAlertDurations []Duration
@@ -28,23 +27,22 @@ type Duration struct {
 }
 
 type CompactedNotice struct {
-	ResourceName          string               `json:"resource_name"`
-	TriggerTime           time.Time            `json:"trigger_time"`
-	MetricName            string               `json:"metric_name"`
-	RuleName              string               `json:"rule_name"`
-	ConsecutiveCount      int32                `json:"consecutive_count"`
-	ConditionType         string               `json:"condition_type"`
-	Threshold             float32              `json:"threshold"`
-	Unit                  string               `json:"unit"`
-	Period                int32                `json:"period"`
-	RepeatSendType        int32                `json:"resend_type"`
-	Metrics               *[]metric.TV         `json:"time_series_metrics"`
-	CumulateReSendCount   uint32               `json:"current_resend_count"`
-	MaxReSendCount        uint32               `json:"max_resend_count"`
-	CurrentReSendInterval uint32               `json:"current_resend_interval"`
-	NextReSendInterval    uint32               `json:"next_resend_interval"`
-	SendNoticeAt          time.Time            `json:"send_notice_at"`
-	FiredAlertDurations   *FiredAlertDurations `json:"fired_alert_durations"`
+	ResourceName          string       `json:"resource_name,omitempty"`
+	TriggerTime           *time.Time   `json:"trigger_time,omitempty"`
+	MetricName            string       `json:"metric_name,omitempty"`
+	RuleName              string       `json:"rule_name,omitempty"`
+	ConsecutiveCount      int32        `json:"consecutive_count,omitempty"`
+	ConditionType         string       `json:"condition_type,omitempty"`
+	Threshold             float32      `json:"threshold,omitempty"`
+	Unit                  string       `json:"unit,omitempty"`
+	Period                int32        `json:"period,omitempty"`
+	RepeatSendType        int32        `json:"resend_type,omitempty"`
+	Metrics               *[]metric.TV `json:"time_series_metrics,omitempty"`
+	CumulateReSendCount   uint32       `json:"current_resend_count,omitempty"`
+	MaxReSendCount        uint32       `json:"max_resend_count,omitempty"`
+	CurrentReSendInterval uint32       `json:"current_resend_interval,omitempty"`
+	NextReSendInterval    uint32       `json:"next_resend_interval,omitempty"`
+	SendNoticeAt          *time.Time   `json:"send_notice_at,omitempty"`
 }
 
 func (n Notice) MakeNotice(detailed bool) string {
@@ -63,7 +61,7 @@ func (n Notice) MakeNotice(detailed bool) string {
 			Period:                r.Period,
 			RepeatSendType:        r.RepeatSendType,
 			RuleName:              r.AlertRuleName,
-			TriggerTime:           n.TriggerTime,
+			TriggerTime:           &n.TriggerTime,
 			Unit:                  r.Unit,
 			CumulateReSendCount:   n.CumulateReSendCount,
 			CurrentReSendInterval: n.CurrentReSendInterval,

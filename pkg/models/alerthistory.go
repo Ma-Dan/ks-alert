@@ -47,7 +47,6 @@ type AlertHistory struct {
 	NotificationSendAt        time.Time `gorm:""`
 
 	CreatedAt time.Time `gorm:"not null;"`
-	UpdatedAt time.Time `gorm:"not null;"`
 }
 
 func CreateAlertHistory(ah *AlertHistory) (*AlertHistory, error) {

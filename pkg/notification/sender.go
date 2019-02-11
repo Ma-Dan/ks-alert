@@ -20,15 +20,14 @@ func (s Sender) Send(receivers *[]models.Receiver, noticeStr string) string {
 
 	// TODO make it more elegant
 	noticeWithReceivers := &pb.CreateNotificationRequest{
-		Content:      &wrappers.StringValue{Value: noticeStr},
-		AddressInfo:  &wrappers.StringValue{Value: jsonutil.Marshal(map[string][]string{"email": emails})},
-		ContentType:  &wrappers.StringValue{Value: "email"},
-		ExpiredDays:  &wrappers.UInt32Value{Value: 0},
-		Owner:        &wrappers.StringValue{Value: "huojiao"},
-		Title:        &wrappers.StringValue{Value: "here comes an alert"},
-		ShortContent: &wrappers.StringValue{Value: ""},
+		Content:     &wrappers.StringValue{Value: noticeStr},
+		AddressInfo: &wrappers.StringValue{Value: jsonutil.Marshal(map[string][]string{"email": emails})},
+		ExpiredDays: &wrappers.UInt32Value{Value: 0},
+		Title:       &wrappers.StringValue{Value: "here comes an alert"},
+		ContentType: &wrappers.StringValue{Value: "alert"},
 	}
 
+	fmt.Println(jsonutil.Marshal(noticeWithReceivers))
 	svcAddress := fmt.Sprintf("%s:%s", *option.NotificationHost, *option.NotificationPort)
 	conn, err := client.GetNotificationConn(svcAddress)
 	if err != nil {

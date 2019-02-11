@@ -15,10 +15,9 @@ message Message {
 
 // suggestion
 message Suggestion {
-    string alert_config_id = 1;
-    string resource_id = 2;
-    string alert_rule_id = 3;
-    repeated Message messages = 4;
+    string resource_id = 1;
+    string alert_rule_id = 2;
+    repeated Message messages = 3;
 }
 
 message SuggestionResponse {

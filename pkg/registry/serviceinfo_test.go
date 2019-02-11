@@ -6,6 +6,7 @@ import (
 	"kubesphere.io/ks-alert/pkg/option"
 	"kubesphere.io/ks-alert/pkg/utils/etcdutil"
 	"kubesphere.io/ks-alert/pkg/utils/jsonutil"
+	. "github.com/smartystreets/goconvey/convey"
 	etcd3 "go.etcd.io/etcd/clientv3"
 	"testing"
 )

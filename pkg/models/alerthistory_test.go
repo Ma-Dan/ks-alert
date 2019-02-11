@@ -45,7 +45,6 @@ func TestCreateAlertHistory(t *testing.T) {
 				RequestNotificationStatus: "xdsfrv",
 				NotificationSendAt:        time.Now(),
 				CreatedAt:                 time.Now(),
-				UpdatedAt:                 time.Now(),
 			})
 		})
 	})

@@ -15,10 +15,10 @@ type SuggestionHandler struct{}
 // for creating and deleting,
 
 func (server SuggestionHandler) UpdateSuggestion(ctx context.Context, suggestion *pb.Suggestion) (*pb.SuggestionResponse, error) {
-	if suggestion.AlertConfigId == "" || suggestion.AlertRuleId == "" || suggestion.ResourceId == "" {
+	if suggestion.AlertRuleId == "" || suggestion.ResourceId == "" {
 		return getSuggestionResponse(nil, stderr.Error{
 			Code: stderr.InvalidParam,
-			Text: "alert config id and alert rule id and resource id must be specified",
+			Text: "alert rule id and resource id must be specified",
 		}), nil
 	}
 
@@ -36,10 +36,10 @@ func getSuggestionResponse(suggestion *models.Suggestion, err error) *pb.Suggest
 }
 
 func (server SuggestionHandler) GetSuggestion(ctx context.Context, suggestion *pb.Suggestion) (*pb.SuggestionResponse, error) {
-	if suggestion.AlertConfigId == "" || suggestion.AlertRuleId == "" || suggestion.ResourceId == "" {
+	if suggestion.AlertRuleId == "" || suggestion.ResourceId == "" {
 		return getSuggestionResponse(nil, stderr.Error{
 			Code: stderr.InvalidParam,
-			Text: "alert config id and alert rule id and resource id must be specified",
+			Text: "alert rule id and resource id must be specified",
 		}), nil
 	}
 
@@ -57,10 +57,9 @@ func ConvertSuggestion2PB(s *models.Suggestion) *pb.Suggestion {
 	jsonutil.Unmarshal(s.Message, &message)
 
 	return &pb.Suggestion{
-		AlertConfigId: s.AlertRuleID,
-		AlertRuleId:   s.AlertRuleID,
-		ResourceId:    s.ResourceID,
-		Messages:      message,
+		AlertRuleId: s.AlertRuleID,
+		ResourceId:  s.ResourceID,
+		Messages:    message,
 	}
 }
 
@@ -71,11 +70,10 @@ func ConvertPB2Suggestion(s *pb.Suggestion) *models.Suggestion {
 	}
 
 	return &models.Suggestion{
-		AlertConfigID: s.AlertConfigId,
-		AlertRuleID:   s.AlertRuleId,
-		ResourceID:    s.ResourceId,
-		Message:       jsonutil.Marshal(s.Messages),
-		CreatedAt:     time.Now(),
-		UpdatedAt:     time.Now(),
+		AlertRuleID: s.AlertRuleId,
+		ResourceID:  s.ResourceId,
+		Message:     jsonutil.Marshal(s.Messages),
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
 	}
 }

@@ -193,11 +193,11 @@ func (rtAlert *RuntimeAlertConfig) runAlert() {
 				return
 			}
 
-			// 1. rtAlert config is enable?
-			//enable := isAlertEnable(alertConfig.EnableStart, alertConfig.EnableEnd)
-			//if !enable {
-			//	continue
-			//}
+			//1. rtAlert config is enable?
+			enable := isAlertEnable(alertConfig.EnableStart, alertConfig.EnableEnd)
+			if !enable {
+				continue
+			}
 
 			// 2. is there any rules need to execute?
 			evaluatedRuleIndx := getExecutingRuleIndx(rtAlert.freq, rtAlert.currentFreq, rtAlert.ruleEnable)
@@ -829,8 +829,6 @@ func (rtAlert *RuntimeAlertConfig) makeAlertHistoryItem(
 	ah.MaxRepeatSendCount = firedRule.MaxRepeatSendCount
 
 	ah.CreatedAt = time.Now()
-	ah.UpdatedAt = time.Now()
-
 	if isRecovery {
 		ah.AlertRecoveryAt = lastEvalutedTime
 	} else {

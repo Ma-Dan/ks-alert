@@ -9,9 +9,8 @@ import (
 )
 
 type Suggestion struct {
-	AlertConfigID string `gorm:"primary_key;"`
-	ResourceID    string `gorm:"primary_key;"`
-	AlertRuleID   string `gorm:"primary_key;"`
+	ResourceID  string `gorm:"primary_key;"`
+	AlertRuleID string `gorm:"primary_key;"`
 	// json format message
 	Message   string    `gorm:"type:text;"`
 	CreatedAt time.Time `gorm:"not null;"`
@@ -40,20 +39,20 @@ func UpdateSuggestion(suggestion *Suggestion) (*Suggestion, error) {
 		if mes != "" {
 			// update mode, since suggestion exist and comming message not null
 			sql = fmt.Sprintf("UPDATE suggestions SET message='%s', updated_at='%v' "+
-				"WHERE alert_config_id='%s' AND alert_rule_id='%s' AND resource_id='%s'",
+				"WHERE alert_rule_id='%s' AND resource_id='%s'",
 				suggestion.Message, time.Now(),
-				suggestion.AlertConfigID, suggestion.AlertRuleID, suggestion.ResourceID)
+				suggestion.AlertRuleID, suggestion.ResourceID)
 		} else {
 			// delete mode, since suggestion exist and comming message is null
-			sql = fmt.Sprintf("DELETE from suggestions WHERE alert_config_id='%s' AND alert_rule_id='%s' AND resource_id='%s'",
-				suggestion.AlertConfigID, suggestion.AlertRuleID, suggestion.ResourceID)
+			sql = fmt.Sprintf("DELETE from suggestions WHERE alert_rule_id='%s' AND resource_id='%s'",
+				suggestion.AlertRuleID, suggestion.ResourceID)
 		}
 
 	} else {
 		// create mode, since suggestion does not exist
-		sql = fmt.Sprintf("INSERT INTO suggestions (alert_config_id, alert_rule_id, resource_id, message, created_at, updated_at) "+
-			"VALUES ('%s', '%s', '%s', '%s', '%v', '%v')",
-			suggestion.AlertConfigID, suggestion.AlertRuleID, suggestion.ResourceID,
+		sql = fmt.Sprintf("INSERT INTO suggestions (alert_rule_id, resource_id, message, created_at, updated_at) "+
+			"VALUES ('%s', '%s', '%s', '%v', '%v')",
+			suggestion.AlertRuleID, suggestion.ResourceID,
 			suggestion.Message, time.Now(), time.Now())
 	}
 
@@ -80,8 +79,8 @@ func GetSuggestion(sugSpec *Suggestion) (*Suggestion, error) {
 	//err = db.Raw("SELECT * from suggestions WHERE alert_config_id=? AND alert_rule_id=? AND resource_id=?",
 	//	sugSpec.AlertConfigID, sugSpec.AlertRuleID, sugSpec.ResourceID).Scan(&suggestion).Error
 
-	b := db.Where("alert_config_id=? AND alert_rule_id=? AND resource_id=?",
-		sugSpec.AlertConfigID, sugSpec.AlertRuleID, sugSpec.ResourceID).First(&suggestion).RecordNotFound()
+	b := db.Where("alert_rule_id=? AND resource_id=?",
+		sugSpec.AlertRuleID, sugSpec.ResourceID).First(&suggestion).RecordNotFound()
 
 	if b {
 		return nil, nil
