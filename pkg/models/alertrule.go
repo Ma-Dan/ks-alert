@@ -11,35 +11,23 @@ import (
 var Bool2Int = map[bool]int8{true: 1, false: 0}
 
 type AlertRule struct {
-	AlertRuleID      string `gorm:"primary_key"`
-	AlertRuleName    string `gorm:"type:varchar(50);not null;"`
-	AlertRuleGroupID string `gorm:"type:varchar(50);not null;"`
-
-	MetricName string `gorm:"type:varchar(50);"`
-
-	ConditionType string `gorm:"type:varchar(10);not null;"`
-	// a flag which use to indicate that relationship between Severity and Threshold
-	PerferSeverity bool `gorm:"type:boolean;"`
-
-	Threshold float32 `gorm:"type:float;not null;"`
-
-	//ThresholdSeverityString string              `gorm:"type:text;not null;" json:"-"`
-	//ThresholdSeverity       []ThresholdSeverity `gorm:"-" json:"threshold_severity"`
-
-	Unit string `gorm:"type:varchar(10);"`
-
-	Period           int32 `gorm:"type:int;not null;"`
-	ConsecutiveCount int32 `gorm:"type:int;not null;"`
-
-	InhibitRule bool `gorm:"type:boolean;"`
-	Enable      bool `gorm:"type:boolean;"`
-	// repeat send
-	RepeatSendType         int32  `gorm:"type:varchar(10);not null;"`
-	InitRepeatSendInterval uint32 `gorm:"type:mediumint(11) unsigned;not null;"`
-	MaxRepeatSendCount     uint32 `gorm:"type:mediumint(11) unsigned;not null;"`
-
-	CreatedAt time.Time `gorm:"not null;"`
-	UpdatedAt time.Time `gorm:"not null;"`
+	AlertRuleID            string    `gorm:"primary_key"`
+	AlertRuleName          string    `gorm:"type:varchar(50);not null;"`
+	AlertRuleGroupID       string    `gorm:"type:varchar(50);not null;"`
+	MetricName             string    `gorm:"type:varchar(50);"`
+	ConditionType          string    `gorm:"type:varchar(10);not null;"`
+	PerferSeverity         bool      `gorm:"type:boolean;"`
+	Threshold              float32   `gorm:"type:float;not null;"`
+	Unit                   string    `gorm:"type:varchar(10);"`
+	Period                 int32     `gorm:"type:int;not null;"`
+	ConsecutiveCount       int32     `gorm:"type:int;not null;"`
+	InhibitRule            bool      `gorm:"type:boolean;"`
+	Enable                 bool      `gorm:"type:boolean;"`
+	RepeatSendType         int32     `gorm:"type:varchar(10);not null;"`
+	InitRepeatSendInterval uint32    `gorm:"type:mediumint(11) unsigned;not null;"`
+	MaxRepeatSendCount     uint32    `gorm:"type:mediumint(11) unsigned;not null;"`
+	CreatedAt              time.Time `gorm:"not null;"`
+	UpdatedAt              time.Time `gorm:"not null;"`
 }
 
 type AlertRuleGroup struct {

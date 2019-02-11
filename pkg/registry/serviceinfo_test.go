@@ -6,6 +6,7 @@ import (
 	"github.com/carmanzhang/ks-alert/pkg/option"
 	"github.com/carmanzhang/ks-alert/pkg/utils/etcdutil"
 	"github.com/carmanzhang/ks-alert/pkg/utils/jsonutil"
+	. "github.com/smartystreets/goconvey/convey"
 	etcd3 "go.etcd.io/etcd/clientv3"
 	"testing"
 )

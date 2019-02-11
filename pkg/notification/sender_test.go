@@ -51,6 +51,7 @@ func TestSender_Send(t *testing.T) {
 
 			noticeStr := notice.MakeNotice(false)
 			fmt.Println(noticeStr)
+			fmt.Println(`{"email": ["1262758612@qq.com", "513590612@qq.com"]}`)
 			sender := Sender{}
 			sendStatus := sender.Send(&[]models.Receiver{
 				{
@@ -71,7 +72,7 @@ func TestSender_Send(t *testing.T) {
 					Phone:        "33333333333333",
 					Wechat:       "haahaah",
 				},
-			}, noticeStr)
+			}, "{\"threshold\":80,\"time_series_metrics\":[{\"T\":1243465,\"V\":\"435.4354\"},{\"T\":1243465,\"V\":\"435.4354\"}]}")
 
 			fmt.Println(sendStatus)
 		})
